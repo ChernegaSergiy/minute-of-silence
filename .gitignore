@@ -1,28 +1,28 @@
-# ── Node / frontend ──────────────────────────────────────────────────────────
+# Node / frontend
 node_modules/
 dist/
 .vite/
 
-# ── Rust / Tauri ─────────────────────────────────────────────────────────────
+# Rust / Tauri
 src-tauri/target/
 src-tauri/WixTools/
 
-# ── OS artefacts ─────────────────────────────────────────────────────────────
+# OS artefacts
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ── Editor / IDE ─────────────────────────────────────────────────────────────
+# Editor / IDE
 .vscode/settings.json
 .idea/
 *.swp
 *.swo
 
-# ── Logs ─────────────────────────────────────────────────────────────────────
+# Logs
 *.log
 logs/
 
-# ── Env / secrets ────────────────────────────────────────────────────────────
+# Env / secrets
 .env
 .env.local
 .env.*.local
