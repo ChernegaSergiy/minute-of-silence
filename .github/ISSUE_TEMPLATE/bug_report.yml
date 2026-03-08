@@ -1,0 +1,54 @@
+name: Bug Report
+description: Report a reproducible bug or unexpected behaviour
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Дякуємо, що повідомляєте про проблему. Будь ласка, заповніть поля нижче.
+
+  - type: input
+    id: version
+    attributes:
+      label: Версія застосунку
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Операційна система
+      options:
+        - Windows 11
+        - Windows 10
+        - Ubuntu 22.04
+        - Ubuntu 24.04
+        - Інша (вкажіть нижче)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Опис проблеми
+      description: Що сталося? Що мало статися?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Кроки для відтворення
+      placeholder: |
+        1. Запустити застосунок
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи (якщо є)
+      description: Вставте вміст файлу `minute-of-silence.log` з директорії конфігурації.
+      render: shell
