@@ -100,32 +100,32 @@ Artifacts are written to `src-tauri/target/release/bundle/`.
 
 ```
 minute-of-silence/
-├── src/                        TypeScript frontend (Vite)
-│   ├── api.ts                  Typed wrappers around Tauri invoke()
-│   ├── app.ts                  Root UI controller
-│   ├── overlay.ts              Full-screen ceremony overlay
-│   └── types.ts                Shared types, mirrors Rust structs
-├── src-tauri/
-│   ├── src/
-│   │   ├── core/
-│   │   │   ├── scheduler.rs    Daily trigger loop with NTP correction
-│   │   │   ├── ntp.rs          NTP offset query
-│   │   │   └── settings.rs     Persistent settings and audio presets
-│   │   ├── commands.rs         Tauri IPC command handlers
-│   │   ├── tray.rs             System tray icon and context menu
-│   │   ├── state.rs            Shared application state (Arc<Mutex>)
-│   │   ├── error.rs            Unified error type
-│   │   ├── platform_windows.rs Win32 API — media control, power events
-│   │   └── platform_linux.rs   MPRIS / xdotool — media control
-│   └── tests/                  Rust integration tests
-├── docs/
-│   └── architecture.md         System design and data flow
-├── .github/
-│   ├── workflows/ci.yml        CI/CD pipeline (lint, test, build)
-│   └── ISSUE_TEMPLATE/         Bug report and feature request forms
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-└── index.html                  App shell with embedded CSS
++-- src/                         # TypeScript frontend (Vite)
+|   +-- api.ts                   # Typed wrappers around Tauri invoke()
+|   +-- app.ts                   # Root UI controller
+|   +-- overlay.ts               # Full-screen ceremony overlay
+|   \-- types.ts                 # Shared types, mirrors Rust structs
++-- src-tauri/
+|   +-- src/
+|   |   +-- core/
+|   |   |   +-- scheduler.rs     # Daily trigger loop with NTP correction
+|   |   |   +-- ntp.rs           # NTP offset query
+|   |   |   \-- settings.rs      # Persistent settings and audio presets
+|   |   +-- commands.rs          # Tauri IPC command handlers
+|   |   +-- tray.rs              # System tray icon and context menu
+|   |   +-- state.rs             # Shared application state (Arc<Mutex>)
+|   |   +-- error.rs             # Unified error type
+|   |   +-- platform_windows.rs  # Win32 API — media control, power events
+|   |   \-- platform_linux.rs    # MPRIS / xdotool — media control
+|   \-- tests/                   # Rust integration tests
++-- docs/
+|   \-- architecture.md          # System design and data flow
++-- .github/
+|   +-- workflows/ci.yml         # CI/CD pipeline (lint, test, build)
+|   \-- ISSUE_TEMPLATE/          # Bug report and feature request forms
++-- CHANGELOG.md
++-- CONTRIBUTING.md
+\-- index.html                   # App shell with embedded CSS
 ```
 
 ## Contributing
