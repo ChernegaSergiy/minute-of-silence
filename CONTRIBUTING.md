@@ -61,23 +61,23 @@ npm run typecheck
 
 ```
 minute-of-silence/
-├── src/                    # TypeScript frontend
-│   ├── api.ts              # Typed Tauri invoke wrappers
-│   ├── app.ts              # Root UI controller
-│   ├── overlay.ts          # Ceremony overlay
-│   └── types.ts            # Shared types (mirrors Rust structs)
-├── src-tauri/
-│   ├── src/
-│   │   ├── core/           # Scheduler, NTP, settings
-│   │   ├── commands.rs     # Tauri IPC commands
-│   │   ├── tray.rs         # System-tray setup
-│   │   ├── platform_windows.rs
-│   │   └── platform_linux.rs
-│   └── tests/              # Integration tests
-├── .github/
-│   ├── workflows/ci.yml
-│   └── ISSUE_TEMPLATE/
-└── docs/
++-- src/                     # TypeScript frontend
+|   +-- api.ts               # Typed Tauri invoke wrappers
+|   +-- app.ts               # Root UI controller
+|   +-- overlay.ts           # Ceremony overlay
+|   \-- types.ts             # Shared types (mirrors Rust structs)
++-- src-tauri/
+|   +-- src/
+|   |   +-- core/            # Scheduler, NTP, settings
+|   |   +-- commands.rs      # Tauri IPC commands
+|   |   +-- tray.rs          # System-tray setup
+|   |   +-- platform_windows.rs
+|   |   \-- platform_linux.rs
+|   \-- tests/               # Integration tests
++-- .github/
+|   +-- workflows/ci.yml
+|   \-- ISSUE_TEMPLATE/
+\-- docs/
 ```
 
 ---
