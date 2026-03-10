@@ -18,11 +18,14 @@ fn default_settings_serialise_and_deserialise() {
 #[test]
 fn all_presets_round_trip() {
     let presets = [
-        AudioPreset::VoiceSilenceBell,
-        AudioPreset::VoiceAnthem,
         AudioPreset::VoiceMetronome,
-        AudioPreset::VoiceMetronomeAnthem,
         AudioPreset::MetronomeOnly,
+        AudioPreset::VoiceSilenceBell,
+        AudioPreset::VoiceSilence,
+        AudioPreset::VoiceMetronomeAnthem,
+        AudioPreset::MetronomeAnthem,
+        AudioPreset::BellSilenceBell,
+        AudioPreset::BellMetronomeBell,
     ];
 
     for preset in presets {
