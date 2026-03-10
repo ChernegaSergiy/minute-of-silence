@@ -82,9 +82,6 @@ pub mod power {
 
     use windows::Win32::UI::WindowsAndMessaging::{PBT_APMRESUMEAUTOMATIC, PBT_APMRESUMESUSPEND};
 
-    #[allow(unused_imports)]
-    use windows::Win32::UI::WindowsAndMessaging::POWERBROADCAST_SETTING;
-
     /// Returns `true` when `wparam` signals a resume-from-sleep event.
     pub fn is_resume_event(wparam: usize) -> bool {
         wparam == PBT_APMRESUMESUSPEND as usize || wparam == PBT_APMRESUMEAUTOMATIC as usize
