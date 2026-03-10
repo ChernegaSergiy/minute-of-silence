@@ -1,7 +1,7 @@
 //! Daily scheduler: fires the ceremony at 09:00 local time, optionally
 //! corrected by NTP, and handles the post-sleep "late start" grace period.
 
-use chrono::{Local, NaiveTime, Timelike};
+use chrono::{Local, NaiveTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::time::{sleep, Duration};
 
