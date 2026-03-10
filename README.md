@@ -29,11 +29,14 @@ The trigger time is corrected against an NTP server, ensuring accuracy regardles
 
 | # | Preset | Description |
 |---|--------|-------------|
-| 1 | Voice + Silence + Bell | Announcement, 60 s of silence, closing bell |
-| 2 | Voice + Anthem | Announcement followed by the national anthem |
-| 3 | Voice + Metronome | Announcement with a metronome for the silence duration |
-| 4 | Voice + Metronome + Anthem | Announcement, metronome, then anthem |
-| 5 | Metronome only | No voice announcement |
+| 1 | Voice + Metronome | Announcement with a metronome for the silence duration |
+| 2 | Metronome | Metronome only (no voice) |
+| 3 | Voice + Silence + Bell | Announcement, 60 s of silence, closing bell |
+| 4 | Voice + Silence | Announcement followed by 60 s of silence |
+| 5 | Voice + Metronome + Anthem | Announcement, metronome, then anthem |
+| 6 | Metronome + Anthem | Metronome followed by the national anthem |
+| 7 | Bell + Silence + Bell | Bell, 60 s of silence, closing bell |
+| 8 | Bell + Metronome + Bell | Bell, metronome, closing bell |
 
 > [!NOTE]
 > Audio playback is not yet implemented. The scheduler, overlay, and media pause/resume are fully functional. Audio assets and the playback engine are planned for the next release.
