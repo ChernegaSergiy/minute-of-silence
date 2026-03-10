@@ -1,11 +1,14 @@
 // ── Mirror of Rust `Settings` struct ────────────────────────────────────────
 
 export type AudioPreset =
-  | "voice_silence_bell"
-  | "voice_anthem"
   | "voice_metronome"
+  | "metronome_only"
+  | "voice_silence_bell"
+  | "voice_silence"
   | "voice_metronome_anthem"
-  | "metronome_only";
+  | "metronome_anthem"
+  | "bell_silence_bell"
+  | "bell_metronome_bell";
 
 export interface Settings {
   autostartEnabled: boolean;
@@ -30,16 +33,19 @@ export interface StatusSnapshot {
 // ── UI helpers ───────────────────────────────────────────────────────────────
 
 export const PRESET_LABELS: Record<AudioPreset, string> = {
-  voice_silence_bell: "Голос + тиша + дзвін",
-  voice_anthem: "Голос + гімн",
   voice_metronome: "Голос + метроном",
+  metronome_only: "Метроном",
+  voice_silence_bell: "Голос + тиша + дзвін",
+  voice_silence: "Голос + тиша",
   voice_metronome_anthem: "Голос + метроном + гімн",
-  metronome_only: "Тільки метроном",
+  metronome_anthem: "Метроном + гімн",
+  bell_silence_bell: "Дзвін + тиша + дзвін",
+  bell_metronome_bell: "Дзвін + метроном + дзвін",
 };
 
 export const DEFAULT_SETTINGS: Settings = {
   autostartEnabled: true,
-  preset: "voice_silence_bell",
+  preset: "voice_metronome",
   volume: 80,
   pauseOtherPlayers: true,
   showVisualOverlay: true,
