@@ -4,6 +4,7 @@ mod error;
 mod state;
 mod tray;
 
+#[cfg(target_os = "windows")]
 use tauri::Manager;
 
 pub use error::{AppError, Result};
