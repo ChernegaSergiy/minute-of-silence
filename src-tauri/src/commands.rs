@@ -1,11 +1,11 @@
 //! Tauri IPC commands exposed to the frontend via `invoke()`.
 
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, State};
 
 use crate::{
     core::settings::Settings,
     state::{AppState, StatusSnapshot},
-    AppError, Result,
+    Result,
 };
 
 // ── Settings ────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ pub fn unskip_next(state: State<'_, AppState>) {
 pub async fn trigger_ceremony_now(app: AppHandle) -> Result<()> {
     log::info!("Manual ceremony trigger requested");
     tauri::async_runtime::spawn(async move {
-        crate::core::scheduler::trigger_ceremony_pub(app).await;
+        crate::core::scheduler::trigger_ceremony(app).await;
     });
     Ok(())
 }

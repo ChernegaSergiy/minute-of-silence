@@ -1,8 +1,4 @@
-use tauri::{
-    image::Image,
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, Runtime,
-};
+use tauri::Manager;
 
 mod commands;
 mod core;
