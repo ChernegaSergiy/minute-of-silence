@@ -12,6 +12,7 @@ export type AudioPreset =
 
 export interface Settings {
   autostartEnabled: boolean;
+  weekdaysOnly: boolean;
   preset: AudioPreset;
   volume: number; // 0–100
   pauseOtherPlayers: boolean;
@@ -45,6 +46,7 @@ export const PRESET_LABELS: Record<AudioPreset, string> = {
 
 export const DEFAULT_SETTINGS: Settings = {
   autostartEnabled: true,
+  weekdaysOnly: false,
   preset: "voice_metronome",
   volume: 80,
   pauseOtherPlayers: true,

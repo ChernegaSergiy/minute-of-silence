@@ -73,6 +73,13 @@ export class App {
                    ${this.settings.autostartEnabled ? "checked" : ""} />
           </label>
 
+          <!-- Weekdays only toggle -->
+          <label class="control-row">
+            <span class="control-row__label">Лише в будні</span>
+            <input type="checkbox" id="weekdaysToggle" class="toggle"
+                   ${this.settings.weekdaysOnly ? "checked" : ""} />
+          </label>
+
           <!-- Skip tomorrow toggle -->
           <label class="control-row">
             <span class="control-row__label">Пропустити завтра</span>
@@ -153,6 +160,16 @@ export class App {
         this.settings = {
           ...this.settings,
           autostartEnabled: (e.target as HTMLInputElement).checked,
+        };
+      }
+    );
+
+    this.q<HTMLInputElement>("#weekdaysToggle").addEventListener(
+      "change",
+      (e) => {
+        this.settings = {
+          ...this.settings,
+          weekdaysOnly: (e.target as HTMLInputElement).checked,
         };
       }
     );

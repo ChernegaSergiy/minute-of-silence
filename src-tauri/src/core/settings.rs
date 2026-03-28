@@ -11,6 +11,9 @@ pub struct Settings {
     /// Enable daily activation at 09:00.
     pub autostart_enabled: bool,
 
+    /// Run ceremony only on weekdays (Mon-Fri).
+    pub weekdays_only: bool,
+
     /// Selected audio preset (1–5).
     pub preset: AudioPreset,
 
@@ -38,6 +41,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             autostart_enabled: true,
+            weekdays_only: false,
             preset: AudioPreset::VoiceMetronome,
             volume: 80,
             pause_other_players: true,
