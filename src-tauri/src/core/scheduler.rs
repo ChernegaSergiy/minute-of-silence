@@ -113,6 +113,13 @@ async fn current_local_time(app: &AppHandle) -> chrono::DateTime<Local> {
 /// Orchestrate the ceremony sequence (audio handled elsewhere; here we emit
 /// Tauri events and update state).
 pub async fn trigger_ceremony(app: AppHandle) {
+    // Check if we should pause other players.
+    let should_pause_players = {
+        let state = app.state::<AppState>();
+        let inner = state.lock();
+        inner.settings.pause_other_players
+    };
+
     // Mark ceremony as active.
     {
         let state = app.state::<AppState>();
@@ -121,17 +128,19 @@ pub async fn trigger_ceremony(app: AppHandle) {
         inner.last_activation = Some(Local::now());
     }
 
-    // Pause other media players before playback starts.
-    #[cfg(target_os = "windows")]
-    {
-        if let Err(e) = crate::platform_windows::media::pause_all() {
-            log::warn!("Could not pause media players: {e}");
+    // Pause other media players before playback starts (if enabled).
+    if should_pause_players {
+        #[cfg(target_os = "windows")]
+        {
+            if let Err(e) = crate::platform_windows::media::pause_all() {
+                log::warn!("Could not pause media players: {e}");
+            }
         }
-    }
-    #[cfg(target_os = "linux")]
-    {
-        if let Err(e) = crate::platform_linux::media::pause_all() {
-            log::warn!("Could not pause media players: {e}");
+        #[cfg(target_os = "linux")]
+        {
+            if let Err(e) = crate::platform_linux::media::pause_all() {
+                log::warn!("Could not pause media players: {e}");
+            }
         }
     }
 
@@ -144,25 +153,33 @@ pub async fn trigger_ceremony(app: AppHandle) {
 
 /// Called when the ceremony audio sequence completes.
 pub async fn finish_ceremony(app: AppHandle) {
-    {
+    let should_resume_players = {
         let state = app.state::<AppState>();
-        let mut inner = state.lock();
+        let inner = state.lock();
         if !inner.ceremony_active {
             return; // Already finished by the frontend early return.
         }
+        inner.settings.pause_other_players
+    };
+
+    {
+        let state = app.state::<AppState>();
+        let mut inner = state.lock();
         inner.ceremony_active = false;
     }
 
-    #[cfg(target_os = "windows")]
-    {
-        if let Err(e) = crate::platform_windows::media::resume_all() {
-            log::warn!("Could not resume media players: {e}");
+    if should_resume_players {
+        #[cfg(target_os = "windows")]
+        {
+            if let Err(e) = crate::platform_windows::media::resume_all() {
+                log::warn!("Could not resume media players: {e}");
+            }
         }
-    }
-    #[cfg(target_os = "linux")]
-    {
-        if let Err(e) = crate::platform_linux::media::resume_all() {
-            log::warn!("Could not resume media players: {e}");
+        #[cfg(target_os = "linux")]
+        {
+            if let Err(e) = crate::platform_linux::media::resume_all() {
+                log::warn!("Could not resume media players: {e}");
+            }
         }
     }
 
