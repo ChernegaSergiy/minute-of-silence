@@ -128,6 +128,12 @@ pub async fn trigger_ceremony(app: AppHandle) {
             log::warn!("Could not pause media players: {e}");
         }
     }
+    #[cfg(target_os = "linux")]
+    {
+        if let Err(e) = crate::platform_linux::media::pause_all() {
+            log::warn!("Could not pause media players: {e}");
+        }
+    }
 
     // Notify the frontend.
     let _ = app.emit(EVENT_CEREMONY_START, ());
@@ -151,6 +157,12 @@ pub async fn finish_ceremony(app: AppHandle) {
     #[cfg(target_os = "windows")]
     {
         if let Err(e) = crate::platform_windows::media::resume_all() {
+            log::warn!("Could not resume media players: {e}");
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Err(e) = crate::platform_linux::media::resume_all() {
             log::warn!("Could not resume media players: {e}");
         }
     }
