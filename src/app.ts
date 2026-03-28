@@ -19,20 +19,18 @@ import {
   onCeremonyStart,
   onCeremonyEnd,
 } from "./api";
-import { OverlayController } from "./overlay";
+
 import { audioPlayer } from "./audio";
 import type { Settings, StatusSnapshot } from "./types";
 import { PRESET_LABELS } from "./types";
 
 export class App {
   private root: HTMLElement;
-  private overlay: OverlayController;
   private settings!: Settings;
   private status!: StatusSnapshot;
 
   constructor(root: HTMLElement) {
     this.root = root;
-    this.overlay = new OverlayController();
   }
 
   async mount(): Promise<void> {
@@ -204,48 +202,30 @@ export class App {
 
     this.q<HTMLButtonElement>("#testBtn").addEventListener("click", async () => {
       console.log("Test button clicked, triggering ceremony...");
-      // Sync UI state back to this.settings before testing
-      this.syncSettingsFromUI();
       await triggerCeremonyNow();
     });
-  }
-
-  private syncSettingsFromUI(): void {
-    const presetSelect = this.q<HTMLSelectElement>("#presetSelect");
-    const volumeSlider = this.q<HTMLInputElement>("#volumeSlider");
-    const autostartToggle = this.q<HTMLInputElement>("#autostartToggle");
-
-    this.settings = {
-      ...this.settings,
-      preset: presetSelect.value as any,
-      volume: parseInt(volumeSlider.value, 10),
-      autostartEnabled: autostartToggle.checked,
-    };
   }
 
   private async subscribeToBackendEvents(): Promise<void> {
     await onCeremonyStart(async () => {
       console.log("Ceremony start event received");
-      this.overlay.show();
       const badge = document.getElementById("statusBadge");
       if (badge) {
         badge.textContent = "● АКТИВНА ЦЕРЕМОНІЯ";
         badge.classList.add("status-badge--active");
       }
 
-      // Play audio sequence based on current settings
-      console.log(`Starting audio preset: ${this.settings.preset} with volume ${this.settings.volume}`);
-      await audioPlayer.playPreset(this.settings.preset, this.settings.volume);
+      const settings = await getSettings();
+      console.log(`Starting audio preset: ${settings.preset} with volume ${settings.volume}`);
+      await audioPlayer.playPreset(settings.preset, settings.volume);
       
-      // Notify backend to immediately finish the ceremony (resumes media, hides overlay)
       console.log("Audio playback finished, notifying backend");
       await finishCeremonyNow();
     });
 
     await onCeremonyEnd(() => {
       console.log("Ceremony end event received");
-      audioPlayer.stop(); // Ensure audio stops if cancelled externally
-      this.overlay.hide();
+      audioPlayer.stop();
       const badge = document.getElementById("statusBadge");
       if (badge) {
         badge.textContent = "○ ОЧІКУВАННЯ";
