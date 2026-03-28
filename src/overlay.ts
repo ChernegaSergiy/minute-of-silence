@@ -24,7 +24,7 @@ export class OverlayController {
       </div>
     `;
 
-    document.body.appendChild(this.el);
+    document.getElementById("app")?.appendChild(this.el);
   }
 
   show(): void {

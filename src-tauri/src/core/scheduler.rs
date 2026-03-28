@@ -138,12 +138,8 @@ pub async fn trigger_ceremony(app: AppHandle) {
     // Notify the frontend.
     let _ = app.emit(EVENT_CEREMONY_START, ());
 
-    // The audio engine drives the actual ceremony length; here we wait for
-    // the maximum possible duration (voice + anthem ≈ 3 min) as a fallback.
-    // In a full implementation the audio module calls `finish_ceremony`.
-    sleep(Duration::from_secs(180)).await;
-
-    finish_ceremony(app).await;
+    // The audio engine drives the actual ceremony length via finish_ceremony_now.
+    // We no longer sleep here to avoid blocking the scheduler or commands.
 }
 
 /// Called when the ceremony audio sequence completes.
