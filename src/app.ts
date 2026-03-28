@@ -209,6 +209,7 @@ export class App {
   private async subscribeToBackendEvents(): Promise<void> {
     await onCeremonyStart(async () => {
       console.log("Ceremony start event received");
+      audioPlayer.stop();
       const badge = document.getElementById("statusBadge");
       if (badge) {
         badge.textContent = "● АКТИВНА ЦЕРЕМОНІЯ";
