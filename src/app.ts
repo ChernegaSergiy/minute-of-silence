@@ -5,7 +5,7 @@
  *  - Bootstrap the UI from the DOM template in `index.html`.
  *  - Load initial settings and status from the backend.
  *  - Wire up all user-interaction event handlers.
- *  - Subscribe to ceremony events and update the overlay accordingly.
+ *  - Subscribe to ceremony events.
  */
 
 import {
@@ -116,8 +116,6 @@ export class App {
                    ${this.settings.pauseOtherPlayers ? "checked" : ""} />
           </label>
 
-          <!-- Visual overlay -->
-          <hr class="divider" />
 
           <!-- Meta / debug info -->
           <div class="meta">
