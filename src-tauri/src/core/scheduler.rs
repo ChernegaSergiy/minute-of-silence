@@ -1,7 +1,7 @@
 //! Daily scheduler: fires the ceremony at 09:00 local time, optionally
 //! corrected by NTP, and handles the post-sleep "late start" grace period.
 
-use chrono::{Local, NaiveTime};
+use chrono::{Datelike, Local, NaiveTime};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::time::{sleep, Duration};
 
@@ -40,7 +40,7 @@ pub async fn run(app: AppHandle) {
             continue;
         }
 
-        // Check skip flag.
+        // Check skip flag and weekdays.
         {
             let state = app.state::<AppState>();
             let inner = state.lock();
@@ -51,6 +51,13 @@ pub async fn run(app: AppHandle) {
                 log::info!("Skipping ceremony for {today}");
                 last_fired_date = Some(today);
                 continue;
+            }
+            if inner.settings.weekdays_only {
+                let weekday = today.weekday();
+                if weekday == chrono::Weekday::Sat || weekday == chrono::Weekday::Sun {
+                    log::info!("Skipping ceremony for {today} (weekend)");
+                    continue;
+                }
             }
         }
 
