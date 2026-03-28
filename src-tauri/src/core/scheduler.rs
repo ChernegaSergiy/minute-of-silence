@@ -99,7 +99,9 @@ async fn current_local_time(app: &AppHandle) -> chrono::DateTime<Local> {
         return Local::now();
     }
 
-    match ntp::query_offset(&server).await {
+    let result = ntp::query_offset(&server).await;
+
+    match result {
         Ok(offset_ms) => {
             let corrected = Local::now() + chrono::Duration::milliseconds(offset_ms);
             {
@@ -112,6 +114,12 @@ async fn current_local_time(app: &AppHandle) -> chrono::DateTime<Local> {
         Err(e) => {
             log::warn!("NTP query failed: {e}; falling back to system clock");
         }
+    }
+
+    {
+        let state = app.state::<AppState>();
+        let mut inner = state.lock();
+        inner.last_ntp_sync = Some(Local::now());
     }
 
     Local::now()
