@@ -27,6 +27,7 @@ export class App {
   private root: HTMLElement;
   private settings!: Settings;
   private status!: StatusSnapshot;
+  private isDirty: boolean = false;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -208,6 +209,20 @@ export class App {
       .join("");
   }
 
+  private setDirty(dirty: boolean): void {
+    this.isDirty = dirty;
+    const saveBtn = document.getElementById("saveBtn");
+    if (saveBtn) {
+      if (dirty) {
+        saveBtn.classList.add("btn--dirty");
+        saveBtn.textContent = "ЗБЕРЕГТИ *";
+      } else {
+        saveBtn.classList.remove("btn--dirty");
+        saveBtn.textContent = "ЗБЕРЕГТИ";
+      }
+    }
+  }
+
   // ── Event wiring ──────────────────────────────────────────────────────────
 
   private bindEvents(): void {
@@ -218,6 +233,7 @@ export class App {
           ...this.settings,
           autostartEnabled: (e.target as HTMLInputElement).checked,
         };
+        this.setDirty(true);
       }
     );
 
@@ -228,6 +244,7 @@ export class App {
           ...this.settings,
           weekdaysOnly: (e.target as HTMLInputElement).checked,
         };
+        this.setDirty(true);
       }
     );
 
@@ -238,6 +255,7 @@ export class App {
           ...this.settings,
           systemTimeOnly: (e.target as HTMLInputElement).checked,
         };
+        this.setDirty(true);
       }
     );
 
@@ -248,6 +266,7 @@ export class App {
           ...this.settings,
           volumePriority: (e.target as HTMLInputElement).checked,
         };
+        this.setDirty(true);
       }
     );
 
@@ -262,6 +281,7 @@ export class App {
           ...this.settings,
           preset: (e.target as HTMLSelectElement).value as Settings["preset"],
         };
+        this.setDirty(true);
       }
     );
 
@@ -271,6 +291,7 @@ export class App {
       const v = parseInt(volumeRange.value, 10);
       volumeValue.textContent = `${v}%`;
       this.settings = { ...this.settings, volume: v };
+      this.setDirty(true);
     });
 
     this.q<HTMLInputElement>("#pauseToggle").addEventListener("change", (e) => {
@@ -278,11 +299,13 @@ export class App {
         ...this.settings,
         pauseOtherPlayers: (e.target as HTMLInputElement).checked,
       };
+      this.setDirty(true);
     });
 
     this.q<HTMLButtonElement>("#saveBtn").addEventListener("click", async () => {
       await saveSettings(this.settings);
       await this.refreshStatus(); // Immediately update status UI (NTP, activation info, etc)
+      this.setDirty(false);
     });
 
     this.q<HTMLButtonElement>("#testBtn").addEventListener("click", async () => {
