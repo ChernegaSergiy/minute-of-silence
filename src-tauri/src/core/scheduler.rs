@@ -1,6 +1,6 @@
 //! Ceremony scheduler and execution logic.
 
-use chrono::{Local, NaiveTime, Timelike};
+use chrono::{Local, NaiveTime};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
