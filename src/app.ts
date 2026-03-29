@@ -265,6 +265,7 @@ export class App {
 
     this.q<HTMLButtonElement>("#saveBtn").addEventListener("click", async () => {
       await saveSettings(this.settings);
+      await this.refreshStatus(); // Immediately update status UI (NTP, activation info, etc)
     });
 
     this.q<HTMLButtonElement>("#testBtn").addEventListener("click", async () => {
