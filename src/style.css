@@ -1,4 +1,4 @@
-/* ── Reset & tokens ─────────────────────────────────────────────────── */
+/* Reset & tokens */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -35,7 +35,7 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Allow selection in input fields if needed, but here we don't have text inputs */
+/* Allow selection in input fields if needed */
 input, textarea {
   font-family: var(--font-mono);
   user-select: text;
@@ -44,7 +44,7 @@ input, textarea {
 
 #app { width: 100%; height: 100%; }
 
-/* ── Window chrome ───────────────────────────────────────────────────── */
+/* Window chrome */
 .window {
   display: flex;
   flex-direction: column;
@@ -77,7 +77,7 @@ input, textarea {
   flex-shrink: 0;
 }
 
-/* ── Tabs ───────────────────────────────────────────────────────────── */
+/* Tabs */
 .tabs {
   display: flex; width: 100%; border-bottom: var(--border);
   margin-bottom: 12px; padding-bottom: 0px;
@@ -94,7 +94,7 @@ input, textarea {
 .tab-content { display: none; flex-direction: column; gap: 8px; }
 .tab-content--active { display: flex; }
 
-/* ── Logo ───────────────────────────────────────────────────────────── */
+/* Logo */
 .about-logo {
   display: block; margin: 8px auto 16px auto;
   max-width: 96px; height: auto;
@@ -102,7 +102,7 @@ input, textarea {
   opacity: 0.9;
 }
 
-/* ── Status badge ────────────────────────────────────────────────────── */
+/* Status badge */
 .status-badge {
   font-size: 10px; letter-spacing: 0.1em;
   color: var(--c-muted);
@@ -111,7 +111,7 @@ input, textarea {
 .status-badge--active { color: var(--c-accent); animation: blink 1s step-start infinite; }
 @keyframes blink { 50% { opacity: 0.4; } }
 
-/* ── Control row ─────────────────────────────────────────────────────── */
+/* Control row */
 .control-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 8px; cursor: pointer;
@@ -122,7 +122,7 @@ input, textarea {
 .control-row__header { display: flex; justify-content: space-between; }
 .control-row__value { color: var(--c-accent); font-weight: bold; }
 
-/* ── Toggle (checkbox) ───────────────────────────────────────────────── */
+/* Toggle (checkbox) */
 .toggle {
   appearance: none; -webkit-appearance: none;
   width: 36px; height: 18px;
@@ -141,7 +141,7 @@ input, textarea {
 .toggle:checked { background: var(--c-accent); border-color: var(--c-accent); }
 .toggle:checked::after { left: 20px; background: var(--c-text); }
 
-/* ── Select ──────────────────────────────────────────────────────────── */
+/* Select */
 .select {
   appearance: none;
   background: var(--c-surface);
@@ -155,7 +155,7 @@ input, textarea {
 }
 .select:focus { outline: 1px solid var(--c-accent); }
 
-/* ── Slider ──────────────────────────────────────────────────────────── */
+/* Slider */
 .slider {
   -webkit-appearance: none; appearance: none;
   width: 100%; height: 4px;
@@ -174,13 +174,13 @@ input, textarea {
   border: none; cursor: pointer;
 }
 
-/* ── Divider ─────────────────────────────────────────────────────────── */
+/* Divider */
 .divider { border: none; border-top: var(--border); margin: 2px 0; }
 
-/* ── Meta ────────────────────────────────────────────────────────────── */
+/* Meta */
 .meta { display: flex; flex-direction: column; gap: 3px; color: var(--c-muted); font-size: 10px; }
 
-/* ── Buttons ─────────────────────────────────────────────────────────── */
+/* Buttons */
 .btn {
   font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 0.08em;
@@ -205,10 +205,10 @@ input, textarea {
 
 .hidden { display: none !important; }
 
-/* ── Meta row ────────────────────────────────────────────────────────── */
+/* Meta row */
 .meta-row { display: flex; align-items: center; }
 
-/* ── Scrollbar ───────────────────────────────────────────────────────── */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--c-bg); }
 ::-webkit-scrollbar-thumb { background: var(--c-border); }
