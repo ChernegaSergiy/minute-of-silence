@@ -29,7 +29,6 @@ export class App {
   private settings!: Settings;
   private cleanSettings!: Settings;
   private status!: StatusSnapshot;
-  private isDirty: boolean = false;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -243,7 +242,6 @@ export class App {
   }
 
   private setDirty(dirty: boolean): void {
-    this.isDirty = dirty;
     const saveBtn = document.getElementById("saveBtn");
     if (saveBtn) {
       if (dirty) {
