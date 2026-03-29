@@ -3,6 +3,7 @@
 use std::sync::{Arc, Mutex};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
+use tauri::AppHandle;
 
 use crate::core::ntp_service::NtpService;
 use crate::core::settings::Settings;
@@ -38,12 +39,12 @@ impl Default for Inner {
 }
 
 impl AppState {
-    pub fn new() -> Self {
+    pub fn new(app_handle: AppHandle) -> Self {
         let settings = Settings::load_or_default();
         Self {
             inner: Arc::new(Mutex::new(Inner::default())),
             ntp_service: NtpService::new(settings.ntp_server.clone()),
-            audio: Arc::new(AudioEngine::new()),
+            audio: Arc::new(AudioEngine::new(app_handle)),
         }
     }
 

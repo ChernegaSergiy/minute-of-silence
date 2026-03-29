@@ -9,10 +9,9 @@ mod error;
 mod state;
 mod tray;
 
-pub use core::settings::{AudioPreset, Settings};
-
-#[cfg(target_os = "windows")]
 use tauri::Manager;
+
+pub use core::settings::{AudioPreset, Settings};
 
 pub use error::{AppError, Result};
 pub use state::AppState;
@@ -36,8 +35,9 @@ pub fn run() {
                 .level(log::LevelFilter::Info)
                 .build(),
         )
-        .manage(AppState::new())
         .setup(|app| {
+            app.manage(AppState::new(app.handle().clone()));
+
             // Build the system-tray icon.
             tray::build_tray(app)?;
 

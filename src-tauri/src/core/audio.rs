@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
+use tauri::{AppHandle, Manager};
 
 use crate::core::settings::AudioPreset;
 use crate::error::{AppError, Result};
@@ -15,12 +16,14 @@ use crate::error::{AppError, Result};
 /// This acts as a class responsible for all audio operations.
 #[derive(Debug)]
 pub struct AudioEngine {
+    app_handle: AppHandle,
     stop_counter: AtomicU64,
 }
 
 impl AudioEngine {
-    pub fn new() -> Self {
+    pub fn new(app_handle: AppHandle) -> Self {
         Self {
+            app_handle,
             stop_counter: AtomicU64::new(0),
         }
     }
@@ -73,8 +76,8 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let announcement = self.get_path("announcement.ogg");
-                let metronome = self.get_path("metronome.ogg");
+                let announcement = self.get_path("announcement.ogg")?;
+                let metronome = self.get_path("metronome.ogg")?;
 
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&announcement)?)) {
                     sink.append(source);
@@ -87,7 +90,7 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let metronome = self.get_path("metronome.ogg");
+                let metronome = self.get_path("metronome.ogg")?;
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&metronome)?)) {
                     sink.append(source);
                 }
@@ -96,8 +99,8 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let announcement = self.get_path("announcement.ogg");
-                let bell = self.get_path("bell.ogg");
+                let announcement = self.get_path("announcement.ogg")?;
+                let bell = self.get_path("bell.ogg")?;
 
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&announcement)?)) {
                     sink.append(source);
@@ -118,7 +121,7 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let announcement = self.get_path("announcement.ogg");
+                let announcement = self.get_path("announcement.ogg")?;
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&announcement)?)) {
                     sink.append(source);
                 }
@@ -134,9 +137,9 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let announcement = self.get_path("announcement.ogg");
-                let metronome = self.get_path("metronome.ogg");
-                let anthem = self.get_path("anthem.ogg");
+                let announcement = self.get_path("announcement.ogg")?;
+                let metronome = self.get_path("metronome.ogg")?;
+                let anthem = self.get_path("anthem.ogg")?;
 
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&announcement)?)) {
                     sink.append(source);
@@ -165,8 +168,8 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let metronome = self.get_path("metronome.ogg");
-                let anthem = self.get_path("anthem.ogg");
+                let metronome = self.get_path("metronome.ogg")?;
+                let anthem = self.get_path("anthem.ogg")?;
 
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&metronome)?)) {
                     sink.append(source);
@@ -184,7 +187,7 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let bell = self.get_path("bell.ogg");
+                let bell = self.get_path("bell.ogg")?;
 
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&bell)?)) {
                     sink.append(source);
@@ -205,8 +208,8 @@ impl AudioEngine {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
-                let bell = self.get_path("bell.ogg");
-                let metronome = self.get_path("metronome.ogg");
+                let bell = self.get_path("bell.ogg")?;
+                let metronome = self.get_path("metronome.ogg")?;
 
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&bell)?)) {
                     sink.append(source);
@@ -227,7 +230,7 @@ impl AudioEngine {
                     return Ok(());
                 }
 
-                let bell2 = self.get_path("bell.ogg");
+                let bell2 = self.get_path("bell.ogg")?;
                 if let Ok(source) = Decoder::new(BufReader::new(File::open(&bell2)?)) {
                     sink.append(source);
                 }
@@ -238,7 +241,18 @@ impl AudioEngine {
         Ok(())
     }
 
-    fn get_path(&self, filename: &str) -> PathBuf {
-        PathBuf::from("audio/").join(filename)
+    /// Resolves the absolute path to an audio resource using Tauri's path resolver.
+    fn get_path(&self, filename: &str) -> Result<PathBuf> {
+        let resource_path = format!("audio/{}", filename);
+        let path = self.app_handle
+            .path()
+            .resolve(&resource_path, tauri::path::BaseDirectory::Resource)
+            .map_err(|e| AppError::Audio(format!("Failed to resolve resource path: {e}")))?;
+        
+        if !path.exists() {
+            return Err(AppError::Audio(format!("Audio file not found: {:?}", path)));
+        }
+
+        Ok(path)
     }
 }
