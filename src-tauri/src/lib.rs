@@ -61,6 +61,7 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::get_status,
+            commands::sync_ntp_now,
             commands::skip_next,
             commands::unskip_next,
             commands::trigger_ceremony_now,

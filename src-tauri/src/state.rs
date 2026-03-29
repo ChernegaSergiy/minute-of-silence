@@ -59,7 +59,7 @@ pub struct StatusSnapshot {
     pub ceremony_active: bool,
     pub skip_tomorrow: bool,
     pub last_activation: Option<String>,
-    pub last_ntp_sync: String, // Changed to non-optional String
+    pub last_ntp_sync: Option<String>,
 }
 
 impl AppState {
@@ -68,12 +68,11 @@ impl AppState {
         let tomorrow = (Local::now() + chrono::Duration::days(1)).date_naive();
         
         let ntp_status = if inner.settings.system_time_only {
-            "Вимкнено (системний час)".to_string()
+            Some("Вимкнено (системний час)".to_string())
         } else {
-            match self.ntp_service.last_sync_time() {
-                Some(dt) => dt.format("%H:%M:%S").to_string(),
-                None => "Синхронізація...".to_string(),
-            }
+            self.ntp_service.last_sync_time()
+                .map(|dt| dt.format("%H:%M:%S").to_string())
+                .or_else(|| Some("Синхронізація...".to_string()))
         };
 
         StatusSnapshot {

@@ -41,7 +41,18 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Setti
     }
 
     // Update in-memory state.
-    state.lock().settings = settings;
+    state.lock().settings = settings.clone();
+
+    // Trigger immediate NTP sync if system time is disabled.
+    if !settings.system_time_only {
+        let ntp = state.ntp_service.clone();
+        let app_handle = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let _ = ntp.sync().await;
+            use tauri::Emitter;
+            let _ = app_handle.emit("ntp-synced", ());
+        });
+    }
 
     log::info!("Settings saved");
     Ok(())
@@ -73,6 +84,14 @@ pub fn unskip_next(state: State<'_, AppState>) {
 }
 
 // ── Manual trigger ──────────────────────────────────────────────────────────
+
+/// Force immediate NTP synchronization.
+#[tauri::command]
+pub async fn sync_ntp_now(state: State<'_, AppState>) -> Result<StatusSnapshot> {
+    log::info!("Manual NTP sync requested");
+    let _ = state.ntp_service.sync().await;
+    Ok(state.get_snapshot())
+}
 
 /// Immediately trigger the ceremony (for testing / demonstration purposes).
 #[tauri::command]
