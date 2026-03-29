@@ -52,7 +52,7 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Setti
 /// Return a lightweight runtime status snapshot.
 #[tauri::command]
 pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
-    StatusSnapshot::from(&*state.lock())
+    state.get_snapshot()
 }
 
 // ── Skip / unskip ───────────────────────────────────────────────────────────

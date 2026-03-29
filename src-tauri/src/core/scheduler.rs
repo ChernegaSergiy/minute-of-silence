@@ -1,8 +1,8 @@
 //! Ceremony scheduler and execution logic.
 
-use chrono::{Local, NaiveTime};
+use chrono::{Local, NaiveTime, Timelike};
 use std::sync::Arc;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::state::AppState;
 use crate::core::CeremonyManager;
@@ -22,10 +22,21 @@ impl CeremonyScheduler {
 
     /// Run the main scheduler loop.
     pub async fn run(&self) {
+        log::info!("Scheduler loop started");
+        
+        // Initial NTP sync
+        self.sync_ntp().await;
+
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
 
         loop {
             interval.tick().await;
+
+            // Periodic NTP sync (every hour)
+            let now_local = Local::now();
+            if now_local.minute() == 0 && now_local.second() == 0 {
+                self.sync_ntp().await;
+            }
 
             let should_trigger = {
                 let state = self.app.state::<AppState>();
@@ -58,6 +69,20 @@ impl CeremonyScheduler {
         }
     }
 
+    async fn sync_ntp(&self) {
+        let state = self.app.state::<AppState>();
+        
+        if state.lock().settings.system_time_only {
+            state.ntp_service.clear_cache();
+            return;
+        }
+
+        log::info!("Attempting NTP synchronization...");
+        let _ = state.ntp_service.sync().await;
+        // Notify frontend (it will call get_status and use NtpService's state)
+        let _ = self.app.emit("ntp-synced", ());
+    }
+
     fn is_within_window(&self, now: NaiveTime, target: NaiveTime, grace_minutes: u8) -> bool {
         if now < target { return false; }
         let elapsed_secs = (now - target).num_seconds();
@@ -83,7 +108,6 @@ impl CeremonyScheduler {
     }
 }
 
-/// Legacy wrapper for backward compatibility in lib.rs
 pub async fn run(app: AppHandle) {
     let scheduler = CeremonyScheduler::new(app);
     scheduler.run().await;
