@@ -1,30 +1,17 @@
-use rodio::{Decoder, OutputStream, Sink, Source};
+use rodio::{Decoder, OutputStream, Sink};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use crate::core::settings::AudioPreset;
 use crate::error::{AppError, Result};
-
-static AUDIO_PLAYING: AtomicBool = AtomicBool::new(false);
-
-pub fn is_playing() -> bool {
-    AUDIO_PLAYING.load(Ordering::SeqCst)
-}
-
-pub fn stop() {
-    AUDIO_PLAYING.store(false, Ordering::SeqCst);
-}
 
 fn get_audio_path(filename: &str) -> PathBuf {
     PathBuf::from("audio/").join(filename)
 }
 
 pub fn play_preset(preset: AudioPreset, volume: u8) -> Result<()> {
-    AUDIO_PLAYING.store(true, Ordering::SeqCst);
-    
     let (_stream, stream_handle) = OutputStream::try_default()
         .map_err(|e| AppError::Audio(format!("Failed to open audio stream: {e}")))?;
     
@@ -180,6 +167,5 @@ pub fn play_preset(preset: AudioPreset, volume: u8) -> Result<()> {
     }
     
     sink.sleep_until_end();
-    AUDIO_PLAYING.store(false, Ordering::SeqCst);
     Ok(())
 }
