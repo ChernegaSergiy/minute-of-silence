@@ -9,21 +9,21 @@ Built with [Tauri 2](https://tauri.app) (Rust + TypeScript).
 
 ## Overview
 
-Minute of Silence runs silently in the system tray and activates every day at 09:00. When the time comes, it pauses any playing media, plays an audio sequence according to the selected preset, and displays a full-screen visual indicator. Once the ceremony concludes, media playback is restored automatically.
+Minute of Silence runs silently in the system tray and activates every day at 09:00. When the time comes, it pauses any playing media, plays an audio sequence according to the selected preset, and displays a visual status indicator. Once the ceremony concludes, media playback is restored automatically.
 
 The trigger time is corrected against an NTP server, ensuring accuracy regardless of local clock drift. A one-shot skip option allows the user to suppress the next activation without disabling the feature permanently.
 
 ## Features
 
 - **Automatic Daily Activation**: Activates at 09:00 with NTP time correction.
-- **Five Audio Presets**: Voice announcement combined with silence, bell, metronome, and/or national anthem.
-- **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony; resumes them after.
-- **Visual Overlay**: A full-screen indicator appears on top of all windows during the ceremony.
+- **Eight Audio Presets**: Voice announcement combined with silence, bell, metronome, and/or national anthem.
+- **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony; resumes them after (supports MPRIS on Linux).
+- **Visual Status**: A status indicator appears in the main window during the ceremony (full-screen overlay planned).
 - **Skip Next**: Suppresses a single upcoming activation via the tray menu or the main window.
 - **Post-Sleep Handling**: If the system wakes from sleep after 09:00, a configurable grace window decides whether to activate late or skip.
 - **Persistent Settings**: Stored as JSON in the platform config directory; no registry writes.
-- **Autostart on Login**: Registers with the OS login mechanism on first launch.
-- **Structured Logging**: Rotating log files written to the platform log directory.
+- **Autostart on Login**: Can be registered for autostart via the settings menu.
+- **Structured Logging**: Log files written to the platform log directory.
 
 ## Audio Presets
 
@@ -38,14 +38,11 @@ The trigger time is corrected against an NTP server, ensuring accuracy regardles
 | 7 | Bell + Silence + Bell | Bell, 60 s of silence, closing bell |
 | 8 | Bell + Metronome + Bell | Bell, metronome, closing bell |
 
-> [!NOTE]
-> Audio playback is not yet implemented. The scheduler, overlay, and media pause/resume are fully functional. Audio assets and the playback engine are planned for the next release.
-
 ## Installation
 
 ### Windows
 
-Download the `.msi` or `.exe` installer from the [Releases](https://github.com/ChernegaSergiy/minute-of-silence/releases) page and run it. The application will start in the system tray and register itself for autostart.
+Download the `.msi` or `.exe` installer from the [Releases](https://github.com/ChernegaSergiy/minute-of-silence/releases) page and run it. The application will start in the system tray. Autostart can be enabled in the settings.
 
 ### Linux (Ubuntu / Debian)
 
@@ -106,13 +103,15 @@ minute-of-silence/
 +-- src/                         # TypeScript frontend (Vite)
 |   +-- api.ts                   # Typed wrappers around Tauri invoke()
 |   +-- app.ts                   # Root UI controller
-|   +-- overlay.ts               # Full-screen ceremony overlay
+|   +-- audio.ts                 # Frontend audio event hooks
 |   \-- types.ts                 # Shared types, mirrors Rust structs
 +-- src-tauri/
 |   +-- src/
 |   |   +-- core/
 |   |   |   +-- scheduler.rs     # Daily trigger loop with NTP correction
-|   |   |   +-- ntp.rs           # NTP offset query
+|   |   |   +-- ntp.rs           # NTP client logic
+|   |   |   +-- ntp_service.rs   # NTP sync service and offset caching
+|   |   |   +-- audio.rs         # Backend audio engine (rodio)
 |   |   |   \-- settings.rs      # Persistent settings and audio presets
 |   |   +-- commands.rs          # Tauri IPC command handlers
 |   |   +-- tray.rs              # System tray icon and context menu
