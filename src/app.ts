@@ -62,8 +62,20 @@ export class App {
   private updateStatusUI(): void {
     console.log("Status update received:", this.status);
     const ntpEl = document.getElementById("ntpSyncValue");
+    const syncBtn = document.getElementById("syncNtpBtn");
+    
     if (ntpEl) {
-      ntpEl.textContent = this.status.lastNtpSync ?? "—";
+      const ntpStatus = this.status.lastNtpSync ?? "—";
+      ntpEl.textContent = ntpStatus;
+      
+      // Hide sync button if NTP is disabled in the backend status
+      if (syncBtn) {
+        if (ntpStatus.includes("Вимкнено")) {
+          syncBtn.classList.add("hidden");
+        } else {
+          syncBtn.classList.remove("hidden");
+        }
+      }
     }
     const ceremonyEl = document.getElementById("lastActivationValue");
     if (ceremonyEl) {
@@ -171,7 +183,7 @@ export class App {
             <span>Остання церемонія: <span id="lastActivationValue">${this.status.lastActivation ?? "—"}</span></span>
             <div class="meta-row">
               <span>Синхронізація NTP: <span id="ntpSyncValue">${this.status.lastNtpSync ?? "—"}</span></span>
-              <button class="btn btn--link ${this.settings.systemTimeOnly ? "hidden" : ""}" id="syncNtpBtn">
+              <button class="btn btn--link" id="syncNtpBtn">
                 СИНХРОНІЗУВАТИ
               </button>
             </div>
@@ -223,16 +235,10 @@ export class App {
     this.q<HTMLInputElement>("#systemTimeToggle").addEventListener(
       "change",
       (e) => {
-        const isChecked = (e.target as HTMLInputElement).checked;
         this.settings = {
           ...this.settings,
-          systemTimeOnly: isChecked,
+          systemTimeOnly: (e.target as HTMLInputElement).checked,
         };
-        const syncBtn = document.getElementById("syncNtpBtn");
-        if (syncBtn) {
-          if (isChecked) syncBtn.classList.add("hidden");
-          else syncBtn.classList.remove("hidden");
-        }
       }
     );
 
