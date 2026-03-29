@@ -7,7 +7,9 @@
 
 pub mod volume {
     use crate::error::{AppError, Result};
-    use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
+    use windows::Win32::Media::Audio::Endpoints::{
+        IAudioEndpointVolume, AUDIO_ENDPOINT_VOLUME_CALLBACK_FLAGS,
+    };
     use windows::Win32::Media::Audio::MMDeviceEnumerator::IMMDeviceEnumerator;
 
     pub fn get_volume() -> Result<u8> {
@@ -21,8 +23,8 @@ pub mod volume {
 
             let device = enumerator
                 .GetDefaultAudioEndpoint(
-                    windows::Win32::Media::Audio::Render,
-                    windows::Win32::Media::Audio::Communications,
+                    windows::Win32::Media::Audio::Endpoints::eRender,
+                    windows::Win32::Media::Audio::Endpoints::eCommunications,
                 )
                 .map_err(|e| AppError::Platform(e.to_string()))?;
 
@@ -48,13 +50,16 @@ pub mod volume {
 
             let device = enumerator
                 .GetDefaultAudioEndpoint(
-                    windows::Win32::Media::Audio::Render,
-                    windows::Win32::Media::Audio::Communications,
+                    windows::Win32::Media::Audio::Endpoints::eRender,
+                    windows::Win32::Media::Audio::Endpoints::eCommunications,
                 )
                 .map_err(|e| AppError::Platform(e.to_string()))?;
 
             let endpoint: IAudioEndpointVolume = device
-                .Activate(windows::Win32::System::Com::CLSCTX_ALL, None)
+                .Activate(
+                    windows::Win32::System::Com::CLSCTX_ALL,
+                    Some(std::ptr::null()),
+                )
                 .map_err(|e| AppError::Platform(e.to_string()))?;
 
             let clamped = (level as f32 / 100.0).min(1.0).max(0.0);

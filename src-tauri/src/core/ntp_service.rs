@@ -29,13 +29,11 @@ impl NtpService {
         }
     }
 
-    pub fn sync(&self) -> impl std::future::Future<Output = Result<i64>> + Send + '_ {
-        async move {
-            let offset = self.sync_once().await?;
-            self.set_cached(offset);
-            self.set_last_sync(Local::now());
-            Ok(offset)
-        }
+    pub async fn sync(&self) -> Result<i64> {
+        let offset = self.sync_once().await?;
+        self.set_cached(offset);
+        self.set_last_sync(Local::now());
+        Ok(offset)
     }
 
     pub fn get_offset(&self) -> Option<i64> {

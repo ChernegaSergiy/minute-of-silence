@@ -17,7 +17,7 @@ pub mod volume {
         let output = Command::new("wpctl")
             .args(["get-volume", "@DEFAULT_AUDIO_SINK@"])
             .output()
-            .map_err(|e| AppError::Io(e))?;
+            .map_err(AppError::Io)?;
 
         if !output.status.success() {
             return get_volume_amixer();
@@ -47,7 +47,7 @@ pub mod volume {
         let output = Command::new("amixer")
             .args(["get", "Master"])
             .output()
-            .map_err(|e| AppError::Io(e))?;
+            .map_err(AppError::Io)?;
 
         if !output.status.success() {
             return Err(AppError::Platform("Failed to get volume".into()));
@@ -94,7 +94,7 @@ pub mod volume {
         let output = Command::new("amixer")
             .args(["set", "Master", &format!("{}%", level)])
             .output()
-            .map_err(|e| AppError::Io(e))?;
+            .map_err(AppError::Io)?;
 
         if !output.status.success() {
             return Err(AppError::Platform("Failed to set volume".into()));
@@ -126,7 +126,7 @@ pub mod media {
                 "org.freedesktop.DBus.ListNames",
             ])
             .output()
-            .map_err(|e| AppError::Io(e))?;
+            .map_err(AppError::Io)?;
 
         if !output.status.success() {
             return Err(AppError::Platform("Failed to list D-Bus names".into()));
