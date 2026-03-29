@@ -1,6 +1,6 @@
 //! NTP service with caching and periodic synchronization.
 //!
-//! Provides a clean OOP interface for NTP time synchronization,
+//! Provides a clean service interface for NTP time synchronization,
 //! supporting cached offsets and configurable sync intervals.
 
 use chrono::{DateTime, Local};
