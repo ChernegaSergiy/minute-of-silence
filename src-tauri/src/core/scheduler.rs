@@ -240,6 +240,9 @@ pub async fn trigger_ceremony(app: AppHandle) {
         }
     }
 
+    // Stop any previous audio playback before starting new one.
+    crate::core::audio::stop();
+
     // Play audio in backend (blocking, runs in spawned task so doesn't block scheduler).
     let app_clone = app.clone();
     std::thread::spawn(move || {
