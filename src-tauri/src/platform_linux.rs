@@ -25,7 +25,7 @@ pub mod volume {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let volume_str = stdout.trim();
-        
+
         if volume_str.contains("MUTE") {
             return Ok(0);
         }
@@ -38,7 +38,7 @@ pub mod volume {
         let vol_str = parts[0].trim_end_matches('.');
         let vol_str = vol_str.trim_start_matches("0.");
         let vol_str = vol_str.trim_start_matches("Volume: ");
-        
+
         let vol: f64 = vol_str.parse().unwrap_or(50.0);
         Ok(vol as u8)
     }
@@ -54,7 +54,7 @@ pub mod volume {
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        
+
         for line in stdout.lines() {
             if line.contains("%[") || line.contains("Playback") {
                 if let Some(pos) = line.find('[') {
@@ -74,9 +74,13 @@ pub mod volume {
 
     pub fn set_volume(level: u8) -> Result<()> {
         let clamped = level.min(100);
-        
+
         let result = Command::new("wpctl")
-            .args(["set-volume", "@DEFAULT_AUDIO_SINK@", &format!("{}%", clamped)])
+            .args([
+                "set-volume",
+                "@DEFAULT_AUDIO_SINK@",
+                &format!("{}%", clamped),
+            ])
             .status();
 
         if result.is_ok() && result.unwrap().success() {
@@ -161,7 +165,8 @@ pub mod media {
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        stdout.lines()
+        stdout
+            .lines()
             .find(|line| line.contains("Playing") || line.contains("Paused"))
             .map(|line| {
                 if line.contains("Playing") {
