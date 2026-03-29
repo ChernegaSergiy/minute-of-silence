@@ -86,13 +86,14 @@
 
       /* ── Tabs ───────────────────────────────────────────────────────────── */
       .tabs {
-        display: flex; gap: 4px; border-bottom: var(--border);
-        margin-bottom: 12px; padding-bottom: 4px;
+        display: flex; width: 100%; border-bottom: var(--border);
+        margin-bottom: 12px; padding-bottom: 0px;
       }
       .tab-btn {
-        background: transparent; color: var(--c-muted); border: none;
+        flex: 1; background: transparent; color: var(--c-muted); border: none;
         font-family: var(--font-mono); font-size: 10px; font-weight: bold;
-        padding: 4px 8px; cursor: pointer; text-transform: uppercase;
+        padding: 8px 12px; cursor: pointer; text-transform: uppercase;
+        text-align: center;
       }
       .tab-btn:hover { color: var(--c-text); }
       .tab-btn--active { color: var(--c-text); border-bottom: 2px solid var(--c-text); }
