@@ -105,7 +105,7 @@ export class App {
       <div class="window">
         <header class="window__header">
           <span class="window__title">ХВИЛИНА МОВЧАННЯ</span>
-          <span class="window__version">v0.1.0</span>
+          <span class="window__version">v0.2.0</span>
         </header>
 
         <main class="window__body">
@@ -206,7 +206,7 @@ export class App {
               <p>Додаток створено для вшанування пам'яті полеглих захисників та жертв війни.</p>
           ...
               <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                <span>ВЕРСІЯ: v0.1.0</span>
+                <span>ВЕРСІЯ: v0.2.0</span>
                 <span>ЛІЦЕНЗІЯ: CSSM Unlimited License v2.0</span>
               </div>
 
