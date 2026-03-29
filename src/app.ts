@@ -130,6 +130,16 @@ export class App {
                      ${this.settings.autostartEnabled ? "checked" : ""} />
             </label>
 
+            <!-- Late start grace window -->
+            <div class="control-row control-row--column">
+              <div class="control-row__header">
+                <span class="control-row__label">Вікно допуску</span>
+                <span class="control-row__value" id="graceValue">${this.settings.lateStartGraceMinutes} хв</span>
+              </div>
+              <input type="range" id="graceRange" class="slider"
+                     min="0" max="5" value="${this.settings.lateStartGraceMinutes}" />
+            </div>
+
             <!-- Weekdays only toggle -->
             <label class="control-row">
               <span class="control-row__label">Лише в будні</span>
@@ -300,6 +310,15 @@ export class App {
         this.checkDirty();
       }
     );
+
+    const graceRange = this.q<HTMLInputElement>("#graceRange");
+    const graceValue = this.q<HTMLElement>("#graceValue");
+    graceRange.addEventListener("input", () => {
+      const v = parseInt(graceRange.value, 10);
+      graceValue.textContent = `${v} хв`;
+      this.settings = { ...this.settings, lateStartGraceMinutes: v };
+      this.checkDirty();
+    });
 
     this.q<HTMLInputElement>("#weekdaysToggle").addEventListener(
       "change",

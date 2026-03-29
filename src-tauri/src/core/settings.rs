@@ -53,7 +53,7 @@ impl Default for Settings {
             system_time_only: false,
             volume_priority: false,
             ntp_server: "pool.ntp.org".to_string(),
-            late_start_grace_minutes: 5,
+            late_start_grace_minutes: 1,
         }
     }
 }
