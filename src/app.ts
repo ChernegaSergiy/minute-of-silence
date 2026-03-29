@@ -98,7 +98,7 @@ export class App {
     setInterval(() => this.refreshStatus(), 60000);
   }
 
-  // ── Rendering ─────────────────────────────────────────────────────────────
+  // Rendering
 
   private render(): void {
     this.root.innerHTML = `
@@ -269,7 +269,7 @@ export class App {
     this.setDirty(dirty);
   }
 
-  // ── Event wiring ──────────────────────────────────────────────────────────
+  // Event wiring
 
   private bindEvents(): void {
     // Tab switching
@@ -437,7 +437,7 @@ export class App {
     });
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // Helpers
 
   private q<T extends Element>(selector: string): T {
     const el = this.root.querySelector<T>(selector);
