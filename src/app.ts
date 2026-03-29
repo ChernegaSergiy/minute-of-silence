@@ -207,7 +207,7 @@ export class App {
               
               <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                 <span>ВЕРСІЯ: v0.1.0</span>
-                <span>ЛІЦЕНЗІЯ: MIT License</span>
+                <span>ЛІЦЕНЗІЯ: CSSM Unlimited License v2.0</span>
               </div>
 
               <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
