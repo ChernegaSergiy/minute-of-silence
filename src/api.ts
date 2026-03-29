@@ -45,6 +45,10 @@ export async function getStatus(): Promise<StatusSnapshot> {
   return invoke<StatusSnapshot>("get_status");
 }
 
+export async function syncNtpNow(): Promise<StatusSnapshot> {
+  return invoke<StatusSnapshot>("sync_ntp_now");
+}
+
 // ── Skip / unskip ───────────────────────────────────────────────────────────
 
 export async function skipNext(): Promise<void> {

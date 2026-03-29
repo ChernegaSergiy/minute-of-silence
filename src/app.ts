@@ -60,6 +60,7 @@ export class App {
   }
 
   private updateStatusUI(): void {
+    console.log("Status update received:", this.status);
     const ntpEl = document.getElementById("ntpSyncValue");
     if (ntpEl) {
       ntpEl.textContent = this.status.lastNtpSync ?? "—";
@@ -168,7 +169,12 @@ export class App {
           <!-- Meta / debug info -->
           <div class="meta">
             <span>Остання церемонія: <span id="lastActivationValue">${this.status.lastActivation ?? "—"}</span></span>
-            <span>Синхронізація NTP: <span id="ntpSyncValue">${this.status.lastNtpSync ?? "—"}</span></span>
+            <div class="meta-row">
+              <span>Синхронізація NTP: <span id="ntpSyncValue">${this.status.lastNtpSync ?? "—"}</span></span>
+              <button class="btn btn--link ${this.settings.systemTimeOnly ? "hidden" : ""}" id="syncNtpBtn">
+                СИНХРОНІЗУВАТИ
+              </button>
+            </div>
           </div>
         </main>
 
@@ -217,10 +223,16 @@ export class App {
     this.q<HTMLInputElement>("#systemTimeToggle").addEventListener(
       "change",
       (e) => {
+        const isChecked = (e.target as HTMLInputElement).checked;
         this.settings = {
           ...this.settings,
-          systemTimeOnly: (e.target as HTMLInputElement).checked,
+          systemTimeOnly: isChecked,
         };
+        const syncBtn = document.getElementById("syncNtpBtn");
+        if (syncBtn) {
+          if (isChecked) syncBtn.classList.add("hidden");
+          else syncBtn.classList.remove("hidden");
+        }
       }
     );
 
@@ -271,6 +283,25 @@ export class App {
     this.q<HTMLButtonElement>("#testBtn").addEventListener("click", async () => {
       console.log("Test button clicked, triggering ceremony...");
       await triggerCeremonyNow();
+    });
+
+    this.q<HTMLButtonElement>("#syncNtpBtn").addEventListener("click", async (e) => {
+      const btn = e.target as HTMLButtonElement;
+      const ntpEl = document.getElementById("ntpSyncValue");
+      
+      btn.disabled = true;
+      if (ntpEl) ntpEl.textContent = "Синхронізація...";
+      
+      try {
+        const { syncNtpNow } = await import("./api");
+        this.status = await syncNtpNow();
+        this.updateStatusUI();
+      } catch (err) {
+        console.error("Manual NTP sync failed:", err);
+        if (ntpEl) ntpEl.textContent = "Помилка";
+      } finally {
+        btn.disabled = false;
+      }
     });
   }
 
