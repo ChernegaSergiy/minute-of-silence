@@ -103,25 +103,30 @@ minute-of-silence/
 +-- src/                         # TypeScript frontend (Vite)
 |   +-- api.ts                   # Typed wrappers around Tauri invoke()
 |   +-- app.ts                   # Root UI controller
-|   +-- audio.ts                 # Frontend audio event hooks
 |   \-- types.ts                 # Shared types, mirrors Rust structs
 +-- src-tauri/
 |   +-- src/
 |   |   +-- core/
-|   |   |   +-- scheduler.rs     # Daily trigger loop with NTP correction
+|   |   |   +-- audio.rs         # Backend audio engine (rodio)
 |   |   |   +-- ntp.rs           # NTP client logic
 |   |   |   +-- ntp_service.rs   # NTP sync service and offset caching
-|   |   |   +-- audio.rs         # Backend audio engine (rodio)
+|   |   |   +-- platform.rs      # Platform abstraction trait
+|   |   |   +-- scheduler.rs     # Daily trigger loop with NTP correction
 |   |   |   \-- settings.rs      # Persistent settings and audio presets
+|   |   +-- platform/            # Native platform implementations
 |   |   +-- commands.rs          # Tauri IPC command handlers
 |   |   +-- tray.rs              # System tray icon and context menu
 |   |   +-- state.rs             # Shared application state (Arc<Mutex>)
 |   |   +-- error.rs             # Unified error type
+|   |   +-- main.rs              # Rust entry point
+|   |   +-- lib.rs               # Library root and Tauri setup
 |   |   +-- platform_windows.rs  # Win32 API — media control, power events
 |   |   \-- platform_linux.rs    # MPRIS / xdotool — media control
+|   +-- audio/                   # Source audio files (.ogg)
 |   \-- tests/                   # Rust integration tests
 +-- docs/
 |   \-- architecture.md          # System design and data flow
++-- public/                      # Static assets (logo, etc.)
 +-- .github/
 |   +-- workflows/ci.yml         # CI/CD pipeline (lint, test, build)
 |   \-- ISSUE_TEMPLATE/          # Bug report and feature request forms
