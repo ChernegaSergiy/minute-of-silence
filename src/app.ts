@@ -20,6 +20,7 @@ import {
 } from "./api";
 
 import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-shell";
 import type { Settings, StatusSnapshot } from "./types";
 import { PRESET_LABELS } from "./types";
 
@@ -109,92 +110,121 @@ export class App {
         </header>
 
         <main class="window__body">
-          <!-- Status badge -->
-          <div class="status-badge ${this.status.ceremonyActive ? "status-badge--active" : ""}"
-               id="statusBadge">
-            ${this.status.ceremonyActive ? "● АКТИВНА ЦЕРЕМОНІЯ" : "○ ОЧІКУВАННЯ"}
-          </div>
+          <!-- Tab navigation -->
+          <nav class="tabs">
+            <button class="tab-btn tab-btn--active" id="settingsTabBtn">НАЛАШТУВАННЯ</button>
+            <button class="tab-btn" id="aboutTabBtn">ПРО ПРОГРАМУ</button>
+          </nav>
 
-          <!-- Autostart toggle -->
-          <label class="control-row">
-            <span class="control-row__label">Автозапуск о 09:00</span>
-            <input type="checkbox" id="autostartToggle" class="toggle"
-                   ${this.settings.autostartEnabled ? "checked" : ""} />
-          </label>
-
-          <!-- Weekdays only toggle -->
-          <label class="control-row">
-            <span class="control-row__label">Лише в будні</span>
-            <input type="checkbox" id="weekdaysToggle" class="toggle"
-                   ${this.settings.weekdaysOnly ? "checked" : ""} />
-           </label>
-
-          <!-- System time toggle -->
-          <label class="control-row">
-            <span class="control-row__label">Системний час</span>
-            <input type="checkbox" id="systemTimeToggle" class="toggle"
-                   ${this.settings.systemTimeOnly ? "checked" : ""} />
-          </label>
-
-          <!-- Skip tomorrow toggle -->
-          <label class="control-row">
-            <span class="control-row__label">Пропустити завтра</span>
-            <input type="checkbox" id="skipToggle" class="toggle"
-                   ${this.status.skipTomorrow ? "checked" : ""} />
-          </label>
-
-          <hr class="divider" />
-
-          <!-- Audio preset -->
-          <div class="control-row">
-            <span class="control-row__label">Режим супроводу</span>
-            <select id="presetSelect" class="select">
-              ${this.renderPresetOptions()}
-            </select>
-          </div>
-
-          <!-- Volume -->
-          <div class="control-row control-row--column">
-            <div class="control-row__header">
-              <span class="control-row__label">Гучність</span>
-              <span class="control-row__value" id="volumeValue">${this.settings.volume}%</span>
+          <!-- Settings Tab Content -->
+          <div id="settingsTabContent" class="tab-content tab-content--active">
+            <!-- Status badge -->
+            <div class="status-badge ${this.status.ceremonyActive ? "status-badge--active" : ""}"
+                 id="statusBadge">
+              ${this.status.ceremonyActive ? "● АКТИВНА ЦЕРЕМОНІЯ" : "○ ОЧІКУВАННЯ"}
             </div>
-            <input type="range" id="volumeRange" class="slider"
-                   min="0" max="100" value="${this.settings.volume}" />
+
+            <!-- Autostart toggle -->
+            <label class="control-row">
+              <span class="control-row__label">Автозапуск о 09:00</span>
+              <input type="checkbox" id="autostartToggle" class="toggle"
+                     ${this.settings.autostartEnabled ? "checked" : ""} />
+            </label>
+
+            <!-- Weekdays only toggle -->
+            <label class="control-row">
+              <span class="control-row__label">Лише в будні</span>
+              <input type="checkbox" id="weekdaysToggle" class="toggle"
+                     ${this.settings.weekdaysOnly ? "checked" : ""} />
+             </label>
+
+            <!-- System time toggle -->
+            <label class="control-row">
+              <span class="control-row__label">Системний час</span>
+              <input type="checkbox" id="systemTimeToggle" class="toggle"
+                     ${this.settings.systemTimeOnly ? "checked" : ""} />
+            </label>
+
+            <!-- Skip tomorrow toggle -->
+            <label class="control-row">
+              <span class="control-row__label">Пропустити завтра</span>
+              <input type="checkbox" id="skipToggle" class="toggle"
+                     ${this.status.skipTomorrow ? "checked" : ""} />
+            </label>
+
+            <hr class="divider" />
+
+            <!-- Audio preset -->
+            <div class="control-row">
+              <span class="control-row__label">Режим супроводу</span>
+              <select id="presetSelect" class="select">
+                ${this.renderPresetOptions()}
+              </select>
+            </div>
+
+            <!-- Volume -->
+            <div class="control-row control-row--column">
+              <div class="control-row__header">
+                <span class="control-row__label">Гучність</span>
+                <span class="control-row__value" id="volumeValue">${this.settings.volume}%</span>
+              </div>
+              <input type="range" id="volumeRange" class="slider"
+                     min="0" max="100" value="${this.settings.volume}" />
+            </div>
+
+            <hr class="divider" />
+
+            <!-- Volume priority toggle -->
+            <label class="control-row">
+              <span class="control-row__label">Пріоритет гучності</span>
+              <input type="checkbox" id="volumePriorityToggle" class="toggle"
+                     ${this.settings.volumePriority ? "checked" : ""} />
+            </label>
+
+            <!-- Pause other players -->
+            <label class="control-row">
+              <span class="control-row__label">Пауза інших плеєрів</span>
+              <input type="checkbox" id="pauseToggle" class="toggle"
+                     ${this.settings.pauseOtherPlayers ? "checked" : ""} />
+            </label>
+
+            <!-- Meta / debug info -->
+            <div class="meta">
+              <span>Остання церемонія: <span id="lastActivationValue">${this.status.lastActivation ?? "—"}</span></span>
+              <div class="meta-row">
+                <span>Синхронізація NTP: <span id="ntpSyncValue">${this.status.lastNtpSync ?? "—"}</span></span>
+                <button class="btn btn--link" id="syncNtpBtn">
+                  СИНХРОНІЗУВАТИ
+                </button>
+              </div>
+            </div>
           </div>
 
-          <hr class="divider" />
+          <!-- About Tab Content -->
+          <div id="aboutTabContent" class="tab-content">
+            <div class="meta" style="font-size: 11px; gap: 12px; margin-top: 10px;">
+              <p>Додаток створено для вшанування пам'яті полеглих захисників та жертв війни.</p>
+              
+              <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                <span>ВЕРСІЯ: v0.1.0</span>
+                <span>ЛІЦЕНЗІЯ: MIT License</span>
+              </div>
 
-          <!-- Volume priority toggle -->
-          <label class="control-row">
-            <span class="control-row__label">Пріоритет гучності</span>
-            <input type="checkbox" id="volumePriorityToggle" class="toggle"
-                   ${this.settings.volumePriority ? "checked" : ""} />
-          </label>
+              <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                <span>КОД (GITHUB):</span>
+                <button class="btn btn--link" id="githubLinkBtn" style="margin: 0;">github.com/chernega/minute-of-silence</button>
+              </div>
 
-          <!-- Pause other players -->
-          <label class="control-row">
-            <span class="control-row__label">Пауза інших плеєрів</span>
-            <input type="checkbox" id="pauseToggle" class="toggle"
-                   ${this.settings.pauseOtherPlayers ? "checked" : ""} />
-          </label>
-
-
-          <!-- Meta / debug info -->
-          <div class="meta">
-            <span>Остання церемонія: <span id="lastActivationValue">${this.status.lastActivation ?? "—"}</span></span>
-            <div class="meta-row">
-              <span>Синхронізація NTP: <span id="ntpSyncValue">${this.status.lastNtpSync ?? "—"}</span></span>
-              <button class="btn btn--link" id="syncNtpBtn">
-                СИНХРОНІЗУВАТИ
-              </button>
+              <p style="opacity: 0.5; font-size: 9px; margin-top: 10px;">
+                Ми щодня о 09:00 згадуємо всіх, чиї життя забрала війна. Слава Героям.
+              </p>
             </div>
           </div>
         </main>
 
-        <footer class="window__footer">
-          <button class="btn btn--ghost" id="testBtn">Тест</button>
-          <button class="btn btn--primary" id="saveBtn">Зберегти</button>
+        <footer class="window__footer" id="windowFooter">
+          <button class="btn btn--ghost" id="testBtn">ТЕСТ</button>
+          <button class="btn btn--primary" id="saveBtn">ЗБЕРЕГТИ</button>
         </footer>
       </div>
     `;
@@ -233,6 +263,34 @@ export class App {
   // ── Event wiring ──────────────────────────────────────────────────────────
 
   private bindEvents(): void {
+    // Tab switching
+    const settingsTabBtn = this.q<HTMLButtonElement>("#settingsTabBtn");
+    const aboutTabBtn = this.q<HTMLButtonElement>("#aboutTabBtn");
+    const settingsContent = this.q<HTMLElement>("#settingsTabContent");
+    const aboutContent = this.q<HTMLElement>("#aboutTabContent");
+    const footer = this.q<HTMLElement>("#windowFooter");
+
+    settingsTabBtn.addEventListener("click", () => {
+      settingsTabBtn.classList.add("tab-btn--active");
+      aboutTabBtn.classList.remove("tab-btn--active");
+      settingsContent.classList.add("tab-content--active");
+      aboutContent.classList.remove("tab-content--active");
+      footer.classList.remove("hidden");
+    });
+
+    aboutTabBtn.addEventListener("click", () => {
+      aboutTabBtn.classList.add("tab-btn--active");
+      settingsTabBtn.classList.remove("tab-btn--active");
+      aboutContent.classList.add("tab-content--active");
+      settingsContent.classList.remove("tab-content--active");
+      footer.classList.add("hidden");
+    });
+
+    // About link
+    this.q<HTMLButtonElement>("#githubLinkBtn").addEventListener("click", async () => {
+      await open("https://github.com/chernega/minute-of-silence");
+    });
+
     this.q<HTMLInputElement>("#autostartToggle").addEventListener(
       "change",
       (e) => {
