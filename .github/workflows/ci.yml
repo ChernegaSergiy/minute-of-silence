@@ -105,6 +105,8 @@ jobs:
     needs: [rust, frontend]
     runs-on: ${{ matrix.os }}
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest]
