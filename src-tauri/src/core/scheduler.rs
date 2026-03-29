@@ -191,6 +191,20 @@ pub async fn trigger_ceremony(app: AppHandle) {
 
     // Volume priority: save current volume and set to target.
     if volume_priority {
+        #[cfg(target_os = "windows")]
+        {
+            match crate::platform_windows::volume::get_volume() {
+                Ok(vol) => {
+                    *PREVIOUS_VOLUME.lock().unwrap() = Some(vol);
+                    if let Err(e) = crate::platform_windows::volume::set_volume(target_volume) {
+                        log::warn!("Could not set volume: {e}");
+                    } else {
+                        log::info!("Volume priority: saved {}%, set to {}%", vol, target_volume);
+                    }
+                }
+                Err(e) => log::warn!("Could not get current volume: {e}"),
+            }
+        }
         #[cfg(target_os = "linux")]
         {
             match crate::platform_linux::volume::get_volume() {
@@ -238,7 +252,10 @@ pub async fn finish_ceremony(app: AppHandle) {
         if !inner.ceremony_active {
             return; // Already finished by the frontend early return.
         }
-        (inner.settings.pause_other_players, inner.settings.volume_priority)
+        (
+            inner.settings.pause_other_players,
+            inner.settings.volume_priority,
+        )
     };
 
     {
@@ -251,6 +268,14 @@ pub async fn finish_ceremony(app: AppHandle) {
     if volume_priority {
         let prev_volume = *PREVIOUS_VOLUME.lock().unwrap();
         if let Some(vol) = prev_volume {
+            #[cfg(target_os = "windows")]
+            {
+                if let Err(e) = crate::platform_windows::volume::set_volume(vol) {
+                    log::warn!("Could not restore volume: {e}");
+                } else {
+                    log::info!("Volume restored to {}%", vol);
+                }
+            }
             #[cfg(target_os = "linux")]
             {
                 if let Err(e) = crate::platform_linux::volume::set_volume(vol) {
