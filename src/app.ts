@@ -339,6 +339,9 @@ export class App {
         btn.disabled = false;
       }
     });
+
+    // Disable default context menu globally for a native app feel
+    window.addEventListener("contextmenu", (e) => e.preventDefault());
   }
 
   private async subscribeToBackendEvents(): Promise<void> {
