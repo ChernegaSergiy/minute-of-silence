@@ -9,7 +9,7 @@ graph TD
     Frontend["Frontend\n(Vite / TS)"]
     Overlay["OverlayController"]
     Commands["commands.rs\n(IPC)"]
-    State["AppState\nArc&lt;Mutex&lt;Inner&gt;&gt;\nsettings · skip_date · ceremony_active"]
+    State["AppState\nArc<Mutex<Inner>>\nsettings · skip_date · ceremony_active"]
     Platform["Platform layer\ncfg-gated"]
     Windows["platform_windows\nSendInput / SMTC"]
     Linux["platform_linux\nxdotool / MPRIS"]
@@ -44,20 +44,31 @@ enhancement for cases where targeted muting is needed without pausing.
 
 ### Settings persistence
 Settings are serialised as pretty-printed JSON to the platform config
-directory (`%APPDATA%\minute-of-silence\settings.json` on Windows,
-`~/.config/minute-of-silence/settings.json` on Linux).  No registry, no
-SQLite — a single file is sufficient and trivially inspectable.
+directory:
+- **Windows:** `%APPDATA%\minute-of-silence\settings.json`
+- **Linux:** `~/.config/minute-of-silence/settings.json`
+
+### NTP Synchronization Strategy
+The app supports both system clock and NTP-corrected time. 
+A manual synchronization feature is provided via a dedicated `sync_ntp_now` 
+IPC command that updates the shared state and triggers immediate correction.
+
+### Native Look & Feel
+To ensure the application feels like a native desktop tool:
+- **Text Selection:** Disabled globally via CSS.
+- **Context Menu:** Standard browser context menu is blocked.
+- **Typography:** Uses a high-quality monospace font stack (Ubuntu Mono, JetBrains Mono, etc.).
 
 ## Data flow: ceremony trigger
 
 ```
-Scheduler loop (every 10 s)
+Scheduler loop (every 1 s)
   └─ current_local_time()          ← NTP-corrected or system clock
-       └─ is_within_window()       ← [09:00, 09:00 + grace)
+       └─ is_within_window()       ← [09:00, 09:00 + grace from settings)
             └─ trigger_ceremony()
                  ├─ platform::media::pause_all()
                  ├─ emit("ceremony:start")   → Frontend shows overlay
-                 ├─ audio engine plays preset (TODO)
+                 ├─ audio engine plays preset
                  └─ finish_ceremony()
                       ├─ platform::media::resume_all()
                       └─ emit("ceremony:end")  → Frontend hides overlay
