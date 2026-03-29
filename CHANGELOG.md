@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-29
+
+### Added
+- Dedicated "About" tab in the user interface with project information.
+- Manual NTP synchronization button for immediate time correction.
+- Visual indicator for unsaved settings (color change and asterisk).
+- Official application logo in the "About" section and updated system icons.
+- Clickable repository link using `tauri-plugin-shell`.
+- Integrated audio playback engine using `rodio` (backend-driven).
+
+### Changed
+- Switched to a high-quality monospace font stack (Ubuntu Mono, JetBrains Mono).
+- Expanded tab buttons to full width for a more balanced layout.
+- Reduced default late-start grace window from 5 minutes to 1 minute.
+- Optimized internal scheduler loop frequency to 1 second.
+
+### Fixed
+- Disabled text selection and browser context menu for a native desktop feel.
+- Improved UI status synchronization after saving settings.
+- Resolved numerous Rust clippy warnings and formatting issues.
+
+## [0.1.0] - 2026-03-29
+
 ### Added
 - Initial project scaffold (Tauri 2 + Rust + TypeScript/Vite).
 - Daily scheduler with NTP time correction and configurable late-start grace window.
