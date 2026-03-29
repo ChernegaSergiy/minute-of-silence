@@ -202,9 +202,10 @@ export class App {
 
           <!-- About Tab Content -->
           <div id="aboutTabContent" class="tab-content">
+            <img src="/logo.png" style="display: block; margin: 16px auto; max-width: 80px; height: auto;" alt="Logo" />
             <div class="meta" style="font-size: 11px; gap: 12px; margin-top: 10px;">
               <p>Додаток створено для вшанування пам'яті полеглих захисників та жертв війни.</p>
-              
+          ...
               <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                 <span>ВЕРСІЯ: v0.1.0</span>
                 <span>ЛІЦЕНЗІЯ: CSSM Unlimited License v2.0</span>
