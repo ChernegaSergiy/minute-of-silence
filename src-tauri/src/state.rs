@@ -38,7 +38,14 @@ impl Default for Inner {
     }
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppState {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         let settings = Settings::load_or_default();
         Self {
