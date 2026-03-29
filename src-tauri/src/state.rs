@@ -51,7 +51,7 @@ impl AppState {
     }
 }
 
-// ── Serialisable snapshot for the frontend ──────────────────────────────────
+// Serialisable snapshot for the frontend
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

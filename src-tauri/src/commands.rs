@@ -9,7 +9,7 @@ use crate::{
     AppError, Result,
 };
 
-// ── Settings ────────────────────────────────────────────────────────────────
+// Settings
 
 /// Return the current settings snapshot.
 #[tauri::command]
@@ -58,7 +58,7 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Setti
     Ok(())
 }
 
-// ── Status ──────────────────────────────────────────────────────────────────
+// Status
 
 /// Return a lightweight runtime status snapshot.
 #[tauri::command]
@@ -66,7 +66,7 @@ pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
     state.get_snapshot()
 }
 
-// ── Skip / unskip ───────────────────────────────────────────────────────────
+// Skip / unskip
 
 /// Skip the ceremony for the next calendar day.
 #[tauri::command]
@@ -83,7 +83,7 @@ pub fn unskip_next(state: State<'_, AppState>) {
     log::info!("Skip for next ceremony removed");
 }
 
-// ── Manual trigger ──────────────────────────────────────────────────────────
+// Manual trigger
 
 /// Force immediate NTP synchronization.
 #[tauri::command]

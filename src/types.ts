@@ -1,4 +1,4 @@
-// ── Mirror of Rust `Settings` struct ────────────────────────────────────────
+// Mirror of Rust `Settings` struct
 
 export type AudioPreset =
   | "voice_metronome"
@@ -22,7 +22,7 @@ export interface Settings {
   lateStartGraceMinutes: number; // 0–15
 }
 
-// ── Mirror of Rust `StatusSnapshot` struct ──────────────────────────────────
+// Mirror of Rust `StatusSnapshot` struct
 
 export interface StatusSnapshot {
   ceremonyActive: boolean;
@@ -31,7 +31,7 @@ export interface StatusSnapshot {
   lastNtpSync: string | null;
 }
 
-// ── UI helpers ───────────────────────────────────────────────────────────────
+// UI helpers
 
 export const PRESET_LABELS: Record<AudioPreset, string> = {
   voice_metronome: "Голос + метроном",
