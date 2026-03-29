@@ -19,6 +19,7 @@ import {
   onCeremonyEnd,
 } from "./api";
 
+import { listen } from "@tauri-apps/api/event";
 import type { Settings, StatusSnapshot } from "./types";
 import { PRESET_LABELS } from "./types";
 
@@ -59,13 +60,22 @@ export class App {
   }
 
   private updateStatusUI(): void {
-    const ntpSpan = document.querySelector(".meta span:last-child");
-    if (ntpSpan) {
-      ntpSpan.textContent = `Синхронізація NTP: ${this.status.lastNtpSync ?? "—"}`;
+    const ntpEl = document.getElementById("ntpSyncValue");
+    if (ntpEl) {
+      ntpEl.textContent = this.status.lastNtpSync ?? "—";
     }
-    const ceremonySpan = document.querySelector(".meta span:first-child");
-    if (ceremonySpan) {
-      ceremonySpan.textContent = `Остання церемонія: ${this.status.lastActivation ?? "—"}`;
+    const ceremonyEl = document.getElementById("lastActivationValue");
+    if (ceremonyEl) {
+      ceremonyEl.textContent = this.status.lastActivation ?? "—";
+    }
+    const badge = document.getElementById("statusBadge");
+    if (badge) {
+      badge.textContent = this.status.ceremonyActive ? "● АКТИВНА ЦЕРЕМОНІЯ" : "○ ОЧІКУВАННЯ";
+      if (this.status.ceremonyActive) {
+        badge.classList.add("status-badge--active");
+      } else {
+        badge.classList.remove("status-badge--active");
+      }
     }
   }
 
@@ -157,8 +167,8 @@ export class App {
 
           <!-- Meta / debug info -->
           <div class="meta">
-            <span>Остання церемонія: ${this.status.lastActivation ?? "—"}</span>
-            <span>Синхронізація NTP: ${this.status.lastNtpSync ?? "—"}</span>
+            <span>Остання церемонія: <span id="lastActivationValue">${this.status.lastActivation ?? "—"}</span></span>
+            <span>Синхронізація NTP: <span id="ntpSyncValue">${this.status.lastNtpSync ?? "—"}</span></span>
           </div>
         </main>
 
@@ -266,21 +276,16 @@ export class App {
   private async subscribeToBackendEvents(): Promise<void> {
     await onCeremonyStart(async () => {
       console.log("Ceremony start event received");
-      const badge = document.getElementById("statusBadge");
-      if (badge) {
-        badge.textContent = "● АКТИВНА ЦЕРЕМОНІЯ";
-        badge.classList.add("status-badge--active");
-      }
-      // Audio is now handled by the backend (rodio)
+      this.refreshStatus();
     });
 
     await onCeremonyEnd(() => {
       console.log("Ceremony end event received");
-      const badge = document.getElementById("statusBadge");
-      if (badge) {
-        badge.textContent = "○ ОЧІКУВАННЯ";
-        badge.classList.remove("status-badge--active");
-      }
+      this.refreshStatus();
+    });
+
+    await listen("ntp-synced", () => {
+      console.log("NTP synced event received");
       this.refreshStatus();
     });
   }

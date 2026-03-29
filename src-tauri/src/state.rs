@@ -22,7 +22,6 @@ pub struct Inner {
     pub settings: Settings,
     pub skip_date: Option<chrono::NaiveDate>,
     pub ceremony_active: bool,
-    pub last_ntp_sync: Option<DateTime<Local>>,
     pub last_activation: Option<DateTime<Local>>,
 }
 
@@ -32,7 +31,6 @@ impl Default for Inner {
             settings: Settings::load_or_default(),
             skip_date: None,
             ceremony_active: false,
-            last_ntp_sync: None,
             last_activation: None,
         }
     }
@@ -61,21 +59,30 @@ pub struct StatusSnapshot {
     pub ceremony_active: bool,
     pub skip_tomorrow: bool,
     pub last_activation: Option<String>,
-    pub last_ntp_sync: Option<String>,
+    pub last_ntp_sync: String, // Changed to non-optional String
 }
 
-impl From<&Inner> for StatusSnapshot {
-    fn from(inner: &Inner) -> Self {
+impl AppState {
+    pub fn get_snapshot(&self) -> StatusSnapshot {
+        let inner = self.lock();
         let tomorrow = (Local::now() + chrono::Duration::days(1)).date_naive();
-        Self {
+        
+        let ntp_status = if inner.settings.system_time_only {
+            "Вимкнено (системний час)".to_string()
+        } else {
+            match self.ntp_service.last_sync_time() {
+                Some(dt) => dt.format("%H:%M:%S").to_string(),
+                None => "Синхронізація...".to_string(),
+            }
+        };
+
+        StatusSnapshot {
             ceremony_active: inner.ceremony_active,
             skip_tomorrow: inner.skip_date == Some(tomorrow),
             last_activation: inner
                 .last_activation
-                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string()),
-            last_ntp_sync: inner
-                .last_ntp_sync
-                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string()),
+                .map(|dt| dt.format("%H:%M:%S").to_string()),
+            last_ntp_sync: ntp_status,
         }
     }
 }
