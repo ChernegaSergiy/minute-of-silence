@@ -32,7 +32,17 @@
         font-family: var(--font-mono);
         font-size: 12px;
         line-height: 1.5;
+        /* Disable text selection and drag */
+        -webkit-user-select: none;
+        -ms-user-select: none;
         user-select: none;
+        cursor: default;
+      }
+
+      /* Allow selection in input fields if needed, but here we don't have text inputs */
+      input, textarea {
+        user-select: text;
+        cursor: auto;
       }
 
       #app { width: 100%; height: 100%; }
