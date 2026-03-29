@@ -53,5 +53,5 @@ export const DEFAULT_SETTINGS: Settings = {
   systemTimeOnly: false,
   volumePriority: false,
   ntpServer: "pool.ntp.org",
-  lateStartGraceMinutes: 5,
+  lateStartGraceMinutes: 1,
 };

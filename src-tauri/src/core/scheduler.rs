@@ -46,7 +46,8 @@ impl CeremonyScheduler {
                     let now = self.get_synchronized_now();
                     let ceremony_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
 
-                    if self.is_within_window(now.time(), ceremony_time, 5) {
+                    let grace_minutes = inner.settings.late_start_grace_minutes as u8;
+                    if self.is_within_window(now.time(), ceremony_time, grace_minutes) {
                         let today = now.date_naive();
                         let last_activated = inner.last_activation.map(|dt| dt.date_naive());
 
