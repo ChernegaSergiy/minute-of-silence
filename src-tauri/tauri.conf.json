@@ -46,8 +46,7 @@
     ],
     "windows": {
       "wix": {
-        "language": ["uk-UA"],
-        "installerIcon": "icons/icon.ico"
+        "language": ["uk-UA"]
       }
     },
     "linux": {
