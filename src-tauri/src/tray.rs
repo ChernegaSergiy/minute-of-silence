@@ -17,7 +17,7 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
 
     let menu = Menu::with_items(app, &[&open_i, &skip_i, &sep, &quit_i])?;
 
-    TrayIconBuilder::new()
+    TrayIconBuilder::with_id("main")
         .icon(app.default_window_icon().unwrap().clone())
         .menu(&menu)
         .tooltip("Хвилина мовчання")
