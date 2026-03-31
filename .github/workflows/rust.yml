@@ -1,4 +1,4 @@
-name: Rust Checks
+name: CI/CD Pipeline
 
 on:
   push:
@@ -11,31 +11,36 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  rust:
-    name: Rust — ${{ matrix.os }}
+  frontend-checks:
+    name: Frontend Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+  backend-checks:
+    name: Backend Checks — ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-
-      - name: Cache Cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Install Linux system deps
         if: runner.os == 'Linux'
@@ -48,17 +53,15 @@ jobs:
             patchelf \
             libasound2-dev
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
         with:
-          node-version: "20"
-          cache: "npm"
+          components: clippy, rustfmt
 
-      - name: Install frontend deps
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
 
       - name: Check formatting
         working-directory: src-tauri
@@ -71,3 +74,55 @@ jobs:
       - name: Unit & integration tests
         working-directory: src-tauri
         run: cargo test --all -- --skip ntp
+
+  build-release:
+    name: Build & Release — ${{ matrix.os }}
+    needs: [frontend-checks, backend-checks]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Linux system deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libasound2-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Tauri build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: nightly-${{ github.sha }}
+          releaseName: "Nightly build"
+          releaseDraft: true
+          prerelease: true
