@@ -33,6 +33,14 @@ export interface StatusSnapshot {
 
 // UI helpers
 
+export interface ImportMetaEnv {
+  readonly PACKAGE_VERSION: string;
+}
+
+export interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 export const PRESET_LABELS: Record<AudioPreset, string> = {
   voice_metronome: "Голос + метроном",
   metronome_only: "Метроном",
