@@ -92,6 +92,11 @@ export class App {
         badge.classList.remove("status-badge--active");
       }
     }
+
+    const skipToggle = document.getElementById("skipToggle") as HTMLInputElement;
+    if (skipToggle) {
+      skipToggle.checked = this.status.skipTomorrow;
+    }
   }
 
   private startStatusPolling(): void {
@@ -433,6 +438,11 @@ export class App {
 
     await listen("ntp-synced", () => {
       console.log("NTP synced event received");
+      this.refreshStatus();
+    });
+
+    await listen("status-updated", () => {
+      console.log("Status updated event received");
       this.refreshStatus();
     });
   }
