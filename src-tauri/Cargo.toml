@@ -35,7 +35,7 @@ rsntp = "4.1"
 log = "0.4"
 thiserror = "1.0"
 anyhow = "1.0"
-dirs = "5.0"
+dirs = "6.0"
 lazy_static = "1.4"
 rodio = "0.22"
 
