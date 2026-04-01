@@ -359,7 +359,11 @@ export class App {
     );
 
     this.q<HTMLInputElement>("#skipToggle").addEventListener("change", (e) => {
-      (e.target as HTMLInputElement).checked ? skipNext() : unskipNext();
+      if ((e.target as HTMLInputElement).checked) {
+        skipNext();
+      } else {
+        unskipNext();
+      }
     });
 
     this.q<HTMLSelectElement>("#presetSelect").addEventListener(
