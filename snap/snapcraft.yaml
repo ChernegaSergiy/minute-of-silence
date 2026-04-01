@@ -61,8 +61,6 @@ apps:
     command: bin/minute-of-silence
     # Use GNOME extension for GTK/GNOME desktop integration
     extensions: [gnome]
-    # Path to the icon for the desktop entry
-    icon: snap/gui/icon.png
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
