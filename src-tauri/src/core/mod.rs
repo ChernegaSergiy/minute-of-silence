@@ -34,12 +34,13 @@ impl CeremonyManager {
     }
 
     pub async fn run_ceremony(&self) {
-        let (should_pause_players, volume_priority, target_volume, preset) = {
+        let (should_pause_players, volume_priority, auto_unmute, target_volume, preset) = {
             let state = self.app.state::<AppState>();
             let inner = state.lock();
             (
                 inner.settings.pause_other_players,
                 inner.settings.volume_priority,
+                inner.settings.auto_unmute,
                 inner.settings.volume,
                 inner.settings.preset,
             )
@@ -57,7 +58,7 @@ impl CeremonyManager {
         let _ = self.app.emit("ceremony-start", ());
 
         // 3. Handle Volume and Mute
-        if volume_priority {
+        if auto_unmute {
             // Save mute state and unmute if necessary
             if let Ok(muted) = self.platform.is_muted() {
                 if muted {
@@ -65,7 +66,9 @@ impl CeremonyManager {
                     let _ = self.platform.set_mute(false);
                 }
             }
+        }
 
+        if volume_priority {
             // Save and set volume
             if let Ok(vol) = self.platform.get_volume() {
                 *PREVIOUS_VOLUME.lock().unwrap() = Some(vol);
@@ -96,7 +99,7 @@ impl CeremonyManager {
     }
 
     pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>) {
-        let (should_resume_players, volume_priority) = {
+        let (should_resume_players, volume_priority, auto_unmute) = {
             let state = app.state::<AppState>();
             let inner = state.lock();
             if !inner.ceremony_active {
@@ -105,6 +108,7 @@ impl CeremonyManager {
             (
                 inner.settings.pause_other_players,
                 inner.settings.volume_priority,
+                inner.settings.auto_unmute,
             )
         };
 
@@ -122,7 +126,9 @@ impl CeremonyManager {
                 let _ = platform.set_volume(vol);
                 *PREVIOUS_VOLUME.lock().unwrap() = None;
             }
+        }
 
+        if auto_unmute {
             // Restore mute state if we changed it
             let was_muted = *WAS_MUTED.lock().unwrap();
             if let Some(true) = was_muted {
