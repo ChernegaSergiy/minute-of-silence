@@ -21,6 +21,10 @@ donation: https://savelife.in.ua/donate/
 grade: stable
 confinement: strict
 
+architectures:
+  - build-on: [amd64, arm64]
+    build-for: [amd64, arm64]
+
 parts:
   minute-of-silence:
     plugin: nil
