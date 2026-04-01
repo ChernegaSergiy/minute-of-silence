@@ -71,8 +71,8 @@ export async function finishCeremonyNow(): Promise<void> {
 
 // Event listeners
 
-export const CEREMONY_START_EVENT = "ceremony:start";
-export const CEREMONY_END_EVENT = "ceremony:end";
+export const CEREMONY_START_EVENT = "ceremony-start";
+export const CEREMONY_END_EVENT = "ceremony-end";
 
 export function onCeremonyStart(callback: () => void): Promise<UnlistenFn> {
   return listen(CEREMONY_START_EVENT, callback);
