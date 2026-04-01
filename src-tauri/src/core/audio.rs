@@ -1,6 +1,8 @@
 //! Backend audio playback engine.
 
-use rodio::{Decoder, OutputStream, Sink};
+use rodio::Decoder;
+use rodio::OutputStream;
+use rodio::Sink;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
