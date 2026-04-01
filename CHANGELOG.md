@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-02
+
+### Added
+- Detailed descriptions and info blocks for all settings in the UI for better clarity.
+- Auto-unmute feature with a dedicated toggle to restore system sound during the ceremony.
+- Ceremony enabled toggle to allow temporary deactivation of the daily schedule.
+- Configurable late-start grace window (0-5 minutes) for handling system wake-up after 09:00.
+- Snapcraft configuration for Ubuntu App Center with support for amd64 and arm64 architectures.
+- Single application instance enforcement (automatically focuses the existing window on relaunch).
+- Dynamic frontend versioning based on `package.json`.
+- Integrated official application icon for Snap and Linux desktop environments.
+
+### Fixed
+- Stabilized NTP synchronization by using Google and Cloudflare servers as reliable fallbacks.
+- Fixed autostart plugin configuration by removing the unhandled `--hidden` argument.
+- Improved media handling: ensured players are paused before unmuting on Windows.
+- Fixed synchronization between the tray menu and the settings window for the "Skip Next" status.
+- Resolved audio engine stability issues by migrating to `rodio 0.22` with proper stream handling.
+- Fixed various build-time issues, including invalid icon fields in Tauri configuration.
+
+### Changed
+- Migrated to Vite 8 and ESLint 10 (Flat Config) for improved development workflow.
+- Refactored the CI/CD pipeline into a unified `ci.yml` with comprehensive build and test stages.
+- Moved UI styles to a dedicated `style.css` file for better maintainability.
+- Updated project dependencies (thiserror, dirs, windows-rs, etc.) to their latest versions.
+
 ## [0.2.0] - 2026-03-29
 
 ### Added
