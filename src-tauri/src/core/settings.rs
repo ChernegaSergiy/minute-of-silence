@@ -14,6 +14,9 @@ use crate::error::{AppError, Result};
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     /// Enable daily activation at 09:00.
+    pub ceremony_enabled: bool,
+
+    /// Enable app autostart when the system boots.
     pub autostart_enabled: bool,
 
     /// Run ceremony only on weekdays (Mon-Fri).
@@ -45,6 +48,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            ceremony_enabled: true,
             autostart_enabled: true,
             weekdays_only: false,
             preset: AudioPreset::VoiceMetronome,

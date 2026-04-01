@@ -11,6 +11,7 @@ export type AudioPreset =
   | "bell_metronome_bell";
 
 export interface Settings {
+  ceremonyEnabled: boolean;
   autostartEnabled: boolean;
   weekdaysOnly: boolean;
   preset: AudioPreset;
@@ -45,6 +46,7 @@ export const PRESET_LABELS: Record<AudioPreset, string> = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
+  ceremonyEnabled: true,
   autostartEnabled: true,
   weekdaysOnly: false,
   preset: "voice_metronome",

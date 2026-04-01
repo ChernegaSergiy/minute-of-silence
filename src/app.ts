@@ -128,6 +128,13 @@ export class App {
               ${this.status.ceremonyActive ? "● АКТИВНА ЦЕРЕМОНІЯ" : "○ ОЧІКУВАННЯ"}
             </div>
 
+            <!-- Ceremony enabled toggle -->
+            <label class="control-row">
+              <span class="control-row__label">Церемонія о 09:00</span>
+              <input type="checkbox" id="ceremonyToggle" class="toggle"
+                     ${this.settings.ceremonyEnabled ? "checked" : ""} />
+            </label>
+
             <!-- Autostart toggle -->
             <label class="control-row">
               <span class="control-row__label">Автозапуск при старті системи</span>
@@ -304,6 +311,17 @@ export class App {
     this.q<HTMLButtonElement>("#githubLinkBtn").addEventListener("click", async () => {
       await open("https://github.com/ChernegaSergiy/minute-of-silence");
     });
+
+    this.q<HTMLInputElement>("#ceremonyToggle").addEventListener(
+      "change",
+      (e) => {
+        this.settings = {
+          ...this.settings,
+          ceremonyEnabled: (e.target as HTMLInputElement).checked,
+        };
+        this.checkDirty();
+      }
+    );
 
     this.q<HTMLInputElement>("#autostartToggle").addEventListener(
       "change",
