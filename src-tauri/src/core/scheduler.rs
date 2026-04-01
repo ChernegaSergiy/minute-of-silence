@@ -42,7 +42,9 @@ impl CeremonyScheduler {
                 let state = self.app.state::<AppState>();
                 let inner = state.lock();
 
-                if !inner.ceremony_active {
+                if !inner.settings.ceremony_enabled {
+                    false
+                } else if !inner.ceremony_active {
                     let now = self.get_synchronized_now();
                     let ceremony_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
 
