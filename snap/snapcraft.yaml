@@ -2,6 +2,7 @@
 # For more information, see: https://snapcraft.io/docs/snapcraft-yaml-reference
 
 name: minute-of-silence
+title: Хвилина мовчання
 base: core22
 version: '0.2.0'
 summary: Національна хвилина мовчання о 09:00
@@ -9,6 +10,13 @@ description: |
   Додаток для автоматизації загальнонаціональної хвилини мовчання.
   Синхронізується через NTP, вмикає звук та призупиняє інші медіаплеєри
   для вшанування пам'яті полеглих захисників та жертв війни.
+
+license: Proprietary
+contact: https://github.com/ChernegaSergiy/minute-of-silence/issues
+issues: https://github.com/ChernegaSergiy/minute-of-silence/issues
+website: https://github.com/ChernegaSergiy/minute-of-silence
+source-code: https://github.com/ChernegaSergiy/minute-of-silence
+donation: https://savelife.in.ua/donate/
 
 grade: stable
 confinement: strict
@@ -53,6 +61,8 @@ apps:
     command: bin/minute-of-silence
     # Use GNOME extension for GTK/GNOME desktop integration
     extensions: [gnome]
+    # Path to the icon for the desktop entry
+    icon: snap/gui/icon.png
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
