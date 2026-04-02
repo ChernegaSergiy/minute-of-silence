@@ -31,7 +31,7 @@ parts:
   minute-of-silence:
     plugin: nil
     source: .
-    extensions: [gnome]
+    build-attributes: [no-buildable-extension]
     # Build dependencies for Tauri on Linux
     build-packages:
       - libasound2-dev
