@@ -50,15 +50,11 @@ parts:
       - node/20/stable
       - rustup
     override-build: |
-      # Priority to system libraries to avoid conflicts with GNOME SDK on Jammy
-      export PKG_CONFIG_PATH="/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/pkgconfig:/usr/share/pkgconfig"
-      export LIBRARY_PATH="/usr/lib/$SNAPCRAFT_ARCH_TRIPLET${LIBRARY_PATH:+:$LIBRARY_PATH}"
-      
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
       rustup default stable
       
-      # Build the Tauri application (Frontend and Backend)
+      # Build the Tauri application
       npm install
       npm run tauri build -- --bundles deb
       
