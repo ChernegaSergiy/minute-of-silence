@@ -31,6 +31,7 @@ parts:
   minute-of-silence:
     plugin: nil
     source: .
+    extensions: [gnome]
     # Build dependencies for Tauri on Linux
     build-packages:
       - libasound2-dev
@@ -39,13 +40,11 @@ parts:
       - libwebkit2gtk-4.1-dev
       - libayatana-appindicator3-dev
       - libsecret-1-dev
-      - libharfbuzz-dev
       - librsvg2-dev
       - curl
       - wget
       - pkg-config
       - libssl-dev
-    # Snap build tools
     build-snaps:
       - node/20/stable
       - rustup
@@ -58,9 +57,10 @@ parts:
       npm install
       npm run tauri build -- --bundles deb
       
-      # Move binary to the snap's bin directory
-      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      # Move binary and resources to the snap's bin directory
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin/audio
       cp src-tauri/target/release/minute-of-silence $SNAPCRAFT_PART_INSTALL/bin/
+      cp src-tauri/audio/*.ogg $SNAPCRAFT_PART_INSTALL/bin/audio/
       
       # Copy desktop assets (icon)
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps
@@ -69,7 +69,6 @@ parts:
 apps:
   minute-of-silence:
     command: bin/minute-of-silence
-    # Use GNOME extension for GTK/GNOME desktop integration
     extensions: [gnome]
     # Required permissions (interfaces)
     plugs:
