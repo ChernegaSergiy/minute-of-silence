@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>ua.minute_of_silence</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-CSSM-Unlimited-2.0</project_license>
+  <name>Хвилина мовчання</name>
+  <summary>Національна хвилина мовчання о 09:00</summary>
+
+  <description>
+    <p>
+      Додаток для автоматизації загальнонаціональної хвилини мовчання.
+      Синхронізується через NTP, вмикає звук та призупиняє інші медіаплеєри
+      для вшанування пам'яті полеглих захисників та жертв війни.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">ua.minute_of_silence.desktop</launchable>
+
+  <url type="homepage">https://github.com/ChernegaSergiy/minute-of-silence</url>
+  <url type="bugtracker">https://github.com/ChernegaSergiy/minute-of-silence/issues</url>
+  <url type="vcs-browser">https://github.com/ChernegaSergiy/minute-of-silence</url>
+  <url type="donation">https://savelife.in.ua/donate/</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Головне вікно налаштувань</caption>
+      <image>https://raw.githubusercontent.com/ChernegaSergiy/minute-of-silence/main/public/logo.png</image>
+    </screenshot>
+  </screenshots>
+
+  <provides>
+    <binary>minute-of-silence</binary>
+  </provides>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="0.3.1" date="2026-04-03" />
+  </releases>
+</component>
