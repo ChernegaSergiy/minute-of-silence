@@ -49,8 +49,33 @@ export class App {
     this.render();
     this.bindEvents();
     await this.subscribeToBackendEvents();
+    this.initOverlay();
     this.refreshStatus();
     this.startStatusPolling();
+  }
+
+  private initOverlay(): void {
+    onCeremonyStart(() => this.showOverlay());
+    onCeremonyEnd(() => this.hideOverlay());
+    
+    // Initial check in case app started during ceremony
+    if (this.status.ceremonyActive) {
+      this.showOverlay();
+    }
+  }
+
+  private showOverlay(): void {
+    const overlay = document.getElementById("overlay");
+    if (overlay) {
+      overlay.classList.add("overlay--visible");
+    }
+  }
+
+  private hideOverlay(): void {
+    const overlay = document.getElementById("overlay");
+    if (overlay) {
+      overlay.classList.remove("overlay--visible");
+    }
   }
 
   private async refreshStatus(): Promise<void> {
