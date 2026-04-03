@@ -32,28 +32,40 @@ parts:
     # Build dependencies for Tauri on Linux
     build-packages:
       - libasound2-dev
-      - libgtk-3-dev
-      - libsoup-3.0-dev
-      - libwebkit2gtk-4.1-dev
       - libayatana-appindicator3-dev
-      - libsecret-1-dev
-      - librsvg2-dev
       - curl
       - wget
       - pkg-config
       - libssl-dev
+      - libwebkit2gtk-4.1-dev
     build-snaps:
       - node/20/stable
       - rustup
+    stage-packages:
+      - libasound2t64
+      - libayatana-appindicator3-1
+      - glib-networking
+      - libwebkit2gtk-4.1-0
     override-build: |
+      # Set SDK path based on architecture
+      SDK_PATH="/snap/gnome-46-2404-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET"
+      
+      # Fix linker for Rust by providing explicit library search paths
+      export RUSTFLAGS="-L $SDK_PATH -L /usr/lib/$CRAFT_ARCH_TRIPLET"
+      
+      # Also set standard linker variables
+      export LIBRARY_PATH="$SDK_PATH${LIBRARY_PATH:+:$LIBRARY_PATH}"
+      export LD_LIBRARY_PATH="$SDK_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      export PKG_CONFIG_PATH="$SDK_PATH/pkgconfig:/snap/gnome-46-2404-sdk/current/usr/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+      
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
       rustup default stable
       
       # Build the Tauri application
       npm install
-      # Build only the binary, no need for .deb bundles inside snapcraft
-      npm run tauri build -- --bundles none
+      # Build only the binary, skip all bundling (deb, appimage, etc.)
+      npm run tauri build -- --no-bundle
       
       # Move binary and resources to the snap's bin directory
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin/audio
@@ -71,10 +83,13 @@ apps:
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
-      - audio-playback # For ceremony audio output (ALSA)
+      - network-bind   # For potential local server/sockets
+      - audio-playback # For ceremony audio output
       - mpris          # For pausing other media players via D-Bus
       - desktop
       - desktop-legacy
       - x11
       - wayland
       - unity7
+      - opengl         # For WebKit/GPU acceleration
+      - gsettings      # To access system settings (removes many GTK warnings)
