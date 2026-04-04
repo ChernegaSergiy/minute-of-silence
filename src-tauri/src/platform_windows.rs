@@ -181,17 +181,17 @@ pub mod output {
             let id_u16: Vec<u16> = id.encode_utf16().chain(std::iter::once(0)).collect();
             let pcwstr = PCWSTR(id_u16.as_ptr());
 
-            ((*(*policy_config).vtbl).set_default_endpoint)(
+            let _ = ((*(*policy_config).vtbl).set_default_endpoint)(
                 policy_config as *mut usize,
                 pcwstr,
                 eConsole,
             );
-            ((*(*policy_config).vtbl).set_default_endpoint)(
+            let _ = ((*(*policy_config).vtbl).set_default_endpoint)(
                 policy_config as *mut usize,
                 pcwstr,
                 eMultimedia,
             );
-            ((*(*policy_config).vtbl).set_default_endpoint)(
+            let _ = ((*(*policy_config).vtbl).set_default_endpoint)(
                 policy_config as *mut usize,
                 pcwstr,
                 eCommunications,
