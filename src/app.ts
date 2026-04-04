@@ -261,7 +261,7 @@ export class App {
             <!-- Auto-unmute toggle -->
             <label class="control-row">
               <div class="control-row__info">
-                <span class="control-row__label">Авто-увімкнення звуку</span>
+                <span class="control-row__label">Автоувімкнення звуку</span>
                 <span class="control-row__description">Автоматично вмикає звук, якщо він був вимкнений у системі.</span>
               </div>
               <input type="checkbox" id="autoUnmuteToggle" class="toggle"
