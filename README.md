@@ -7,6 +7,14 @@
 
 Minute of Silence is a lightweight desktop application built with [Tauri 2](https://tauri.app) (Rust + TypeScript) that runs silently in the system tray and accurately triggers the daily ceremony at 09:00 using NTP time correction. Upon activation, it automatically pauses background media, plays a selected audio preset, and seamlessly restores playback afterward, offering flexible control through persistent settings and a convenient one-shot skip option.
 
+## Screenshots
+
+| Main Settings | About Tab |
+| :---: | :---: |
+| ![Main Settings Tab](docs/images/01-settings-main.png) | ![About Tab](docs/images/02-about-tab.png) |
+| **Audio Settings** | **Active Ceremony Overlay** |
+| ![Audio Settings](docs/images/03-settings-audio.png) | ![Active Ceremony Overlay](docs/images/04-active-overlay.png) |
+
 ## Features
 
 - **Automatic Daily Activation**: Activates at 09:00 with NTP time correction.
