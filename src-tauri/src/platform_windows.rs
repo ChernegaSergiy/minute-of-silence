@@ -81,8 +81,8 @@ pub mod output {
         eCommunications, eConsole, eMultimedia, eRender, ERole, IMMDeviceEnumerator,
         MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
     };
-    use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER};
-    use windows::Win32::UI::Shell::PropertiesSystem::STGM_READ;
+    use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER, STGM_READ};
+    use windows::Win32::UI::Shell::PropertiesSystem::PROPERTYKEY;
 
     // Undocumented IPolicyConfig interface GUID
     const IPOLICYCONFIG_GUID: GUID = GUID::from_u128(0x870af99c_171d_4f15_af0d_e63df40c2bc9);
@@ -140,7 +140,7 @@ pub mod output {
                 let form_factor = props
                     .and_then(|p| {
                         // PKEY_AudioEndpoint_FormFactor: {1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E}, 0
-                        let pkey = windows::Win32::Devices::Properties::PROPERTYKEY {
+                        let pkey = PROPERTYKEY {
                             fmtid: windows::core::GUID::from_u128(
                                 0x1da5d803_d492_4edd_8c23_e0c0ffee7f0e,
                             ),
@@ -149,7 +149,7 @@ pub mod output {
                         p.GetValue(&pkey).ok()
                     })
                     .and_then(|v| unsafe { v.Anonymous.Anonymous.Anonymous.uiVal.into() })
-                    .unwrap_or(0u32);
+                    .unwrap_or(0u16);
 
                 log::info!(
                     "Checking device ID: {} | FormFactor: {}",
