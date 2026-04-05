@@ -74,86 +74,19 @@ pub mod volume {
 }
 
 pub mod media {
-    //! Pause and resume other media players using the Windows multimedia API.
+    //! Pause other media players using the Windows multimedia API.
     //!
-    //! Strategy: Check if any audio is actually playing before pausing. Only send
-    //! the media toggle key if something was playing — this prevents accidentally
-    //! unpausing media that was already paused, and avoids interfering if the user
-    //! manually unpaused during the ceremony.
+    //! Sends VK_MEDIA_PLAY_PAUSE to pause all media. Media is NOT resumed
+    //! after ceremony — user controls their audio manually.
 
-    use std::sync::Mutex;
-    use windows::Win32::Media::Audio::{
-        eConsole, eRender, AudioSessionStateActive, IAudioSessionControl, IAudioSessionManager2,
-        IMMDeviceEnumerator, MMDeviceEnumerator,
-    };
-    use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER};
     use windows::Win32::UI::Input::KeyboardAndMouse::{
         SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, VK_MEDIA_PLAY_PAUSE,
     };
 
     use crate::error::{AppError, Result};
 
-    lazy_static::lazy_static! {
-        static ref WAS_PLAYING: Mutex<bool> = Mutex::new(false);
-    }
-
     pub fn pause_all() -> Result<()> {
-        let is_playing = is_anything_playing()?;
-        *WAS_PLAYING.lock().unwrap() = is_playing;
-
-        if is_playing {
-            send_media_key()?;
-        }
-        Ok(())
-    }
-
-    pub fn resume_all() -> Result<()> {
-        let was_playing = *WAS_PLAYING.lock().unwrap();
-        if was_playing {
-            send_media_key()?;
-        }
-        *WAS_PLAYING.lock().unwrap() = false;
-        Ok(())
-    }
-
-    fn is_anything_playing() -> Result<bool> {
-        unsafe {
-            let enumerator: IMMDeviceEnumerator =
-                CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_INPROC_SERVER)
-                    .map_err(|e| AppError::Platform(e.to_string()))?;
-
-            let device = enumerator
-                .GetDefaultAudioEndpoint(eRender, eConsole)
-                .map_err(|e| AppError::Platform(e.to_string()))?;
-
-            let session_manager: IAudioSessionManager2 = device
-                .Activate(CLSCTX_INPROC_SERVER, None)
-                .map_err(|e| AppError::Platform(e.to_string()))?;
-
-            let session_enumerator = session_manager
-                .GetSessionEnumerator()
-                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-            let count = session_enumerator
-                .GetCount()
-                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-            for i in 0..count {
-                let session: IAudioSessionControl = session_enumerator
-                    .GetSession(i)
-                    .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-                let state = session
-                    .GetState()
-                    .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-                if state == AudioSessionStateActive {
-                    return Ok(true);
-                }
-            }
-
-            Ok(false)
-        }
+        send_media_key()
     }
 
     fn send_media_key() -> Result<()> {

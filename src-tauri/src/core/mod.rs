@@ -99,17 +99,13 @@ impl CeremonyManager {
     }
 
     pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>) {
-        let (should_resume_players, volume_priority, auto_unmute) = {
+        let (volume_priority, auto_unmute) = {
             let state = app.state::<AppState>();
             let inner = state.lock();
             if !inner.ceremony_active {
                 return;
             }
-            (
-                inner.settings.pause_other_players,
-                inner.settings.volume_priority,
-                inner.settings.auto_unmute,
-            )
+            (inner.settings.volume_priority, inner.settings.auto_unmute)
         };
 
         {
@@ -120,7 +116,6 @@ impl CeremonyManager {
 
         // Restore volume and mute
         if volume_priority {
-            // Restore volume
             let prev_vol = *PREVIOUS_VOLUME.lock().unwrap();
             if let Some(vol) = prev_vol {
                 let _ = platform.set_volume(vol);
@@ -129,17 +124,11 @@ impl CeremonyManager {
         }
 
         if auto_unmute {
-            // Restore mute state if we changed it
             let was_muted = *WAS_MUTED.lock().unwrap();
             if let Some(true) = was_muted {
                 let _ = platform.set_mute(true);
                 *WAS_MUTED.lock().unwrap() = None;
             }
-        }
-
-        // Resume media
-        if should_resume_players {
-            let _ = platform.resume_media();
         }
 
         let _ = app.emit("ceremony-end", ());
