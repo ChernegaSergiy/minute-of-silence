@@ -76,21 +76,34 @@ pub mod volume {
 pub mod media {
     //! Pause and resume other media players using the Windows multimedia API.
     //!
-    //! Strategy: Send `VK_MEDIA_PLAY_PAUSE` via `SendInput` — works for most apps
-    //! (Spotify, browser video, VLC, etc.) without needing per-process control.
+    //! Strategy: Track whether we actually paused media. Only send resume key
+    //! if we previously sent a pause key. This prevents accidentally unpausing
+    //! media that was already paused before the ceremony started.
 
+    use std::sync::Mutex;
     use windows::Win32::UI::Input::KeyboardAndMouse::{
         SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, VK_MEDIA_PLAY_PAUSE,
     };
 
     use crate::error::{AppError, Result};
 
+    lazy_static::lazy_static! {
+        static ref WAS_PAUSED_BY_CEREMONY: Mutex<bool> = Mutex::new(false);
+    }
+
     pub fn pause_all() -> Result<()> {
-        send_media_key()
+        send_media_key()?;
+        *WAS_PAUSED_BY_CEREMONY.lock().unwrap() = true;
+        Ok(())
     }
 
     pub fn resume_all() -> Result<()> {
-        send_media_key()
+        let should_resume = *WAS_PAUSED_BY_CEREMONY.lock().unwrap();
+        if should_resume {
+            send_media_key()?;
+        }
+        *WAS_PAUSED_BY_CEREMONY.lock().unwrap() = false;
+        Ok(())
     }
 
     fn send_media_key() -> Result<()> {
