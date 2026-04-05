@@ -1,14 +1,12 @@
 use crate::error::Result;
 
 /// Interface for platform-specific operations.
-/// This is our "Abstract Class" for system integration.
 pub trait Platform: Send + Sync {
     fn get_volume(&self) -> Result<u8>;
     fn set_volume(&self, level: u8) -> Result<()>;
     fn is_muted(&self) -> Result<bool>;
     fn set_mute(&self, mute: bool) -> Result<()>;
     fn pause_media(&self) -> Result<()>;
-    fn resume_media(&self) -> Result<()>;
 }
 
 #[cfg(target_os = "windows")]
@@ -31,9 +29,6 @@ impl Platform for WindowsPlatform {
     fn pause_media(&self) -> Result<()> {
         crate::platform_windows::media::pause_all()
     }
-    fn resume_media(&self) -> Result<()> {
-        crate::platform_windows::media::resume_all()
-    }
 }
 
 #[cfg(target_os = "linux")]
@@ -55,9 +50,6 @@ impl Platform for LinuxPlatform {
     }
     fn pause_media(&self) -> Result<()> {
         crate::platform_linux::media::pause_all()
-    }
-    fn resume_media(&self) -> Result<()> {
-        crate::platform_linux::media::resume_all()
     }
 }
 
