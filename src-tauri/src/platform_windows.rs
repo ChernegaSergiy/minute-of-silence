@@ -74,83 +74,41 @@ pub mod volume {
 }
 
 pub mod media {
-    use windows::core::GUID;
-    use windows::Win32::Media::Audio::{
-        eConsole, eRender, AudioSessionStateActive, IAudioClient, IAudioSessionControl,
-        IAudioSessionManager2, IMMDeviceEnumerator, MMDeviceEnumerator,
+    use windows::Media::Control::{
+        GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     };
-    use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER};
 
     use crate::error::{AppError, Result};
 
-    static IID_IAUDIOCLIENT: GUID = GUID::from_values(
-        0x1cb9ad4c,
-        0xdbfa,
-        0x4c32,
-        [0xb1, 0x78, 0xc2, 0xf5, 0x68, 0xa7, 0x03, 0xb2],
-    );
-
-    fn get_audio_client(session: &IAudioSessionControl) -> Result<IAudioClient> {
-        unsafe {
-            let raw = windows::core::Interface::as_raw(session);
-            let vtable = (*(raw as *const *const _)) as *const *const std::ffi::c_void;
-            let get_service: extern "system" fn(
-                *const std::ffi::c_void,
-                *const GUID,
-                *mut *mut std::ffi::c_void,
-            )
-                -> windows::Win32::Foundation::WIN32_ERROR = std::mem::transmute(*vtable.offset(3));
-            let mut audio_client_ptr: *mut std::ffi::c_void = std::ptr::null_mut();
-            let hr = get_service(raw, &IID_IAUDIOCLIENT, &mut audio_client_ptr);
-            if hr != windows::Win32::Foundation::WIN32_ERROR(0) {
-                return Err(AppError::Platform(format!("GetService failed: {:?}", hr)));
-            }
-            windows::core::Type::from_abi(audio_client_ptr)
-                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))
-        }
-    }
-
     pub fn pause_all() -> Result<()> {
-        unsafe {
-            let enumerator: IMMDeviceEnumerator =
-                CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_INPROC_SERVER)
+        let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+            .map_err(|e| AppError::Platform(e.to_string()))?
+            .get()
+            .map_err(|e| AppError::Platform(e.to_string()))?;
+
+        let sessions = manager
+            .GetSessions()
+            .map_err(|e| AppError::Platform(e.to_string()))?;
+
+        for i in 0..sessions
+            .Size()
+            .map_err(|e| AppError::Platform(e.to_string()))?
+        {
+            if let Ok(session) = sessions.GetAt(i) {
+                let playback_info = session
+                    .GetPlaybackInfo()
                     .map_err(|e| AppError::Platform(e.to_string()))?;
-
-            let device = enumerator
-                .GetDefaultAudioEndpoint(eRender, eConsole)
-                .map_err(|e| AppError::Platform(e.to_string()))?;
-
-            let session_manager: IAudioSessionManager2 = device
-                .Activate(CLSCTX_INPROC_SERVER, None)
-                .map_err(|e| AppError::Platform(e.to_string()))?;
-
-            let session_enumerator = session_manager
-                .GetSessionEnumerator()
-                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-            let count = session_enumerator
-                .GetCount()
-                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-            for i in 0..count {
-                let session: IAudioSessionControl = session_enumerator
-                    .GetSession(i)
-                    .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-                let state = session
-                    .GetState()
-                    .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
-                if state == AudioSessionStateActive {
-                    let audio_client = get_audio_client(&session)?;
-                    audio_client
-                        .Stop()
-                        .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
+                let status = playback_info
+                    .PlaybackStatus()
+                    .map_err(|e| AppError::Platform(e.to_string()))?;
+                if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                    let _ = session.TryPauseAsync();
                 }
             }
-
-            Ok(())
         }
+
+        Ok(())
     }
 }
 
