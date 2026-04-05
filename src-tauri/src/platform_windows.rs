@@ -84,12 +84,29 @@ pub mod output {
     };
     use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER, STGM_READ};
 
+    // EndpointFormFactor constants (mmdeviceapi.h)
+    // RemoteNetworkDevice      = 0
+    // Speakers                 = 1  <-- що нам потрібно
+    // LineLevel                = 2
+    // Headphones               = 3  <-- виключаємо
+    // Microphone               = 4
+    // Headset                  = 5
+    // Handset                  = 6
+    // UnknownDigitalPassthrough= 7
+    // SPDIF                    = 8  <-- виключаємо (цифровий)
+    // DigitalAudioDisplayDevice= 9  <-- виключаємо (HDMI/DisplayPort)
+    // UnknownFormFactor        = 10
+    const FORM_FACTOR_SPEAKERS: u32 = 1;
+    const FORM_FACTOR_HEADPHONES: u32 = 3;
+    const FORM_FACTOR_SPDIF: u32 = 8;
+    const FORM_FACTOR_DIGITAL_DISPLAY: u32 = 9; // HDMI / DisplayPort
+
     // Undocumented IPolicyConfig interface GUID
     const IPOLICYCONFIG_GUID: GUID = GUID::from_u128(0x870af99c_171d_4f15_af0d_e63df40c2bc9);
 
     #[repr(C)]
     struct IPolicyConfigVtbl {
-        pub base: [usize; 10], // Skip first 10 methods (QueryInterface, AddRef, Release, etc.)
+        pub base: [usize; 10], // QueryInterface, AddRef, Release + reserved methods
         pub set_default_endpoint:
             unsafe extern "system" fn(this: *mut usize, device_id: PCWSTR, role: ERole) -> HRESULT,
     }
@@ -98,6 +115,7 @@ pub mod output {
     struct IPolicyConfig {
         pub vtbl: *const IPolicyConfigVtbl,
     }
+
     /// Force the system to use built-in speakers if available.
     /// Returns the ID of the previously default device so it can be restored.
     pub fn force_speakers() -> Result<Option<String>> {
@@ -114,7 +132,7 @@ pub mod output {
                 .and_then(|d| d.GetId().ok())
                 .and_then(|id| id.to_string().ok());
 
-            // 2. Find speakers
+            // 2. Enumerate active render endpoints and find speakers
             let collection = enumerator
                 .EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE)
                 .map_err(|e| AppError::Platform(format!("Enum endpoints failed: {e}")))?;
@@ -122,7 +140,17 @@ pub mod output {
             let count = collection
                 .GetCount()
                 .map_err(|e| AppError::Platform(format!("GetCount failed: {e}")))?;
+
             let mut speaker_id: Option<String> = None;
+
+            // PKEY_AudioEndpoint_FormFactor: {1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E}, pid=0
+            // Value type is VT_UINT (u32), read via .ulVal — NOT .uiVal (u16)
+            let form_factor_pkey = PROPERTYKEY {
+                fmtid: windows::core::GUID::from_u128(
+                    0x1da5d803_d492_4edd_8c23_e0c0ffee7f0e,
+                ),
+                pid: 0,
+            };
 
             for i in 0..count {
                 let device = collection
@@ -135,53 +163,47 @@ pub mod output {
                     .to_string()
                     .map_err(|e| AppError::Platform(e.to_string()))?;
 
-                // Use FormFactor to identify speakers technically (language-independent)
-                let props = device.OpenPropertyStore(STGM_READ).ok();
-                let form_factor = props
-                    .and_then(|p| {
-                        // PKEY_AudioEndpoint_FormFactor: {1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E}, 0
-                        let pkey = PROPERTYKEY {
-                            fmtid: windows::core::GUID::from_u128(
-                                0x1da5d803_d492_4edd_8c23_e0c0ffee7f0e,
-                            ),
-                            pid: 0,
-                        };
-                        p.GetValue(&pkey).ok()
-                    })
-                    .and_then(|v| v.Anonymous.Anonymous.Anonymous.uiVal.into())
-                    .unwrap_or(0u16);
+                // Read FormFactor as VT_UINT (u32) using .ulVal
+                let form_factor: u32 = device
+                    .OpenPropertyStore(STGM_READ)
+                    .ok()
+                    .and_then(|props| props.GetValue(&form_factor_pkey).ok())
+                    .map(|v| v.Anonymous.Anonymous.Anonymous.ulVal)
+                    .unwrap_or(u32::MAX);
 
                 log::info!(
-                    "Checking device ID: {} | FormFactor: {}",
+                    "Device ID: {} | FormFactor: {}",
                     id_str,
                     form_factor
                 );
 
-                // FormFactor values:
-                // 2 = Speakers, 8 = BuiltInSpeaker
-                if form_factor == 2 || form_factor == 8 {
+                // Accept only Speakers (1).
+                // Reject headphones (3), SPDIF (8), and HDMI/DisplayPort (9).
+                let is_speakers = form_factor == FORM_FACTOR_SPEAKERS;
+                let is_excluded = form_factor == FORM_FACTOR_HEADPHONES
+                    || form_factor == FORM_FACTOR_SPDIF
+                    || form_factor == FORM_FACTOR_DIGITAL_DISPLAY;
+
+                if is_speakers && !is_excluded {
                     speaker_id = Some(id_str);
-                    log::info!(
-                        "Technical match for speaker found via FormFactor: {}",
-                        form_factor
-                    );
+                    log::info!("Speaker found (FormFactor={})", form_factor);
                     break;
                 }
             }
 
-            // 3. Switch to speakers if found and different from current
+            // 3. Switch to speakers if found and different from current default
             if let Some(id) = speaker_id {
                 if Some(id.clone()) == previous_default {
                     log::info!("Speakers are already the default device");
-                    return Ok(None); // No need to restore if nothing changed
+                    return Ok(None); // Nothing changed — nothing to restore
                 }
 
-                log::info!("Found speakers: {}. Activating...", id);
+                log::info!("Switching default audio output to: {}", id);
                 set_default_device_api(&id)?;
                 log::info!("Audio output successfully redirected to speakers");
                 Ok(previous_default)
             } else {
-                log::warn!("No speakers found among active audio endpoints");
+                log::warn!("No suitable speaker endpoint found among active audio devices");
                 Ok(None)
             }
         }
@@ -193,16 +215,14 @@ pub mod output {
         set_default_device_api(device_id)
     }
 
-    /// Internal helper to call IPolicyConfig
+    /// Internal helper to call IPolicyConfig::SetDefaultEndpoint for all three roles.
     fn set_default_device_api(id: &str) -> Result<()> {
         unsafe {
-            // We use IUnknown as a generic COM interface to satisfy trait bounds of CoCreateInstance
             let unknown: windows::core::IUnknown =
                 CoCreateInstance(&IPOLICYCONFIG_GUID, None, CLSCTX_INPROC_SERVER).map_err(|e| {
                     AppError::Platform(format!("IPolicyConfig creation failed: {e}"))
                 })?;
 
-            // Cast the raw pointer to our manual IPolicyConfig structure
             let policy_config = unknown.as_raw() as *mut IPolicyConfig;
 
             let id_u16: Vec<u16> = id.encode_utf16().chain(std::iter::once(0)).collect();
@@ -227,13 +247,12 @@ pub mod output {
         }
     }
 }
+
 pub mod media {
     //! Pause and resume other media players using the Windows multimedia API.
     //!
-    //! Strategy (in order of preference):
-    //! 1. Send `VK_MEDIA_PLAY_PAUSE` via `SendInput` — works for most apps.
-    //! 2. Mute individual audio sessions via `IAudioSessionControl` — used as
-    //!    a complement when step 1 is insufficient.
+    //! Strategy: Send `VK_MEDIA_PLAY_PAUSE` via `SendInput` — works for most apps
+    //! (Spotify, browser video, VLC, etc.) without needing per-process control.
 
     use windows::Win32::UI::Input::KeyboardAndMouse::{
         SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, VK_MEDIA_PLAY_PAUSE,
@@ -241,21 +260,15 @@ pub mod media {
 
     use crate::error::{AppError, Result};
 
-    /// Send a synthetic `MEDIA_PLAY_PAUSE` key press to the system.
-    ///
-    /// This pauses Spotify, browser video, VLC, etc. without needing
-    /// per-process control.
     pub fn pause_all() -> Result<()> {
         send_media_key()
     }
 
-    /// Send a second `MEDIA_PLAY_PAUSE` to resume playback.
     pub fn resume_all() -> Result<()> {
         send_media_key()
     }
 
     fn send_media_key() -> Result<()> {
-        // Key-down event.
         let key_down = INPUT {
             r#type: INPUT_KEYBOARD,
             Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
@@ -269,7 +282,6 @@ pub mod media {
             },
         };
 
-        // Key-up event.
         let key_up = INPUT {
             r#type: INPUT_KEYBOARD,
             Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
@@ -299,9 +311,6 @@ pub mod media {
 pub mod power {
     //! Listen for `WM_POWERBROADCAST` events so the scheduler can detect
     //! whether the PC woke from sleep after 09:00.
-    //!
-    //! NOTE: Full message-loop integration is wired via the Tauri window
-    //! `WndProc` callback; this module exposes the handler logic only.
 
     use windows::Win32::UI::WindowsAndMessaging::{PBT_APMRESUMEAUTOMATIC, PBT_APMRESUMESUSPEND};
 
