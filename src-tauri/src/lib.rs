@@ -80,6 +80,7 @@ pub fn run() {
             commands::unskip_next,
             commands::trigger_ceremony_now,
             commands::finish_ceremony_now,
+            commands::list_audio_devices,
         ])
         .on_window_event(|window, event| {
             // Close button minimises to tray instead of quitting.
