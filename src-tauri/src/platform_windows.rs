@@ -146,9 +146,7 @@ pub mod output {
             // PKEY_AudioEndpoint_FormFactor: {1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E}, pid=0
             // Value type is VT_UINT (u32), read via .ulVal — NOT .uiVal (u16)
             let form_factor_pkey = PROPERTYKEY {
-                fmtid: windows::core::GUID::from_u128(
-                    0x1da5d803_d492_4edd_8c23_e0c0ffee7f0e,
-                ),
+                fmtid: windows::core::GUID::from_u128(0x1da5d803_d492_4edd_8c23_e0c0ffee7f0e),
                 pid: 0,
             };
 
@@ -171,11 +169,7 @@ pub mod output {
                     .map(|v| v.Anonymous.Anonymous.Anonymous.ulVal)
                     .unwrap_or(u32::MAX);
 
-                log::info!(
-                    "Device ID: {} | FormFactor: {}",
-                    id_str,
-                    form_factor
-                );
+                log::info!("Device ID: {} | FormFactor: {}", id_str, form_factor);
 
                 // Accept only Speakers (1).
                 // Reject headphones (3), SPDIF (8), and HDMI/DisplayPort (9).
