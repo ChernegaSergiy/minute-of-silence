@@ -74,7 +74,7 @@ pub mod volume {
 }
 
 pub mod media {
-    use windows::core::Interface;
+    use windows::core::GUID;
     use windows::Win32::Media::Audio::{
         eConsole, eRender, AudioSessionStateActive, IAudioClient, IAudioSessionControl,
         IAudioSessionManager2, IMMDeviceEnumerator, MMDeviceEnumerator,
@@ -82,6 +82,33 @@ pub mod media {
     use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER};
 
     use crate::error::{AppError, Result};
+
+    static IID_IAUDIOCLIENT: GUID = GUID::from_values(
+        0x1cb9ad4c,
+        0xdbfa,
+        0x4c32,
+        [0xb1, 0x78, 0xc2, 0xf5, 0x68, 0xa7, 0x03, 0xb2],
+    );
+
+    fn get_audio_client(session: &IAudioSessionControl) -> Result<IAudioClient> {
+        unsafe {
+            let raw = windows::core::Interface::as_raw(session);
+            let vtable = (*(raw as *const *const _)) as *const *const std::ffi::c_void;
+            let get_service: extern "system" fn(
+                *const std::ffi::c_void,
+                *const GUID,
+                *mut *mut std::ffi::c_void,
+            )
+                -> windows::Win32::Foundation::WIN32_ERROR = std::mem::transmute(*vtable.offset(3));
+            let mut audio_client_ptr: *mut std::ffi::c_void = std::ptr::null_mut();
+            let hr = get_service(raw, &IID_IAUDIOCLIENT, &mut audio_client_ptr);
+            if hr != windows::Win32::Foundation::WIN32_ERROR(0) {
+                return Err(AppError::Platform(format!("GetService failed: {:?}", hr)));
+            }
+            windows::core::Type::from_abi(audio_client_ptr)
+                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))
+        }
+    }
 
     pub fn pause_all() -> Result<()> {
         unsafe {
@@ -115,10 +142,7 @@ pub mod media {
                     .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
 
                 if state == AudioSessionStateActive {
-                    let audio_client: IAudioClient = session
-                        .cast()
-                        .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
-
+                    let audio_client = get_audio_client(&session)?;
                     audio_client
                         .Stop()
                         .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
