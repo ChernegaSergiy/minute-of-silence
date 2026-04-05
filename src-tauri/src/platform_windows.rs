@@ -148,7 +148,7 @@ pub mod output {
                         };
                         p.GetValue(&pkey).ok()
                     })
-                    .and_then(|v| unsafe { v.Anonymous.Anonymous.Anonymous.uiVal.into() })
+                    .and_then(|v| v.Anonymous.Anonymous.Anonymous.uiVal.into())
                     .unwrap_or(0u16);
 
                 log::info!(
