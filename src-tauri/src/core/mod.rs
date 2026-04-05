@@ -14,7 +14,6 @@ use tauri::{AppHandle, Emitter, Manager};
 lazy_static::lazy_static! {
     static ref PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
     static ref WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
-    static ref PREVIOUS_DEVICE_ID: Mutex<Option<String>> = Mutex::new(None);
 }
 
 /// Orchestrator for the ceremony.
@@ -39,7 +38,6 @@ impl CeremonyManager {
             should_pause_players,
             volume_priority,
             auto_unmute,
-            force_speaker,
             target_volume,
             preset,
         ) = {
@@ -49,7 +47,6 @@ impl CeremonyManager {
                 inner.settings.pause_other_players,
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
-                inner.settings.force_speaker,
                 inner.settings.volume,
                 inner.settings.preset,
             )
@@ -71,14 +68,7 @@ impl CeremonyManager {
             let _ = self.platform.pause_media();
         }
 
-        // 4. Handle Output Redirection
-        if force_speaker {
-            if let Ok(Some(old_id)) = self.platform.force_speakers() {
-                *PREVIOUS_DEVICE_ID.lock().unwrap() = Some(old_id);
-            }
-        }
-
-        // 5. Handle Volume and Mute
+        // 4. Handle Volume and Mute
         if auto_unmute {
             // Save mute state and unmute if necessary
             if let Ok(muted) = self.platform.is_muted() {
@@ -115,7 +105,7 @@ impl CeremonyManager {
     }
 
     pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>) {
-        let (should_resume_players, volume_priority, auto_unmute, force_speaker) = {
+        let (should_resume_players, volume_priority, auto_unmute) = {
             let state = app.state::<AppState>();
             let inner = state.lock();
             if !inner.ceremony_active {
@@ -125,7 +115,6 @@ impl CeremonyManager {
                 inner.settings.pause_other_players,
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
-                inner.settings.force_speaker,
             )
         };
 
@@ -151,15 +140,6 @@ impl CeremonyManager {
             if let Some(true) = was_muted {
                 let _ = platform.set_mute(true);
                 *WAS_MUTED.lock().unwrap() = None;
-            }
-        }
-
-        // Restore Audio Device
-        if force_speaker {
-            let prev_device = PREVIOUS_DEVICE_ID.lock().unwrap().clone();
-            if let Some(id) = prev_device {
-                let _ = platform.restore_output(&id);
-                *PREVIOUS_DEVICE_ID.lock().unwrap() = None;
             }
         }
 

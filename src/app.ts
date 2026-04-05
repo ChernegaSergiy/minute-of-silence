@@ -268,15 +268,6 @@ export class App {
                      ${this.settings.autoUnmute ? "checked" : ""} />
             </label>
 
-            <label class="control-row">
-              <div class="control-row__info">
-                <span class="control-row__label">Зовнішні динаміки</span>
-                <span class="control-row__description">Примусово виводити звук через вбудовані динаміки (ігнорувати навушники).</span>
-              </div>
-              <input type="checkbox" id="forceSpeakerToggle" class="toggle"
-                     ${this.settings.forceSpeaker ? "checked" : ""} />
-            </label>
-
             <!-- Pause other players -->
             <label class="control-row">
               <div class="control-row__info">
@@ -470,17 +461,6 @@ export class App {
         this.settings = {
           ...this.settings,
           autoUnmute: (e.target as HTMLInputElement).checked,
-        };
-        this.checkDirty();
-      }
-    );
-
-    this.q<HTMLInputElement>("#forceSpeakerToggle").addEventListener(
-      "change",
-      (e) => {
-        this.settings = {
-          ...this.settings,
-          forceSpeaker: (e.target as HTMLInputElement).checked,
         };
         this.checkDirty();
       }
