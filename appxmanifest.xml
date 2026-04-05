@@ -45,8 +45,7 @@
         <uap:DefaultTile 
           Wide310x150Logo="Assets\WideTile.png" 
           Square310x310Logo="Assets\icon.png"
-          Square71x71Logo="Assets\icon.png"
-          Square70x70Logo="Assets\icon.png" />
+          Square71x71Logo="Assets\icon.png" />
       </uap:VisualElements>
     </Application>
   </Applications>
