@@ -80,16 +80,16 @@ pub mod media {
 
     use crate::error::Result;
 
-    const APPCOMMAND_MEDIA_PLAY_PAUSE: LPARAM = LPARAM(0xE0000);
+    const APPCOMMAND_MEDIA_PAUSE: LPARAM = LPARAM(0xE0006);
 
     pub fn pause_all() -> Result<()> {
-        info!("Sending VK_MEDIA_PLAY_PAUSE to all windows");
+        info!("Sending APPCOMMAND_MEDIA_PAUSE to all windows");
         unsafe {
             SendMessageW(
                 HWND_BROADCAST,
                 WM_APPCOMMAND,
                 Some(WPARAM(0)),
-                Some(APPCOMMAND_MEDIA_PLAY_PAUSE),
+                Some(APPCOMMAND_MEDIA_PAUSE),
             );
         }
         Ok(())
