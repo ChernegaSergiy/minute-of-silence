@@ -3,6 +3,7 @@
 use chrono::{Local, NaiveTime, Timelike};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_notification::NotificationExt;
 
 use crate::core::audio::AudioEngine;
 use crate::core::CeremonyManager;
@@ -27,6 +28,10 @@ impl CeremonyScheduler {
         // Initial NTP sync
         self.sync_ntp().await;
 
+        // Track the date for which we already sent a reminder,
+        // so we don't fire it again on the same day even after restart.
+        let mut last_reminded_date: Option<NaiveDate> = None;
+
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
 
         loop {
@@ -38,6 +43,44 @@ impl CeremonyScheduler {
                 self.sync_ntp().await;
             }
 
+            let now = self.get_synchronized_now();
+            let today = now.date_naive();
+            let now_time = now.time();
+ 
+            // Reminder notification
+            let reminder_info = {
+                let state = self.app.state::<AppState>();
+                let inner = state.lock();
+                let mins = inner.settings.reminder_minutes_before;
+ 
+                if mins == 0
+                    || !inner.settings.ceremony_enabled
+                    || inner.skip_date == Some(today)
+                    || inner.last_activation.map(|dt| dt.date_naive()) == Some(today)
+                    || last_reminded_date == Some(today)
+                {
+                    None
+                } else {
+                    let ceremony_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
+                    // Safe subtraction: reminder_at is always before 09:00
+                    // (mins is 1–10, so at minimum 08:50)
+                    let remind_at = ceremony_time
+                        - chrono::Duration::minutes(mins as i64);
+ 
+                    let fire = now_time.hour() == remind_at.hour()
+                        && now_time.minute() == remind_at.minute()
+                        && now_time.second() == 0;
+ 
+                    if fire { Some(mins) } else { None }
+                }
+            };
+ 
+            if let Some(mins) = reminder_info {
+                last_reminded_date = Some(today);
+                self.send_reminder_notification(mins);
+            }
+
+            // Ceremony trigger
             let should_trigger = {
                 let state = self.app.state::<AppState>();
                 let inner = state.lock();
@@ -45,14 +88,11 @@ impl CeremonyScheduler {
                 if !inner.settings.ceremony_enabled {
                     false
                 } else if !inner.ceremony_active {
-                    let now = self.get_synchronized_now();
                     let ceremony_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
-
                     let grace_minutes = inner.settings.late_start_grace_minutes;
-                    if self.is_within_window(now.time(), ceremony_time, grace_minutes) {
-                        let today = now.date_naive();
-                        let last_activated = inner.last_activation.map(|dt| dt.date_naive());
 
+                    if self.is_within_window(now_time, ceremony_time, grace_minutes) {
+                        let last_activated = inner.last_activation.map(|dt| dt.date_naive());
                         last_activated != Some(today) && inner.skip_date != Some(today)
                     } else {
                         false
@@ -65,6 +105,26 @@ impl CeremonyScheduler {
             if should_trigger {
                 self.trigger_ceremony().await;
             }
+        }
+    }
+
+    /// Send a system notification about the upcoming ceremony.
+    fn send_reminder_notification(&self, mins_before: u8) {
+        let body = format!(
+            "Через {} хв розпочнеться хвилина мовчання о 09:00",
+            mins_before
+        );
+        let result = self
+            .app
+            .notification()
+            .builder()
+            .title("Хвилина мовчання")
+            .body(&body)
+            .show();
+ 
+        match result {
+            Ok(_) => log::info!("Reminder notification sent ({} min before)", mins_before),
+            Err(e) => log::warn!("Failed to send reminder notification: {e}"),
         }
     }
 
