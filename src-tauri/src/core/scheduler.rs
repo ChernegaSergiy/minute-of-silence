@@ -53,7 +53,8 @@ impl CeremonyScheduler {
                 let inner = state.lock();
                 let mins = inner.settings.reminder_minutes_before;
 
-                if mins == 0
+                if !inner.settings.reminder_enabled
+                    || mins == 0
                     || !inner.settings.ceremony_enabled
                     || inner.skip_date == Some(today)
                     || inner.last_activation.map(|dt| dt.date_naive()) == Some(today)
@@ -113,10 +114,14 @@ impl CeremonyScheduler {
 
     /// Send a system notification about the upcoming ceremony.
     fn send_reminder_notification(&self, mins_before: u8) {
-        let body = format!(
-            "Через {} хв розпочнеться хвилина мовчання о 09:00",
-            mins_before
-        );
+        let body = if mins_before == 0 {
+            "Чергова хвилина мовчання розпочинається".to_string()
+        } else {
+            format!(
+                "Через {} хв розпочнеться хвилина мовчання о 09:00",
+                mins_before
+            )
+        };
         let result = self
             .app
             .notification()
