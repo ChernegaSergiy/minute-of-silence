@@ -74,24 +74,63 @@ pub mod volume {
 }
 
 pub mod media {
-    use log::info;
-    use windows::Win32::Foundation::{LPARAM, WPARAM};
-    use windows::Win32::UI::WindowsAndMessaging::{SendMessageW, HWND_BROADCAST, WM_APPCOMMAND};
+    use log::{error, info};
+    use windows::Media::Control::{
+        GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+    };
 
-    use crate::error::Result;
-
-    const APPCOMMAND_MEDIA_PAUSE: LPARAM = LPARAM(0xE0006);
+    use crate::error::{AppError, Result};
 
     pub fn pause_all() -> Result<()> {
-        info!("Sending APPCOMMAND_MEDIA_PAUSE to all windows");
-        unsafe {
-            SendMessageW(
-                HWND_BROADCAST,
-                WM_APPCOMMAND,
-                Some(WPARAM(0)),
-                Some(APPCOMMAND_MEDIA_PAUSE),
-            );
+        let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+            .map_err(|e| AppError::Platform(e.to_string()))?
+            .get()
+            .map_err(|e| AppError::Platform(e.to_string()))?;
+
+        let sessions = manager
+            .GetSessions()
+            .map_err(|e| AppError::Platform(e.to_string()))?;
+
+        let count = sessions
+            .Size()
+            .map_err(|e| AppError::Platform(e.to_string()))?;
+
+        info!("Found {} media sessions", count);
+
+        for i in 0..count {
+            if let Ok(session) = sessions.GetAt(i) {
+                let app_id = session.SourceAppUserModelId().unwrap_or_default();
+                info!("Session {}: AppId={}", i, app_id);
+
+                let playback_info = match session.GetPlaybackInfo() {
+                    Ok(info) => info,
+                    Err(e) => {
+                        error!("Failed to get playback info for session {}: {:?}", i, e);
+                        continue;
+                    }
+                };
+
+                let status = match playback_info.PlaybackStatus() {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!("Failed to get playback status for session {}: {:?}", i, e);
+                        continue;
+                    }
+                };
+
+                if status == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                    info!("Pausing session {}...", i);
+                    if let Err(e) = session
+                        .TryPauseAsync()
+                        .map_err(|e| AppError::Platform(e.to_string()))
+                    {
+                        error!("Failed to pause session {}: {:?}", i, e);
+                    }
+                }
+            }
         }
+
         Ok(())
     }
 }
