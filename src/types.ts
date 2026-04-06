@@ -23,6 +23,8 @@ export interface Settings {
   autoUnmute: boolean;
   ntpServer: string;
   lateStartGraceMinutes: number; // 0–15
+  /** Minutes before 09:00 to show a reminder notification. 0 = disabled. */
+  reminderMinutesBefore: number; // 0–10
 }
 
 // Mirror of Rust `StatusSnapshot` struct
@@ -60,4 +62,5 @@ export const DEFAULT_SETTINGS: Settings = {
   autoUnmute: false,
   ntpServer: "pool.ntp.org",
   lateStartGraceMinutes: 1,
+  reminderMinutesBefore: 5,
 };
