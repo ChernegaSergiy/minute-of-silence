@@ -46,13 +46,13 @@ impl CeremonyScheduler {
             let now = self.get_synchronized_now();
             let today = now.date_naive();
             let now_time = now.time();
- 
+
             // Reminder notification
             let reminder_info = {
                 let state = self.app.state::<AppState>();
                 let inner = state.lock();
                 let mins = inner.settings.reminder_minutes_before;
- 
+
                 if mins == 0
                     || !inner.settings.ceremony_enabled
                     || inner.skip_date == Some(today)
@@ -64,17 +64,20 @@ impl CeremonyScheduler {
                     let ceremony_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
                     // Safe subtraction: reminder_at is always before 09:00
                     // (mins is 1–10, so at minimum 08:50)
-                    let remind_at = ceremony_time
-                        - chrono::Duration::minutes(mins as i64);
- 
+                    let remind_at = ceremony_time - chrono::Duration::minutes(mins as i64);
+
                     let fire = now_time.hour() == remind_at.hour()
                         && now_time.minute() == remind_at.minute()
                         && now_time.second() == 0;
- 
-                    if fire { Some(mins) } else { None }
+
+                    if fire {
+                        Some(mins)
+                    } else {
+                        None
+                    }
                 }
             };
- 
+
             if let Some(mins) = reminder_info {
                 last_reminded_date = Some(today);
                 self.send_reminder_notification(mins);
@@ -121,7 +124,7 @@ impl CeremonyScheduler {
             .title("Хвилина мовчання")
             .body(&body)
             .show();
- 
+
         match result {
             Ok(_) => log::info!("Reminder notification sent ({} min before)", mins_before),
             Err(e) => log::warn!("Failed to send reminder notification: {e}"),
