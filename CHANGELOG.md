@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-07
+
+### Added
+- System reminder notifications before the ceremony (configurable: immediately or up to 10 minutes before).
+- User interface controls for enabling and configuring reminder notifications.
+
+### Changed
+- Improved Windows media pausing by migrating from legacy `WM_APPCOMMAND` to the modern `GlobalSystemMediaTransportControlsSessionManager` API for reliable playback control.
+- Bumped project version to 0.5.0 across all configuration files.
+
+### Fixed
+- Fixed window restoration from the system tray by explicitly unminimizing the window before showing it.
+
 ## [0.4.2] - 2026-04-05
 
 ### Changed
