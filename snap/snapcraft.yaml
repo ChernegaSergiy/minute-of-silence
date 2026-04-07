@@ -43,6 +43,7 @@ parts:
       - rustup
     stage-packages:
       - glib-networking
+      - libasound2-plugins
       - libpulse0
     override-build: |
       # Setup Rust environment
@@ -70,6 +71,9 @@ apps:
     extensions: [gnome]
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
+      # ALSA bridge settings for PulseAudio
+      ALSA_CONFIG_PATH: /snap/gnome-46-2404-sdk/current/usr/share/alsa/alsa.conf
+      ALSA_PLUGIN_DIR: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET/alsa-lib
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
