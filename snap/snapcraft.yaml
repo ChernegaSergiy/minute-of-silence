@@ -78,7 +78,7 @@ apps:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
       # Direct redirection to PulseAudio via minimal config
       ALSA_CONFIG_PATH: $SNAP/etc/asound.conf
-      ALSA_PLUGIN_DIR: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET/alsa-lib
+      ALSA_PLUGIN_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/alsa-lib
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
