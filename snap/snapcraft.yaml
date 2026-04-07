@@ -42,10 +42,6 @@ parts:
       - rustup
     stage-packages:
       - glib-networking
-      - libasound2
-      - libasound2-plugins
-      - libpulse0
-      - librsvg2-common
     override-build: |
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
