@@ -1,0 +1,9 @@
+# Ukrainian translations
+open = "Відкрити"
+skip_next = "Пропустити завтра"
+unskip_next = "Відновити завтра"
+quit = "Вийти"
+tray_tooltip = "Хвилина мовчання"
+notification_title = "Хвилина мовчання"
+notification_body_start = "Чергова хвилина мовчання розпочинається"
+notification_body_reminder = "Через %{mins} хв розпочнеться хвилина мовчання о 09:00"
