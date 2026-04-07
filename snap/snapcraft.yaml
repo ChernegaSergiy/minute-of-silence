@@ -45,6 +45,7 @@ parts:
       - libasound2
       - libasound2-plugins
       - libpulse0
+      - liboss-salsa2
     override-build: |
       # Set SDK path based on architecture
       SDK_PATH="/snap/gnome-46-2404-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET"
