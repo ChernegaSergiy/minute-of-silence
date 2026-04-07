@@ -12,6 +12,12 @@ description: |
   для вшанування пам'яті полеглих захисників та жертв війни.
 
 license: Proprietary
+contact: https://github.com/ChernegaSergiy/minute-of-silence/issues
+issues: https://github.com/ChernegaSergiy/minute-of-silence/issues
+website: https://github.com/ChernegaSergiy/minute-of-silence
+source-code: https://github.com/ChernegaSergiy/minute-of-silence
+donation: https://savelife.in.ua/donate/
+
 grade: stable
 confinement: strict
 
@@ -39,6 +45,7 @@ parts:
       - libasound2
       - libasound2-plugins
       - libpulse0
+      - librsvg2-common
     override-build: |
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
@@ -70,6 +77,8 @@ apps:
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
       ALSA_CONFIG_PATH: $SNAP/etc/alsa.conf
+      # Use plugins from the gnome-platform to keep snap functional
+      ALSA_PLUGIN_DIR: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET/alsa-lib
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
@@ -83,3 +92,8 @@ apps:
       - unity7
       - opengl         # For WebKit/GPU acceleration
       - gsettings      # To access system settings
+
+layout:
+  # Map internal Snap paths to where Tauri expects resources on Linux
+  /usr/lib/Minute of Silence:
+    bind: $SNAP/bin
