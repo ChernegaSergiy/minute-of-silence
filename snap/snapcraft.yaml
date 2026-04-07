@@ -42,6 +42,9 @@ parts:
       - rustup
     stage-packages:
       - glib-networking
+      - libasound2
+      - libasound2-plugins
+      - libpulse0
     override-build: |
       # Set SDK path based on architecture
       SDK_PATH="/snap/gnome-46-2404-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET"
@@ -79,6 +82,7 @@ apps:
     extensions: [gnome]
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
+      ALSA_CONFIG_PATH: /snap/gnome-46-2404-sdk/current/usr/share/alsa/alsa.conf
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
