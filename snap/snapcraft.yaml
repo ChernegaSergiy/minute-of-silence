@@ -42,8 +42,6 @@ parts:
       - rustup
     stage-packages:
       - glib-networking
-      - libasound2
-      - libpulse0
     override-build: |
       # Set SDK path based on architecture
       SDK_PATH="/snap/gnome-46-2404-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET"
