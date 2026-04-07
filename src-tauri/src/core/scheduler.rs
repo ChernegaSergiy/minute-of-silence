@@ -114,19 +114,17 @@ impl CeremonyScheduler {
 
     /// Send a system notification about the upcoming ceremony.
     fn send_reminder_notification(&self, mins_before: u8) {
+        use rust_i18n::t;
         let body = if mins_before == 0 {
-            "Чергова хвилина мовчання розпочинається".to_string()
+            t!("notification_body_start")
         } else {
-            format!(
-                "Через {} хв розпочнеться хвилина мовчання о 09:00",
-                mins_before
-            )
+            t!("notification_body_reminder", mins => mins_before)
         };
         let result = self
             .app
             .notification()
             .builder()
-            .title("Хвилина мовчання")
+            .title(t!("notification_title"))
             .body(&body)
             .show();
 
