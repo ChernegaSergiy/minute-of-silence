@@ -64,6 +64,10 @@ parts:
       # Copy desktop assets
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps
       cp src-tauri/icons/icon.png $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps/minute-of-silence.png
+      
+      # Copy custom minimal ALSA config (Pulse redirect)
+      mkdir -p $SNAPCRAFT_PART_INSTALL/etc
+      cp snap/local/asound.conf $SNAPCRAFT_PART_INSTALL/etc/asound.conf
 
 apps:
   minute-of-silence:
@@ -72,8 +76,8 @@ apps:
     extensions: [gnome]
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
-      # ALSA bridge settings for PulseAudio (using runtime paths)
-      ALSA_CONFIG_PATH: $SNAP/gnome-platform/usr/share/alsa/alsa.conf
+      # Direct redirection to PulseAudio via minimal config
+      ALSA_CONFIG_PATH: $SNAP/etc/asound.conf
       ALSA_PLUGIN_DIR: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET/alsa-lib
     # Required permissions (interfaces)
     plugs:
