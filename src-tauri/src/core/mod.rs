@@ -89,7 +89,9 @@ impl CeremonyManager {
         let platform_handle = platform::get_platform();
 
         std::thread::spawn(move || {
-            let _ = audio_engine.play_preset(preset, target_volume);
+            if let Err(e) = audio_engine.play_preset(preset, target_volume) {
+                log::error!("Ceremony audio error: {}", e);
+            }
 
             // 7. Finish
             tauri::async_runtime::spawn(async move {
