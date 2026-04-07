@@ -1,3 +1,4 @@
+import "./i18n";
 import "./style.css";
 import { App } from "./app";
 
