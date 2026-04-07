@@ -42,9 +42,8 @@ parts:
       - rustup
     stage-packages:
       - glib-networking
+      - librsvg2-common
       - libasound2
-      - libasound2-plugins
-      - libpulse0
     override-build: |
       # Set SDK path based on architecture
       SDK_PATH="/snap/gnome-46-2404-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET"
@@ -99,4 +98,6 @@ apps:
 
 layout:
   /usr/share/alsa:
-    bind: $SNAP/usr/share/alsa
+    bind: $SNAP/gnome-platform/usr/share/alsa
+  /usr/lib/${CRAFT_ARCH_TRIPLET}/alsa-lib:
+    bind: $SNAP/gnome-platform/usr/lib/${CRAFT_ARCH_TRIPLET}/alsa-lib
