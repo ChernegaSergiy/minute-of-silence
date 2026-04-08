@@ -1,7 +1,4 @@
 //! Main library entry point for the Minute of Silence application.
-//!
-//! Orchestrates the initialization of the Tauri application,
-//! including plugin registration, tray setup, and starting the scheduler.
 
 mod commands;
 mod core;
@@ -10,40 +7,33 @@ mod state;
 mod tray;
 
 use tauri::Manager;
-
-// Initialize i18n
 rust_i18n::i18n!("locales");
 
 pub use core::settings::{AudioPreset, Settings};
-
 pub use error::{AppError, Result};
 pub use state::AppState;
 
-#[cfg(target_os = "windows")]
-mod platform_windows;
-
 #[cfg(target_os = "linux")]
 mod platform_linux;
+#[cfg(target_os = "windows")]
+mod platform_windows;
 
 /// Application entry point — called from `main.rs`.
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            if std::env::var("SNAP").is_ok() {
-                Some(vec!["minute-of-silence", "--hidden"])
-            } else {
-                Some(vec!["--hidden"])
-            },
+            Some(vec!["--hidden"]),
         ))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app.get_webview_window("main").map(|w| {
-                let _ = w.unminimize();
-                let _ = w.show();
-                let _ = w.set_focus();
-            });
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w
+                    .unminimize()
+                    .and_then(|_| w.show())
+                    .and_then(|_| w.set_focus());
+            }
         }))
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -51,23 +41,35 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            // Set the backend locale to match the system locale
+            let handle = app.handle();
+
+            // --- 1. Localization ---
             let locale = sys_locale::get_locale().unwrap_or_else(|| "uk".to_string());
             let lang = locale.split(['-', '_']).next().unwrap_or("uk");
             rust_i18n::set_locale(lang);
             log::info!("Backend locale set to: {}, source: {}", lang, locale);
 
+            // --- 2. State Management ---
             let settings = Settings::load_or_default();
             app.manage(AppState::new_with_settings(
-                app.handle().clone(),
+                handle.clone(),
                 settings.clone(),
             ));
 
-            // Synchronise autostart state with the plugin (skip on Snap/Flatpak where handled by package manager).
-            #[cfg(not(test))]
-            {
-                let is_snap = std::env::var("SNAP").is_ok();
-                if !is_snap {
+            // --- 3. Autostart & Snap Logic ---
+            let is_snap = std::env::var("SNAP").is_ok();
+            let is_hidden = std::env::args().any(|arg| arg == "--hidden");
+
+            if is_snap {
+                // In Snap, if we started automatically but it's disabled in settings, exit.
+                if is_hidden && !settings.autostart_enabled {
+                    log::info!("Autostart disabled in settings, exiting Snap background instance.");
+                    handle.exit(0);
+                }
+            } else {
+                // Outside Snap, sync the actual OS autostart file with settings.
+                #[cfg(not(test))]
+                {
                     use tauri_plugin_autostart::ManagerExt;
                     let autostart_manager = app.autolaunch();
                     if settings.autostart_enabled {
@@ -78,26 +80,20 @@ pub fn run() {
                 }
             }
 
-            // Build the system-tray icon.
+            // --- 4. UI Initialization ---
             tray::build_tray(app)?;
 
-            // If started with --hidden (e.g. from autostart), hide the main window immediately.
-            if std::env::args().any(|arg| arg == "--hidden") {
-                if let Some(window) = app.get_webview_window("main") {
+            if let Some(window) = app.get_webview_window("main") {
+                if is_hidden {
                     window.hide()?;
                 }
+                // Hide from taskbar; the app lives in the tray only.
+                #[cfg(target_os = "windows")]
+                window.set_skip_taskbar(true)?;
             }
 
-            // Hide from taskbar; the app lives in the tray only.
-            #[cfg(target_os = "windows")]
-            {
-                if let Some(window) = app.get_webview_window("main") {
-                    window.set_skip_taskbar(true)?;
-                }
-            }
-
-            // Spawn the scheduler loop.
-            let app_handle = app.handle().clone();
+            // --- 5. Core Services ---
+            let app_handle = handle.clone();
             tauri::async_runtime::spawn(async move {
                 core::scheduler::run(app_handle).await;
             });

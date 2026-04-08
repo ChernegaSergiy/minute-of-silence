@@ -62,6 +62,10 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps
       cp src-tauri/icons/icon.png $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/512x512/apps/minute-of-silence.png
       
+      # Copy desktop file for app launcher and autostart
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
+      cp snap/gui/minute-of-silence.desktop $SNAPCRAFT_PART_INSTALL/usr/share/applications/
+      
       # Copy custom minimal ALSA config (Pulse redirect)
       mkdir -p $SNAPCRAFT_PART_INSTALL/etc
       cp snap/local/asound.conf $SNAPCRAFT_PART_INSTALL/etc/asound.conf
