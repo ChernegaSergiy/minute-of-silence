@@ -84,10 +84,11 @@ pub mod media {
     use crate::error::{AppError, Result};
 
     pub async fn pause_all() -> Result<()> {
-        let manager: GlobalSystemMediaTransportControlsSessionManager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-            .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?
-            .await
-            .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
+        let manager: GlobalSystemMediaTransportControlsSessionManager =
+            GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?
+                .await
+                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
 
         let sessions = manager
             .GetSessions()
