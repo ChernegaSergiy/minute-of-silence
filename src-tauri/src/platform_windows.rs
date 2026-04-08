@@ -75,7 +75,6 @@ pub mod volume {
 
 pub mod media {
     use log::{error, info};
-    use tauri::async_runtime::block_on;
     use windows::Media::Control::{
         GlobalSystemMediaTransportControlsSession,
         GlobalSystemMediaTransportControlsSessionManager,
@@ -85,7 +84,7 @@ pub mod media {
     use crate::error::{AppError, Result};
 
     pub fn pause_all() -> Result<()> {
-        let manager: GlobalSystemMediaTransportControlsSessionManager = block_on(
+        let manager: GlobalSystemMediaTransportControlsSessionManager = windows_future::block_on(
             GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
                 .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?,
         )
