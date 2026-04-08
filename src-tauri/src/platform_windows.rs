@@ -75,20 +75,22 @@ pub mod volume {
 
 pub mod media {
     use log::{error, info};
+    use tauri::async_runtime::block_on;
     use windows::Media::Control::{
-        GlobalSystemMediaTransportControlsSession,
         GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackInfo,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     };
 
     use crate::error::{AppError, Result};
 
     pub fn pause_all() -> Result<()> {
-        let manager: GlobalSystemMediaTransportControlsSessionManager = windows_future::block_on(
+        let manager: GlobalSystemMediaTransportControlsSessionManager = block_on(async {
             GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?,
-        )
-        .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?;
+                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))?
+                .await
+                .map_err(|e: windows::core::Error| AppError::Platform(e.to_string()))
+        })?;
 
         let sessions = manager
             .GetSessions()
@@ -106,13 +108,14 @@ pub mod media {
                     session.SourceAppUserModelId().unwrap_or_default();
                 info!("Session {}: AppId={}", i, app_id);
 
-                let playback_info = match session.GetPlaybackInfo() {
-                    Ok(info) => info,
-                    Err(e) => {
-                        error!("Failed to get playback info for session {}: {:?}", i, e);
-                        continue;
-                    }
-                };
+                let playback_info: GlobalSystemMediaTransportControlsSessionPlaybackInfo =
+                    match session.GetPlaybackInfo() {
+                        Ok(info) => info,
+                        Err(e) => {
+                            error!("Failed to get playback info for session {}: {:?}", i, e);
+                            continue;
+                        }
+                    };
 
                 let status = match playback_info.PlaybackStatus() {
                     Ok(s) => s,
