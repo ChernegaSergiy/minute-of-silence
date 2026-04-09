@@ -65,7 +65,6 @@ parts:
 apps:
   minute-of-silence:
     command: bin/minute-of-silence
-    autostart: minute-of-silence.desktop
     extensions: [gnome]
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
