@@ -44,6 +44,8 @@ parts:
       - rustup
     stage-packages:
       - libasound2-plugins
+      - librsvg2-common
+      - glib-networking
     override-build: |
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
@@ -84,7 +86,6 @@ apps:
       - unity7
       - opengl         # For WebKit/GPU acceleration
       - gsettings      # To access system settings
-      - desktop-notifications
       - hardware-observe
       - system-observe
       - shared-memory
