@@ -5,6 +5,7 @@ name: minute-of-silence
 title: Хвилина мовчання
 base: core24
 version: '0.5.1'
+icon: snap/gui/minute-of-silence.png
 summary: Національна хвилина мовчання о 09:00
 description: |
   Додаток для автоматизації загальнонаціональної хвилини мовчання.
@@ -43,6 +44,12 @@ parts:
       - rustup
     stage-packages:
       - libasound2-plugins
+      - librsvg2-common
+      - glib-networking
+      - libwebkit2gtk-4.1-0
+      - libayatana-appindicator3-1
+      - libssl3
+      - libsecret-1-0
     override-build: |
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
@@ -84,6 +91,12 @@ apps:
       - unity7
       - opengl         # For WebKit/GPU acceleration
       - gsettings      # To access system settings
+      - desktop-notifications
+      - hardware-observe
+      - system-observe
+      - shared-memory
+      - screen-inhibit-control
+      - upower-observe
 
 layout:
   # Map internal Snap paths to where Tauri expects resources on Linux
