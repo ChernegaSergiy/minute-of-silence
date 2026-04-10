@@ -44,12 +44,6 @@ parts:
       - rustup
     stage-packages:
       - libasound2-plugins
-      - librsvg2-common
-      - glib-networking
-      - libwebkit2gtk-4.1-0
-      - libayatana-appindicator3-1
-      - libssl3
-      - libsecret-1-0
     override-build: |
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
@@ -77,7 +71,6 @@ apps:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
       # Direct redirection to PulseAudio via minimal config
       ALSA_CONFIG_PATH: $SNAP/etc/asound.conf
-      ALSA_PLUGIN_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/alsa-lib
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
