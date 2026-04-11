@@ -56,8 +56,10 @@ parts:
       
       # Move binary and resources
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin/audio
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin/icons
       cp src-tauri/target/release/minute-of-silence $SNAPCRAFT_PART_INSTALL/bin/
       cp src-tauri/audio/*.ogg $SNAPCRAFT_PART_INSTALL/bin/audio/
+      cp src-tauri/icons/*.png $SNAPCRAFT_PART_INSTALL/bin/icons/
       
       # Copy custom minimal ALSA config (Pulse redirect)
       mkdir -p $SNAPCRAFT_PART_INSTALL/etc
