@@ -67,7 +67,6 @@ apps:
   minute-of-silence:
     command: bin/minute-of-silence
     extensions: [gnome]
-    desktop: snap/gui/minute-of-silence.desktop
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
       # Direct redirection to PulseAudio via minimal config
