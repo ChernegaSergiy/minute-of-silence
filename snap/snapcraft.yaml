@@ -63,16 +63,19 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/etc
       cp snap/local/asound.conf $SNAPCRAFT_PART_INSTALL/etc/asound.conf
       
-      # Install icons and desktop file
+      # Copy icons to meta/gui (standard for Snap icons)
       mkdir -p $SNAPCRAFT_PART_INSTALL/meta/gui
       cp snap/gui/minute-of-silence.png $SNAPCRAFT_PART_INSTALL/meta/gui/
-      cp snap/gui/minute-of-silence.desktop $SNAPCRAFT_PART_INSTALL/meta/gui/
+      
+      # Install desktop file to standard location
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
+      cp snap/gui/minute-of-silence.desktop $SNAPCRAFT_PART_INSTALL/usr/share/applications/
 
 apps:
   minute-of-silence:
     command: bin/minute-of-silence
     extensions: [gnome]
-    desktop: meta/gui/minute-of-silence.desktop
+    desktop: usr/share/applications/minute-of-silence.desktop
     autostart: minute-of-silence.desktop
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
