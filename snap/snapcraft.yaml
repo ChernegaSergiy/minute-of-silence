@@ -83,7 +83,6 @@ apps:
       - network-bind   # For potential local server/sockets
       - audio-playback # For ceremony audio output
       - mpris          # For pausing other media players via D-Bus
-      - notifications  # For system notifications
       - desktop
       - desktop-legacy
       - x11
