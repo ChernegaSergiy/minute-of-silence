@@ -58,22 +58,24 @@ pub fn run() {
 
             // --- 3. Autostart & Snap Logic ---
             let is_hidden = std::env::args().any(|arg| arg == "--hidden");
-            let is_snap = std::env::var("SNAP").is_ok();
 
             // Sync the actual OS autostart file with settings.
             #[cfg(not(test))]
-            if !is_snap {
-                use tauri_plugin_autostart::ManagerExt;
-                let autostart_manager = app.autolaunch();
-                if settings.autostart_enabled {
-                    let _ = autostart_manager.enable();
-                } else {
-                    let _ = autostart_manager.disable();
+            {
+                let is_snap = std::env::var("SNAP").is_ok();
+                if !is_snap {
+                    use tauri_plugin_autostart::ManagerExt;
+                    let autostart_manager = app.autolaunch();
+                    if settings.autostart_enabled {
+                        let _ = autostart_manager.enable();
+                    } else {
+                        let _ = autostart_manager.disable();
+                    }
+                } else if is_hidden && !settings.autostart_enabled {
+                    // If started automatically by Snap but user disabled autostart in settings, exit.
+                    log::info!("Autostart is disabled in settings. Exiting Snap instance launched with --hidden.");
+                    std::process::exit(0);
                 }
-            } else if is_hidden && !settings.autostart_enabled {
-                // If started automatically by Snap but user disabled autostart in settings, exit.
-                log::info!("Autostart is disabled in settings. Exiting Snap instance launched with --hidden.");
-                std::process::exit(0);
             }
 
             // --- 4. UI Initialization ---
