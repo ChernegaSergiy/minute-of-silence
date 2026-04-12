@@ -12,12 +12,12 @@
   IgnorableNamespaces="uap uap2 uap3 uap10 desktop desktop6 rescap">
 
   <Identity
-    Name="minute-of-silence"
-    Publisher="CN=Serhii Cherneha"
+    Name="BF570F0A.313786C1665D6"
+    Publisher="CN=01445EFC-3CD0-4B45-A28E-B290F6B26A52"
     Version="0.5.1.0" />
 
   <Properties>
-    <DisplayName>minute-of-silence</DisplayName>
+    <DisplayName>Хвилина мовчання</DisplayName>
     <PublisherDisplayName>Serhii Cherneha</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
