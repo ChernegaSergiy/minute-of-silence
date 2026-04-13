@@ -19,7 +19,7 @@ Minute of Silence is a lightweight desktop application built with [Tauri 2](http
 
 - **Automatic Daily Activation**: Activates at 09:00 with NTP time correction.
 - **Eight Audio Presets**: Voice announcement combined with silence, bell, metronome, and/or national anthem.
-- **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony; resumes them after (supports MPRIS on Linux).
+- **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony (supports MPRIS on Linux).
 - **Visual Status**: A status indicator appears in the main window during the ceremony (full-screen overlay planned).
 - **Skip Next**: Suppresses a single upcoming activation via the tray menu or the main window.
 - **Post-Sleep Handling**: If the system wakes from sleep after 09:00, a configurable grace window decides whether to activate late or skip.
