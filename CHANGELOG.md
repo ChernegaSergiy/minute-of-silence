@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-04-14
+
+### Added
+- Microsoft Store identity and localized display name ("Хвилина мовчання") for official Store distribution.
+
 ## [0.5.1] - 2026-04-12
 
 ### Added
