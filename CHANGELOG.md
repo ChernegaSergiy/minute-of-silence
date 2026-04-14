@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.5.1] - 2026-04-12
+
+### Added
+- Full localization (i18n) with Ukrainian and English support via `i18next` and `rust-i18n`.
+
+### Changed
+- Snap audio handling: refactored to use native PulseAudio/PipeWire bridge for reliable playback.
+- Unified application identifiers and fixed icon paths for correct display in Linux menus and system trays.
+- Updated official website URL to `khvylyna.pp.ua`.
+
+### Fixed
+- Windows build compatibility with latest Windows SDK (windows-rs v0.62).
+- Media control reliability: asynchronous pausing prevents backend panics on Linux.
+- UI badge localization and dashboard status indicator updates.
+
+### Technical
+- Bumped dependencies: `zbus` (v5.14.0), `cpal` (v0.17.1), `windows` (v0.62.2).
 
 ## [0.5.0] - 2026-04-07
 
