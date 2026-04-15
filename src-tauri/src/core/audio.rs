@@ -235,6 +235,12 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
+            AudioPreset::Silence => {
+                // No audio, just wait for 60 seconds
+                if self.sleep_interruptible(Duration::from_secs(60), start_counter) {
+                    return Ok(());
+                }
+            }
         }
 
         self.wait_player_interruptible(&player, start_counter);
