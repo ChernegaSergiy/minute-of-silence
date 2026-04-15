@@ -334,6 +334,10 @@ export class App {
               <p>${t("about.description")}</p>
 
               <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                <span>${t("about.acknowledgments")}</span>
+              </div>
+
+              <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                 <span>${t("about.version")} v${this.version}</span>
                 <span>${t("about.license")}</span>
               </div>
