@@ -52,6 +52,17 @@
       "label": "Companion mode",
       "description": "Select audio accompaniment: voice, metronome, bell, or anthem."
     },
+    "presets": {
+      "voice_metronome": "Voice + metronome",
+      "metronome_only": "Metronome",
+      "voice_silence_bell": "Voice + silence + bell",
+      "voice_silence": "Voice + silence",
+      "voice_metronome_anthem": "Voice + metronome + anthem",
+      "metronome_anthem": "Metronome + anthem",
+      "bell_silence_bell": "Bell + silence + bell",
+      "bell_metronome_bell": "Bell + metronome + bell",
+      "silence": "Silence"
+    },
     "volume": {
       "label": "Volume",
       "description": "Volume level for the application's audio presets."
