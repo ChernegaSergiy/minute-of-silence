@@ -161,4 +161,4 @@ This project is licensed under the CSSM Unlimited License v2.0 (CSSM-ULv2). See 
 
 ## Acknowledgments
 
-- Inspired by the [Bohdan Hdal's Minute of Silence app](https://bohdan.com.ua/memoryminute)
+- Inspired by Bohdan Hdal's ["MemoryMinute" app](https://bohdan.com.ua/memoryminute)
