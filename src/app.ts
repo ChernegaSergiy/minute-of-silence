@@ -381,7 +381,7 @@ export class App {
         (key) =>
           `<option value="${key}" ${
             this.settings.preset === key ? "selected" : ""
-          }>${PRESET_LABELS[key]}</option>`
+          }>${t("presets." + key)}</option>`
       )
       .join("");
   }
