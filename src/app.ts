@@ -335,6 +335,7 @@ export class App {
 
               <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                 <span>${t("about.acknowledgments")}</span>
+                <button class="btn btn--link" id="bohdanLinkBtn" style="margin: 0;">bohdan.com.ua/memoryminute</button>
               </div>
 
               <div class="meta-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
@@ -433,6 +434,11 @@ export class App {
     // About link
     this.q<HTMLButtonElement>("#githubLinkBtn").addEventListener("click", async () => {
       await open("https://github.com/ChernegaSergiy/minute-of-silence");
+    });
+
+    // Bohdan Hdal link
+    this.q<HTMLButtonElement>("#bohdanLinkBtn").addEventListener("click", async () => {
+      await open("https://bohdan.com.ua/memoryminute");
     });
  
     // Ceremony toggle
