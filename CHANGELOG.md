@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-04-15
+
+### Added
+- New audio preset that shows visual overlay and pauses other players without playing any sound.
+- Preset names are now translatable via i18n system.
+
 ## [0.6.1] - 2026-04-15
 
 ### Fixed
