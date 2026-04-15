@@ -8,7 +8,8 @@ export type AudioPreset =
   | "voice_metronome_anthem"
   | "metronome_anthem"
   | "bell_silence_bell"
-  | "bell_metronome_bell";
+  | "bell_metronome_bell"
+  | "silence";
 
 export interface Settings {
   ceremonyEnabled: boolean;
