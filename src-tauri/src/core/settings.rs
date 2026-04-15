@@ -137,6 +137,8 @@ pub enum AudioPreset {
     BellSilenceBell,
     /// Bell + metronome + bell
     BellMetronomeBell,
+    /// Silence only (no audio, just visual overlay)
+    Silence,
 }
 
 impl std::fmt::Display for AudioPreset {
@@ -150,6 +152,7 @@ impl std::fmt::Display for AudioPreset {
             Self::MetronomeAnthem => "Метроном + гімн",
             Self::BellSilenceBell => "Дзвін + тиша + дзвін",
             Self::BellMetronomeBell => "Дзвін + метроном + дзвін",
+            Self::Silence => "Тиша",
         };
         write!(f, "{label}")
     }
