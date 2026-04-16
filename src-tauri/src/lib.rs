@@ -18,6 +18,75 @@ mod platform_linux;
 #[cfg(target_os = "windows")]
 mod platform_windows;
 
+/// Check if running as MSIX package (Windows Runtime API)
+#[cfg(target_os = "windows")]
+fn is_running_as_msix() -> bool {
+    windows::ApplicationModel::Package::Current().is_ok()
+}
+
+/// Configure MSIX autostart using Windows StartupTask API
+#[cfg(target_os = "windows")]
+fn configure_msix_autostart(enabled: bool) {
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to create tokio runtime for MSIX autostart");
+
+        rt.block_on(async {
+            use windows::core::HSTRING;
+            use windows::ApplicationModel::StartupTask;
+
+            let task_id = HSTRING::from("MinuteOfSilenceStartup");
+
+            // Get the task
+            let op = match StartupTask::GetAsync(&task_id) {
+                Ok(op) => op,
+                Err(e) => {
+                    log::warn!("Failed to get MSIX startup task: {:?}", e);
+                    return;
+                }
+            };
+            let task = match op.await {
+                Ok(t) => t,
+                Err(e) => {
+                    log::warn!("Failed to await MSIX startup task: {:?}", e);
+                    return;
+                }
+            };
+
+            if enabled {
+                match task.State() {
+                    Ok(state) => {
+                        if state == windows::ApplicationModel::StartupTaskState::Enabled {
+                            log::info!("MSIX autostart already enabled");
+                        } else {
+                            // Request enable - this may show a UI prompt
+                            let enable_op = match task.RequestEnableAsync() {
+                                Ok(op) => op,
+                                Err(e) => {
+                                    log::warn!("Failed to request MSIX autostart: {:?}", e);
+                                    return;
+                                }
+                            };
+                            match enable_op.await {
+                                Ok(_) => log::info!("MSIX autostart enabled"),
+                                Err(e) => log::warn!("Failed to enable MSIX autostart: {:?}", e),
+                            }
+                        }
+                    }
+                    Err(e) => log::warn!("Failed to get MSIX autostart state: {:?}", e),
+                }
+            } else {
+                match task.Disable() {
+                    Ok(_) => log::info!("MSIX autostart disabled"),
+                    Err(e) => log::warn!("Failed to disable MSIX autostart: {:?}", e),
+                }
+            }
+        });
+    });
+}
+
 /// Application entry point — called from `main.rs`.
 pub fn run() {
     tauri::Builder::default()
@@ -64,12 +133,30 @@ pub fn run() {
             {
                 let is_snap = std::env::var("SNAP").is_ok();
                 if !is_snap {
-                    use tauri_plugin_autostart::ManagerExt;
-                    let autostart_manager = app.autolaunch();
-                    if settings.autostart_enabled {
-                        let _ = autostart_manager.enable();
-                    } else {
-                        let _ = autostart_manager.disable();
+                    #[cfg(target_os = "windows")]
+                    {
+                        // Check if running as MSIX package
+                        if is_running_as_msix() {
+                            configure_msix_autostart(settings.autostart_enabled);
+                        } else {
+                            use tauri_plugin_autostart::ManagerExt;
+                            let autostart_manager = app.autolaunch();
+                            if settings.autostart_enabled {
+                                let _ = autostart_manager.enable();
+                            } else {
+                                let _ = autostart_manager.disable();
+                            }
+                        }
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        use tauri_plugin_autostart::ManagerExt;
+                        let autostart_manager = app.autolaunch();
+                        if settings.autostart_enabled {
+                            let _ = autostart_manager.enable();
+                        } else {
+                            let _ = autostart_manager.disable();
+                        }
                     }
                 } else if is_hidden && !settings.autostart_enabled {
                     // If started automatically by Snap but user disabled autostart in settings, exit.
