@@ -1,6 +1,6 @@
 //! Backend audio playback engine.
 
-use rodio::{Decoder, DeviceSinkBuilder, Player, Source};
+use rodio::{Decoder, DeviceSinkBuilder, Player};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -60,11 +60,48 @@ impl AudioEngine {
     }
 
     pub fn get_duration(&self, filename: &str) -> Result<Duration> {
+        use symphonia::core::formats::FormatOptions;
+        use symphonia::core::io::MediaSourceStream;
+        use symphonia::core::meta::MetadataOptions;
+        use symphonia::core::probe::Hint;
+
         let path = self.get_path(filename)?;
-        let source = Decoder::new(BufReader::new(File::open(&path)?))
-            .map_err(|e| AppError::Audio(format!("Failed to decode audio file: {}", e)))?;
-        let duration = source.total_duration().unwrap_or(Duration::ZERO);
-        Ok(duration)
+        let file = File::open(&path)?;
+        let mss = MediaSourceStream::new(Box::new(file), Default::default());
+
+        let mut hint = Hint::new();
+        hint.with_extension("ogg");
+
+        let format_opts = FormatOptions::default();
+        let metadata_opts = MetadataOptions::default();
+
+        let probed = symphonia::default::get_probe()
+            .format(&hint, mss, &format_opts, &metadata_opts)
+            .map_err(|e| AppError::Audio(format!("Failed to probe audio file: {}", e)))?;
+
+        let format = probed.format;
+
+        if let Some(track) = format.default_track() {
+            if let Some(n_frames) = track.codec_params.n_frames {
+                if let Some(sample_rate) = track.codec_params.sample_rate {
+                    let duration_secs = n_frames as f64 / sample_rate as f64;
+                    return Ok(Duration::from_secs_f64(duration_secs));
+                }
+            }
+            if let Some(time_base) = track.codec_params.time_base {
+                if let Some(n_frames) = track.codec_params.n_frames {
+                    let duration_secs =
+                        n_frames as f64 * time_base.numer as f64 / time_base.denom as f64;
+                    return Ok(Duration::from_secs_f64(duration_secs));
+                }
+            }
+        }
+
+        log::warn!(
+            "Could not determine duration of {}, using default 2s",
+            filename
+        );
+        Ok(Duration::from_secs(2))
     }
 
     pub fn play_preset(&self, preset: AudioPreset, volume: u8) -> Result<()> {
