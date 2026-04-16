@@ -15,12 +15,20 @@ use crate::state::AppState;
 pub struct CeremonyScheduler {
     app: AppHandle,
     audio: Arc<AudioEngine>,
+    announcement_duration: Duration,
 }
 
 impl CeremonyScheduler {
     pub fn new(app: AppHandle) -> Self {
         let audio = app.state::<AppState>().audio.clone();
-        Self { app, audio }
+        let announcement_duration = audio
+            .get_duration("announcement.ogg")
+            .unwrap_or(Duration::ZERO);
+        Self {
+            app,
+            audio,
+            announcement_duration,
+        }
     }
 
     /// Run the main scheduler loop.
@@ -107,9 +115,8 @@ impl CeremonyScheduler {
                     } else if self.is_within_window(now_time, ceremony_time, grace_minutes) {
                         true
                     } else if Self::preset_has_announcement(inner.settings.preset) {
-                        let announcement_duration = self.get_announcement_duration();
                         let window_start = ceremony_time
-                            - chrono::Duration::seconds(announcement_duration.as_secs() as i64);
+                            - chrono::Duration::seconds(self.announcement_duration.as_secs() as i64);
                         now_time >= window_start && now_time < ceremony_time
                     } else {
                         false
@@ -180,9 +187,7 @@ impl CeremonyScheduler {
     }
 
     fn get_announcement_duration(&self) -> Duration {
-        self.audio
-            .get_duration("announcement.ogg")
-            .unwrap_or(Duration::ZERO)
+        self.announcement_duration
     }
 
     fn get_synchronized_now(&self) -> chrono::DateTime<Local> {

@@ -271,7 +271,7 @@ impl AudioEngine {
                 ))
             })?;
 
-        log::info!("Audio resource path: {:?}", path);
+        log::debug!("Audio resource path: {:?}", path);
         Ok(path)
     }
 }
