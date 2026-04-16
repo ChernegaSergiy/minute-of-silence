@@ -12,15 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.3] - 2026-04-16
 
 ### Added
-- MSIX autostart support via Windows StartupTask API.
+- Precise timing for presets with voice announcement to ensure silence starts at exactly 09:00.
 
 ### Changed
-- Presets with voice announcement now trigger earlier to ensure silence starts at exactly 09:00.
 - Audio duration detection now uses symphonia for accurate OGG metadata reading.
 - Updated Linux audio dependencies: alsa 0.11 and cpal 0.17.3.
-
-### Fixed
-- MSIX autostart not working due to registry limitations.
 
 ### Removed
 - Unused audio files from the package.
