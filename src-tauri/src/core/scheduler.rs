@@ -24,6 +24,10 @@ impl CeremonyScheduler {
         let announcement_duration = audio
             .get_duration("announcement.ogg")
             .unwrap_or(Duration::ZERO);
+        log::info!(
+            "Announcement duration: {:.2}s",
+            announcement_duration.as_secs_f32()
+        );
         Self {
             app,
             audio,
@@ -116,7 +120,16 @@ impl CeremonyScheduler {
                         // Compensation window: [09:00 - duration, 09:00)
                         let window_start = ceremony_time
                             - chrono::Duration::seconds(self.announcement_duration.as_secs() as i64);
-                        now_time >= window_start && now_time < ceremony_time
+                        let should = now_time >= window_start && now_time < ceremony_time;
+                        if now_time.hour() == 8 && now_time.minute() == 59 {
+                            log::info!(
+                                "Compensation check: now={}, window_start={}, should_trigger={}",
+                                now_time,
+                                window_start,
+                                should
+                            );
+                        }
+                        should
                     } else if self.is_within_window(now_time, ceremony_time, grace_minutes) {
                         // Grace window: [09:00, 09:00 + grace)
                         true
@@ -129,6 +142,7 @@ impl CeremonyScheduler {
             };
 
             if should_trigger {
+                log::info!("Ceremony triggered at {}", now_time);
                 self.trigger_ceremony().await;
             }
         }
