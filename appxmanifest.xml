@@ -33,7 +33,7 @@
 
   <Applications>
     <Application Id="minuteOfSilence"
-      Executable="$targetnametoken$.exe"
+      Executable="minute-of-silence.exe"
       EntryPoint="Windows.FullTrustApplication"
       uap10:TrustLevel="mediumIL"
       uap10:RuntimeBehavior="packagedClassicApp">
