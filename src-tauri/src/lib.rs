@@ -64,29 +64,12 @@ pub fn run() {
             {
                 let is_snap = std::env::var("SNAP").is_ok();
                 if !is_snap {
-                    #[cfg(target_os = "windows")]
-                    {
-                        if platform_windows::autostart::is_running_as_msix() {
-                            platform_windows::autostart::configure(settings.autostart_enabled);
-                        } else {
-                            use tauri_plugin_autostart::ManagerExt;
-                            let autostart_manager = app.autolaunch();
-                            if settings.autostart_enabled {
-                                let _ = autostart_manager.enable();
-                            } else {
-                                let _ = autostart_manager.disable();
-                            }
-                        }
-                    }
-                    #[cfg(not(target_os = "windows"))]
-                    {
-                        use tauri_plugin_autostart::ManagerExt;
-                        let autostart_manager = app.autolaunch();
-                        if settings.autostart_enabled {
-                            let _ = autostart_manager.enable();
-                        } else {
-                            let _ = autostart_manager.disable();
-                        }
+                    use tauri_plugin_autostart::ManagerExt;
+                    let autostart_manager = app.autolaunch();
+                    if settings.autostart_enabled {
+                        let _ = autostart_manager.enable();
+                    } else {
+                        let _ = autostart_manager.disable();
                     }
                 } else if is_hidden && !settings.autostart_enabled {
                     // If started automatically by Snap but user disabled autostart in settings, exit.

@@ -5,12 +5,11 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
-  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
   xmlns:desktop6="http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap2 uap3 uap5 uap10 desktop desktop6 rescap">
+  IgnorableNamespaces="uap uap2 uap3 uap10 desktop desktop6 rescap">
 
   <Identity
     Name="BF570F0A.313786C1665D6"
@@ -34,9 +33,7 @@
   <Applications>
     <Application Id="minuteOfSilence"
       Executable="minute-of-silence.exe"
-      EntryPoint="Windows.FullTrustApplication"
-      uap10:TrustLevel="mediumIL"
-      uap10:RuntimeBehavior="packagedClassicApp">
+      EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Хвилина мовчання"
         Description="Додаток для автоматизації загальнонаціональної хвилини мовчання о 09:00."
@@ -48,11 +45,6 @@
           Square310x310Logo="Assets\icon.png"
           Square71x71Logo="Assets\icon.png" />
       </uap:VisualElements>
-      <Extensions>
-        <uap5:Extension Category="windows.startupTask">
-          <uap5:StartupTask TaskId="MinuteOfSilenceStartup" DisplayName="Хвилина мовчання" Enabled="false" />
-        </uap5:Extension>
-      </Extensions>
     </Application>
   </Applications>
 
