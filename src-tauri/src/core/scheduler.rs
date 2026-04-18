@@ -7,7 +7,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::audio::AudioEngine;
-use crate::core::settings::AudioPreset;
+use crate::core::settings::{AnnouncementVoice, AudioPreset};
 use crate::core::CeremonyManager;
 use crate::state::AppState;
 
@@ -121,9 +121,14 @@ impl CeremonyScheduler {
                     if last_activated == Some(today) || inner.skip_date == Some(today) {
                         false
                     } else {
+                        let voice = inner.settings.announcement_voice;
+                        let voice_duration = self
+                            .audio
+                            .get_duration(&self.get_announcement_filename(voice))
+                            .unwrap_or(self.announcement_duration);
                         let compensation = Self::get_compensation_duration(
                             inner.settings.preset,
-                            self.announcement_duration,
+                            voice_duration,
                             self.bell_duration,
                         );
                         if compensation > Duration::ZERO {
@@ -246,6 +251,16 @@ impl CeremonyScheduler {
             return corrected;
         }
         Local::now()
+    }
+
+    fn get_announcement_filename(&self, voice: AnnouncementVoice) -> String {
+        use crate::core::settings::AnnouncementVoice::*;
+        match voice {
+            BohdanHdal => "announcement.ogg".to_string(),
+            SoniaSotnyk => "announcement_sotnyk.ogg".to_string(),
+            DaniaKhomutovskyi => "announcement_khomutovskyi.ogg".to_string(),
+            AirAlert => "announcement_air_alert.ogg".to_string(),
+        }
     }
 
     pub async fn trigger_ceremony(&self) {
