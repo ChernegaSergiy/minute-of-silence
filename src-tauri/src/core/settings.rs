@@ -56,6 +56,15 @@ pub struct Settings {
     /// Show a system notification N minutes before the ceremony (0 = immediately).
     /// Valid range: 0–10.
     pub reminder_minutes_before: u8,
+
+    /// Selected announcement voice/version.
+    pub announcement_voice: AnnouncementVoice,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnnouncementVoice {
+    BohdanHdal,
 }
 
 impl Default for Settings {
@@ -75,6 +84,7 @@ impl Default for Settings {
             late_start_grace_minutes: 1,
             reminder_enabled: false,
             reminder_minutes_before: 5,
+            announcement_voice: AnnouncementVoice::BohdanHdal,
         }
     }
 }
