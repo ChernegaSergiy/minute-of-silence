@@ -7,7 +7,7 @@ pub mod settings;
 
 use crate::core::audio::AudioEngine;
 use crate::core::platform::Platform;
-use crate::core::settings::{AnnouncementVoice, AudioPreset};
+use crate::core::settings::AudioPreset;
 use crate::state::AppState;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager};
