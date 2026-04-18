@@ -271,16 +271,6 @@ impl CeremonyScheduler {
         Local::now()
     }
 
-    fn get_announcement_filename(&self, voice: AnnouncementVoice) -> String {
-        use crate::core::settings::AnnouncementVoice::*;
-        match voice {
-            BohdanHdal => "announcement.ogg".to_string(),
-            SoniaSotnyk => "announcement_sotnyk.ogg".to_string(),
-            DaniaKhomutovskyi => "announcement_khomutovskyi.ogg".to_string(),
-            AirAlert => "announcement_air_alert.ogg".to_string(),
-        }
-    }
-
     pub async fn trigger_ceremony(&self) {
         let platform = crate::core::platform::get_platform();
         let manager = CeremonyManager::new(self.app.clone(), platform, Arc::clone(&self.audio));
