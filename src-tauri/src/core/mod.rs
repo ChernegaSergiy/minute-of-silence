@@ -7,7 +7,7 @@ pub mod settings;
 
 use crate::core::audio::AudioEngine;
 use crate::core::platform::Platform;
-use crate::core::settings::AudioPreset;
+use crate::core::settings::{AnnouncementVoice, AudioPreset};
 use crate::state::AppState;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager};
@@ -35,7 +35,14 @@ impl CeremonyManager {
     }
 
     pub async fn run_ceremony(&self) {
-        let (should_pause_players, volume_priority, auto_unmute, target_volume, preset) = {
+        let (
+            should_pause_players,
+            volume_priority,
+            auto_unmute,
+            target_volume,
+            preset,
+            announcement_voice,
+        ) = {
             let state = self.app.state::<AppState>();
             let inner = state.lock();
             (
@@ -44,6 +51,7 @@ impl CeremonyManager {
                 inner.settings.auto_unmute,
                 inner.settings.volume,
                 inner.settings.preset,
+                inner.settings.announcement_voice,
             )
         };
 
@@ -90,7 +98,7 @@ impl CeremonyManager {
         let platform_handle = platform::get_platform();
 
         std::thread::spawn(move || {
-            if let Err(e) = audio_engine.play_preset(preset, target_volume) {
+            if let Err(e) = audio_engine.play_preset(preset, target_volume, announcement_voice) {
                 log::error!("Ceremony audio error: {}", e);
             }
 
