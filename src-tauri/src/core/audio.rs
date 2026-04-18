@@ -225,11 +225,28 @@ impl AudioEngine {
                 let announcement_file = self.get_announcement_filename(voice);
                 let announcement = self.get_path(&announcement_file)?;
                 let metronome = self.get_path("metronome.ogg")?;
+
+                if let AnnouncementVoice::AirAlert = voice {
+                    if let Ok(source) = Decoder::new(BufReader::new(File::open(&announcement)?)) {
+                        player.append(source);
+                    }
+                    if self.wait_player_interruptible(&player, start_counter) {
+                        return Ok(());
+                    }
+                    if self.sleep_interruptible(Duration::from_secs(1), start_counter) {
+                        return Ok(());
+                    }
+                    if let Ok(source) = Decoder::new(BufReader::new(File::open(&metronome)?)) {
+                        player.append(source);
+                    }
+                    return Ok(());
+                }
+
                 let ending_file = match voice {
                     AnnouncementVoice::BohdanHdal => "ending_heroes.ogg",
                     AnnouncementVoice::SoniaSotnyk => "ending_sotnyk.ogg",
                     AnnouncementVoice::DaniaKhomutovskyi => "ending_khomutovskyi.ogg",
-                    AnnouncementVoice::AirAlert => "ending_heroes.ogg",
+                    AnnouncementVoice::AirAlert => unreachable!(),
                 };
                 let ending = self.get_path(ending_file)?;
 
