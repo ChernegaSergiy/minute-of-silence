@@ -9,7 +9,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
-use crate::core::settings::AudioPreset;
+use crate::core::settings::{AnnouncementVoice, AudioPreset};
 use crate::error::{AppError, Result};
 
 /// Audio engine for ceremony playback.
@@ -104,7 +104,12 @@ impl AudioEngine {
         Ok(Duration::from_secs(2))
     }
 
-    pub fn play_preset(&self, preset: AudioPreset, volume: u8) -> Result<()> {
+    pub fn play_preset(
+        &self,
+        preset: AudioPreset,
+        volume: u8,
+        voice: AnnouncementVoice,
+    ) -> Result<()> {
         let start_counter = self.stop_counter.load(Ordering::SeqCst);
 
         let sink = DeviceSinkBuilder::open_default_sink()
@@ -116,8 +121,8 @@ impl AudioEngine {
         let volume_float = volume as f32 / 100.0;
         player.set_volume(volume_float);
 
-        match preset {
-            AudioPreset::VoiceMetronome => {
+        match (preset, voice) {
+            (AudioPreset::VoiceMetronome, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -131,7 +136,7 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            AudioPreset::MetronomeOnly => {
+            (AudioPreset::MetronomeOnly, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -140,7 +145,7 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            AudioPreset::VoiceSilenceBell => {
+            (AudioPreset::VoiceSilenceBell, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -162,7 +167,7 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            AudioPreset::VoiceSilence => {
+            (AudioPreset::VoiceSilence, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -178,7 +183,7 @@ impl AudioEngine {
                 }
                 return Ok(());
             }
-            AudioPreset::VoiceMetronomeAnthem => {
+            (AudioPreset::VoiceMetronomeAnthem, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -209,7 +214,7 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            AudioPreset::MetronomeAnthem => {
+            (AudioPreset::MetronomeAnthem, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -228,7 +233,7 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            AudioPreset::BellSilenceBell => {
+            (AudioPreset::BellSilenceBell, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -249,7 +254,7 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            AudioPreset::BellMetronomeBell => {
+            (AudioPreset::BellMetronomeBell, _) => {
                 if self.is_stopped(start_counter) {
                     return Ok(());
                 }
@@ -280,7 +285,7 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            AudioPreset::Silence => {
+            (AudioPreset::Silence, _) => {
                 // No audio, just wait for 60 seconds
                 if self.sleep_interruptible(Duration::from_secs(60), start_counter) {
                     return Ok(());
