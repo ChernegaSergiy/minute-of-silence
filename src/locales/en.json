@@ -56,6 +56,8 @@
       "label": "Announcement voice",
       "description": "Select voice for the pre-ceremony announcement.",
       "bohdan_hdal": "Bohdan Hdal",
+      "sonia_sotnyk": "Sonia Sotnyk (Vshanui)",
+      "dania_khomutovskyi": "Dania Khomutovskyi (Vshanui)",
       "air_alert": "From Air Alert app"
     },
     "presets": {
