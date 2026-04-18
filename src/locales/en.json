@@ -66,6 +66,7 @@
       "voice_silence_bell": "Voice + silence + bell",
       "voice_silence": "Voice + silence",
       "voice_metronome_anthem": "Voice + metronome + anthem",
+      "voice_metronome_ending": "Voice + metronome + ending",
       "metronome_anthem": "Metronome + anthem",
       "bell_silence_bell": "Bell + silence + bell",
       "bell_metronome_bell": "Bell + metronome + bell",
