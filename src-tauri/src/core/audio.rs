@@ -218,8 +218,43 @@ impl AudioEngine {
                     player.append(source);
                 }
             }
-            (AudioPreset::VoiceMetronomeEnding, _) => {
-                todo!("VoiceMetronomeEnding not implemented yet")
+            (AudioPreset::VoiceMetronomeEnding, voice) => {
+                if self.is_stopped(start_counter) {
+                    return Ok(());
+                }
+                let announcement_file = self.get_announcement_filename(voice);
+                let announcement = self.get_path(&announcement_file)?;
+                let metronome = self.get_path("metronome.ogg")?;
+                let ending_file = match voice {
+                    AnnouncementVoice::BohdanHdal => "ending_heroes.ogg",
+                    AnnouncementVoice::SoniaSotnyk => "ending_sotnyk.ogg",
+                    AnnouncementVoice::DaniaKhomutovskyi => "ending_khomutovskyi.ogg",
+                    AnnouncementVoice::AirAlert => "ending_heroes.ogg",
+                };
+                let ending = self.get_path(ending_file)?;
+
+                if let Ok(source) = Decoder::new(BufReader::new(File::open(&announcement)?)) {
+                    player.append(source);
+                }
+
+                if self.wait_player_interruptible(&player, start_counter) {
+                    return Ok(());
+                }
+                if self.sleep_interruptible(Duration::from_secs(1), start_counter) {
+                    return Ok(());
+                }
+
+                if let Ok(source) = Decoder::new(BufReader::new(File::open(&metronome)?)) {
+                    player.append(source);
+                }
+
+                if self.sleep_interruptible(Duration::from_secs(30), start_counter) {
+                    return Ok(());
+                }
+
+                if let Ok(source) = Decoder::new(BufReader::new(File::open(&ending)?)) {
+                    player.append(source);
+                }
             }
             (AudioPreset::MetronomeAnthem, _) => {
                 if self.is_stopped(start_counter) {
