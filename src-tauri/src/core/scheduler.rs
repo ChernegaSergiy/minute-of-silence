@@ -1,6 +1,7 @@
 //! Ceremony scheduler and execution logic.
 
 use chrono::{Local, NaiveDate, NaiveTime, Timelike};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
@@ -15,28 +16,48 @@ use crate::state::AppState;
 pub struct CeremonyScheduler {
     app: AppHandle,
     audio: Arc<AudioEngine>,
-    announcement_duration: Duration,
+    voice_durations: HashMap<AnnouncementVoice, Duration>,
     bell_duration: Duration,
 }
 
 impl CeremonyScheduler {
     pub fn new(app: AppHandle) -> Self {
         let audio = app.state::<AppState>().audio.clone();
-        let announcement_duration = audio
-            .get_duration("announcement.ogg")
-            .unwrap_or(Duration::ZERO);
         let bell_duration = audio.get_duration("bell.ogg").unwrap_or(Duration::ZERO);
-        log::info!(
-            "Announcement duration: {:.2}s",
-            announcement_duration.as_secs_f32()
-        );
+
+        let mut voice_durations = HashMap::new();
+        for voice in [
+            AnnouncementVoice::BohdanHdal,
+            AnnouncementVoice::SoniaSotnyk,
+            AnnouncementVoice::DaniaKhomutovskyi,
+            AnnouncementVoice::AirAlert,
+        ] {
+            let filename = match voice {
+                AnnouncementVoice::BohdanHdal => "announcement.ogg".to_string(),
+                AnnouncementVoice::SoniaSotnyk => "announcement_sotnyk.ogg".to_string(),
+                AnnouncementVoice::DaniaKhomutovskyi => "announcement_khomutovskyi.ogg".to_string(),
+                AnnouncementVoice::AirAlert => "announcement_air_alert.ogg".to_string(),
+            };
+            let duration = audio.get_duration(&filename).unwrap_or(Duration::ZERO);
+            voice_durations.insert(voice, duration);
+            log::info!(
+                "Voice {:?} ({}) duration: {:.2}s",
+                voice,
+                filename,
+                duration.as_secs_f32()
+            );
+        }
         log::info!("Bell duration: {:.2}s", bell_duration.as_secs_f32());
         Self {
             app,
             audio,
-            announcement_duration,
+            voice_durations,
             bell_duration,
         }
+    }
+
+    fn get_default_duration(&self) -> Duration {
+        *self.voice_durations.get(&AnnouncementVoice::BohdanHdal).unwrap()
     }
 
     /// Run the main scheduler loop.
@@ -122,10 +143,7 @@ impl CeremonyScheduler {
                         false
                     } else {
                         let voice = inner.settings.announcement_voice;
-                        let voice_duration = self
-                            .audio
-                            .get_duration(&self.get_announcement_filename(voice))
-                            .unwrap_or(self.announcement_duration);
+                        let voice_duration = *self.voice_durations.get(&voice).unwrap_or(&self.get_default_duration());
                         let compensation = Self::get_compensation_duration(
                             inner.settings.preset,
                             voice_duration,
