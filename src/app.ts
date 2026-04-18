@@ -260,6 +260,17 @@ export class App {
               </select>
             </div>
 
+            <!-- Voice selection -->
+            <div class="control-row" id="voiceSelectRow">
+              <div class="control-row__info">
+                <span class="control-row__label">${t("controls.voice.label")}</span>
+                <span class="control-row__description">${t("controls.voice.description")}</span>
+              </div>
+              <select id="voiceSelect" class="select">
+                <option value="bohdan_hdal" ${this.settings.announcementVoice === "bohdan_hdal" ? "selected" : ""}>${t("controls.voice.bohdan_hdal")}</option>
+              </select>
+            </div>
+
             <!-- Volume -->
             <div class="control-row control-row--column">
               <div class="control-row__header">
@@ -521,7 +532,7 @@ export class App {
       this.checkDirty();
     });
  
-    // Preset select
+// Preset select
     this.q<HTMLSelectElement>("#presetSelect").addEventListener("change", (e) => {
       this.settings = {
         ...this.settings,
@@ -529,7 +540,16 @@ export class App {
       };
       this.checkDirty();
     });
- 
+
+    // Voice select
+    this.q<HTMLSelectElement>("#voiceSelect").addEventListener("change", (e) => {
+      this.settings = {
+        ...this.settings,
+        announcementVoice: (e.target as HTMLSelectElement).value as Settings["announcementVoice"],
+      };
+      this.checkDirty();
+    });
+  
     // Volume slider
     const volumeRange = this.q<HTMLInputElement>("#volumeRange");
     const volumeValue = this.q<HTMLElement>("#volumeValue");

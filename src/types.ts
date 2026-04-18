@@ -1,3 +1,7 @@
+// Mirror of Rust `AnnouncementVoice` enum
+
+export type AnnouncementVoice = "bohdan_hdal";
+
 // Mirror of Rust `Settings` struct
 
 export type AudioPreset =
@@ -28,6 +32,8 @@ export interface Settings {
   reminderEnabled: boolean;
   /** Minutes before 09:00 to show reminder. 0 = immediately. */
   reminderMinutesBefore: number; // 0–10
+  /** Selected announcement voice. */
+  announcementVoice: AnnouncementVoice;
 }
 
 // Mirror of Rust `StatusSnapshot` struct
@@ -56,4 +62,5 @@ export const DEFAULT_SETTINGS: Settings = {
   lateStartGraceMinutes: 1,
   reminderEnabled: false,
   reminderMinutesBefore: 5,
+  announcementVoice: "bohdan_hdal",
 };
