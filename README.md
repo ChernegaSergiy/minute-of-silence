@@ -18,7 +18,7 @@ Minute of Silence is a lightweight desktop application built with [Tauri 2](http
 ## Features
 
 - **Automatic Daily Activation**: Activates at 09:00 with NTP time correction.
-- **Nine Audio Presets**: Voice announcement combined with silence, bell, metronome, and/or national anthem, plus a silent "Silence" preset.
+- **Ten Audio Presets**: Voice announcement combined with silence, bell, metronome, national anthem, and/or ending, plus a silent "Silence" preset.
 - **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony (supports MPRIS on Linux).
 - **Visual Status**: A status indicator appears in the main window during the ceremony (full-screen overlay planned).
 - **Skip Next**: Suppresses a single upcoming activation via the tray menu or the main window.
@@ -36,10 +36,11 @@ Minute of Silence is a lightweight desktop application built with [Tauri 2](http
 | 3 | Voice + Silence + Bell | Announcement, 60 s of silence, closing bell |
 | 4 | Voice + Silence | Announcement followed by 60 s of silence |
 | 5 | Voice + Metronome + Anthem | Announcement, metronome, then anthem |
-| 6 | Metronome + Anthem | Metronome followed by the national anthem |
-| 7 | Bell + Silence + Bell | Bell, 60 s of silence, closing bell |
-| 8 | Bell + Metronome + Bell | Bell, metronome, closing bell |
-| 9 | Silence | Visual overlay and pause other players only, no sound |
+| 6 | Voice + Metronome + Ending | Announcement, metronome, then ending ("Slava Ukrajini" or "Vichna slava Herojam") |
+| 7 | Metronome + Anthem | Metronome followed by the national anthem |
+| 8 | Bell + Silence + Bell | Bell, 60 s of silence, closing bell |
+| 9 | Bell + Metronome + Bell | Bell, metronome, closing bell |
+| 10 | Silence | Visual overlay and pause other players only, no sound |
 
 ## Installation
 
