@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-04-19
+
+### Added
+- New ending voice from Bohdan Hdal with "Slava Ukrajini".
+
+### Changed
+- Updated ending voice for Bohdan Hdal to use new "Slava Ukrajini" recording.
+
+### Removed
+- Removed unused ending_heroes.ogg file.
+
 ## [0.6.4] - 2026-04-19
 
 ### Added
