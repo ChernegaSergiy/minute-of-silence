@@ -252,7 +252,7 @@ impl AudioEngine {
                 }
 
                 let ending_file = match voice {
-                    AnnouncementVoice::BohdanHdal => "ending_heroes.ogg",
+                    AnnouncementVoice::BohdanHdal => "ending.ogg",
                     AnnouncementVoice::SoniaSotnyk => "ending_sotnyk.ogg",
                     AnnouncementVoice::DaniaKhomutovskyi => "ending_khomutovskyi.ogg",
                     AnnouncementVoice::AirAlert => unreachable!(),
