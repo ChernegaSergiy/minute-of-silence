@@ -37,7 +37,7 @@ Minute of Silence is a lightweight desktop application built with [Tauri 2](http
 | 3 | Voice + Silence + Bell | Announcement, 60 s of silence, closing bell |
 | 4 | Voice + Silence | Announcement followed by 60 s of silence |
 | 5 | Voice + Metronome + Anthem | Announcement, metronome, then anthem |
-| 6 | Voice + Metronome + Ending | Announcement, metronome, then ending ("Slava Ukrajini" or "Vichna slava Herojam") |
+| 6 | Voice + Metronome + Ending | Announcement, metronome, then ending ("Slava Ukrajini") |
 | 7 | Metronome + Anthem | Metronome followed by the national anthem |
 | 8 | Bell + Silence + Bell | Bell, 60 s of silence, closing bell |
 | 9 | Bell + Metronome + Bell | Bell, metronome, closing bell |
@@ -47,7 +47,7 @@ Minute of Silence is a lightweight desktop application built with [Tauri 2](http
 
 | # | Voice | Description |
 |---|-------|-------------|
-| 1 | Bohdan Hdal | Original voice with "Vichna slava Herojam" ending |
+| 1 | Bohdan Hdal | Original voice with "Slava Ukrajini" ending |
 | 2 | Sonia Sotnyk | Voice from Vshanui with "Slava Ukrajini" ending |
 | 3 | Dania Khomutovskyi | Voice from Vshanui with "Slava Ukrajini" ending |
 | 4 | Air Alert | Voice from the Air Alert app (announcement only, no ending) |
