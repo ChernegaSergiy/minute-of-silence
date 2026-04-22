@@ -34,12 +34,7 @@ pub fn create_autostart_task(exe_path: &str) -> Result<(), String> {
 
     let output = Command::new("schtasks")
         .args([
-            "/Create",
-            "/TN", task_name,
-            "/TR", &quoted,
-            "/SC", "ONLOGON",
-            "/RL", "LIMITED",
-            "/F",
+            "/Create", "/TN", task_name, "/TR", &quoted, "/SC", "ONLOGON", "/RL", "LIMITED", "/F",
         ])
         .output()
         .map_err(|e| e.to_string())?;
