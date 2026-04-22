@@ -38,6 +38,7 @@ pub fn remove_autostart_task() -> Result<(), String> {
     }
 }
 
+#[allow(dead_code)]
 pub fn is_autostart_task_exists() -> bool {
     let task_name = "MinuteOfSilence";
 
