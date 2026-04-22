@@ -16,10 +16,9 @@ pub use state::AppState;
 #[cfg(target_os = "linux")]
 mod platform_linux;
 #[cfg(target_os = "windows")]
-mod platform_windows;
-#[cfg(target_os = "windows")]
 mod platform_scheduler_task;
-mod msix;
+#[cfg(target_os = "windows")]
+mod platform_windows;
 
 /// Application entry point — called from `main.rs`.
 pub fn run() {
@@ -66,20 +65,28 @@ pub fn run() {
             #[cfg(not(test))]
             {
                 let is_snap = std::env::var("SNAP").is_ok();
-                let is_msix = crate::msix::is_msix_package();
+
+                #[cfg(target_os = "windows")]
+                let is_msix = std::env::var("APP_ID").is_ok();
+
+                #[cfg(not(target_os = "windows"))]
+                let is_msix = false;
 
                 if is_msix {
                     // Use Windows Task Scheduler for MSIX packages
-                    use crate::platform_scheduler_task;
-                    if settings.autostart_enabled {
-                        if let Ok(exe_path) = std::env::current_exe() {
-                            if let Err(e) = scheduler_task::create_autostart_task(&exe_path.to_string_lossy()) {
-                                log::error!("Failed to create autostart task: {}", e);
+                    #[cfg(target_os = "windows")]
+                    {
+                        use crate::platform_scheduler_task;
+                        if settings.autostart_enabled {
+                            if let Ok(exe_path) = std::env::current_exe() {
+                                if let Err(e) = crate::platform_scheduler_task::create_autostart_task(&exe_path.to_string_lossy()) {
+                                    log::error!("Failed to create autostart task: {}", e);
+                                }
                             }
-                        }
-                    } else {
-                        if let Err(e) = scheduler_task::remove_autostart_task() {
-                            log::error!("Failed to remove autostart task: {}", e);
+                        } else {
+                            if let Err(e) = crate::platform_scheduler_task::remove_autostart_task() {
+                                log::error!("Failed to remove autostart task: {}", e);
+                            }
                         }
                     }
                 } else if !is_snap {
