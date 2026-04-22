@@ -31,6 +31,7 @@ pub fn create_autostart_task(exe_path: &str) -> Result<(), String> {
 #[allow(dead_code)]
 pub fn remove_autostart_task() -> Result<(), String> {
     let task_name = "MinuteOfSilence";
+    log::info!("Removing Windows Task Scheduler task");
 
     let output = Command::new("schtasks")
         .args(["/Delete", "/TN", task_name, "/F"])
@@ -38,9 +39,12 @@ pub fn remove_autostart_task() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if output.status.success() {
+        log::info!("Successfully removed autostart task");
         Ok(())
     } else {
-        Err(String::from_utf8_lossy(&output.stderr).to_string())
+        let error = String::from_utf8_lossy(&output.stderr).to_string();
+        log::error!("Failed to remove autostart task: {}", error);
+        Err(error)
     }
 }
 
