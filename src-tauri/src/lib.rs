@@ -76,7 +76,6 @@ pub fn run() {
                     // Use Windows Task Scheduler for MSIX packages
                     #[cfg(target_os = "windows")]
                     {
-                        use crate::platform_scheduler_task;
                         if settings.autostart_enabled {
                             if let Ok(exe_path) = std::env::current_exe() {
                                 if let Err(e) = crate::platform_scheduler_task::create_autostart_task(&exe_path.to_string_lossy()) {
