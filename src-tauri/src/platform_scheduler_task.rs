@@ -1,5 +1,6 @@
 use std::process::Command;
 
+#[allow(dead_code)]
 pub fn create_autostart_task(exe_path: &str) -> Result<(), String> {
     let task_name = "MinuteOfSilence";
 
@@ -23,6 +24,7 @@ pub fn create_autostart_task(exe_path: &str) -> Result<(), String> {
     }
 }
 
+#[allow(dead_code)]
 pub fn remove_autostart_task() -> Result<(), String> {
     let task_name = "MinuteOfSilence";
 
