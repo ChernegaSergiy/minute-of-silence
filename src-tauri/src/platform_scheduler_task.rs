@@ -7,6 +7,7 @@ use std::process::Command;
 /// which is the protected directory where the OS unpacks MSIX packages.
 /// We intentionally avoid `GetCurrentPackageFullName` WinAPI here to keep the
 /// dependency surface minimal — the path check is sufficient for our purposes.
+#[allow(dead_code)]
 pub fn is_msix_package() -> bool {
     std::env::current_exe()
         .map(|p| {
