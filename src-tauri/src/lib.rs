@@ -17,6 +17,7 @@ pub use state::AppState;
 mod platform_linux;
 #[cfg(target_os = "windows")]
 mod platform_windows;
+mod msix;
 
 /// Application entry point — called from `main.rs`.
 pub fn run() {
