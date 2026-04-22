@@ -18,7 +18,7 @@ mod platform_linux;
 #[cfg(target_os = "windows")]
 mod platform_windows;
 #[cfg(target_os = "windows")]
-mod scheduler_task;
+mod platform_scheduler_task;
 mod msix;
 
 /// Application entry point — called from `main.rs`.
@@ -70,7 +70,7 @@ pub fn run() {
 
                 if is_msix {
                     // Use Windows Task Scheduler for MSIX packages
-                    use crate::platform::scheduler_task;
+                    use crate::platform_scheduler_task;
                     if settings.autostart_enabled {
                         if let Ok(exe_path) = std::env::current_exe() {
                             if let Err(e) = scheduler_task::create_autostart_task(&exe_path.to_string_lossy()) {
