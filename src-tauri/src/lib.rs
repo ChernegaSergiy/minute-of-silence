@@ -61,35 +61,23 @@ pub fn run() {
             // --- 3. Autostart & Snap Logic ---
             let is_hidden = std::env::args().any(|arg| arg == "--hidden");
 
-            // Sync the actual OS autostart file with settings.
             #[cfg(not(test))]
             {
                 let is_snap = std::env::var("SNAP").is_ok();
 
                 #[cfg(target_os = "windows")]
-                let is_msix = std::env::var("APP_ID").is_ok();
+                let is_msix = crate::platform_scheduler_task::is_msix_package();
 
                 #[cfg(not(target_os = "windows"))]
                 let is_msix = false;
 
                 if is_msix {
-                    // Use Windows Task Scheduler for MSIX packages
-                    #[cfg(target_os = "windows")]
-                    {
-                        if settings.autostart_enabled {
-                            if let Ok(exe_path) = std::env::current_exe() {
-                                if let Err(e) = crate::platform_scheduler_task::create_autostart_task(&exe_path.to_string_lossy()) {
-                                    log::error!("Failed to create autostart task: {}", e);
-                                }
-                            }
-                        } else {
-                            if let Err(e) = crate::platform_scheduler_task::remove_autostart_task() {
-                                log::error!("Failed to remove autostart task: {}", e);
-                            }
-                        }
-                    }
+                    log::info!(
+                        "Running as MSIX package — autostart is managed by the StartupTask \
+                         manifest extension (autostart_enabled = {}).",
+                        settings.autostart_enabled
+                    );
                 } else if !is_snap {
-                    // Use standard autostart plugin for non-sandboxed packages
                     use tauri_plugin_autostart::ManagerExt;
                     let autostart_manager = app.autolaunch();
                     if settings.autostart_enabled {
@@ -98,7 +86,6 @@ pub fn run() {
                         let _ = autostart_manager.disable();
                     }
                 } else if is_hidden && !settings.autostart_enabled {
-                    // If started automatically by Snap but user disabled autostart in settings, exit.
                     log::info!("Autostart is disabled in settings. Exiting Snap instance launched with --hidden.");
                     std::process::exit(0);
                 }
@@ -111,7 +98,6 @@ pub fn run() {
                 if is_hidden {
                     window.hide()?;
                 }
-                // Hide from taskbar; the app lives in the tray only.
                 #[cfg(target_os = "windows")]
                 window.set_skip_taskbar(true)?;
             }
@@ -135,7 +121,6 @@ pub fn run() {
             commands::finish_ceremony_now,
         ])
         .on_window_event(|window, event| {
-            // Close button minimises to tray instead of quitting.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();
