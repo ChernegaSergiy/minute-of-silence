@@ -55,6 +55,8 @@ windows = { version = "0.62.2", features = [
     "Win32_System_Com",
     "Foundation_Collections",
     "Media_Control",
+    "UI_Notifications",
+    "Data_Xml_Dom",
 ] }
 windows-future = "0.3.2"
 
