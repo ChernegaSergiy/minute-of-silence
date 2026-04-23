@@ -19,6 +19,8 @@ mod platform_linux;
 mod platform_scheduler_task;
 #[cfg(target_os = "windows")]
 mod platform_windows;
+#[cfg(target_os = "windows")]
+mod platform_windows_notifications;
 
 /// Application entry point — called from `main.rs`.
 pub fn run() {
