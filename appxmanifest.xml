@@ -8,8 +8,9 @@
   xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
   xmlns:desktop6="http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap2 uap3 uap10 desktop desktop6 rescap">
+  IgnorableNamespaces="uap uap2 uap3 uap10 desktop desktop6 com rescap">
 
   <Identity
     Name="BF570F0A.313786C1665D6"
@@ -55,6 +56,21 @@
             Enabled="true"
             DisplayName="Хвилина мовчання" />
         </desktop:Extension>
+        <desktop:Extension
+          Category="windows.toastNotificationActivation">
+          <desktop:ToastNotificationActivation
+            ToastActivatorCLSID="A1B2C3D4-E5F6-7890-ABCD-EF1234567890" />
+        </desktop:Extension>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer
+              Executable="minute-of-silence.exe"
+              Arguments="-ToastActivated"
+              DisplayName="Toast activator">
+              <com:Class Id="A1B2C3D4-E5F6-7890-ABCD-EF1234567890" DisplayName="Toast activator"/>
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
       </Extensions>
     </Application>
   </Applications>
