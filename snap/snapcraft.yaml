@@ -44,6 +44,7 @@ parts:
       - rustup
     stage-packages:
       - libasound2-plugins
+      - libpulse0
     override-build: |
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
@@ -58,10 +59,6 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin/audio
       cp src-tauri/target/release/minute-of-silence $SNAPCRAFT_PART_INSTALL/bin/
       cp src-tauri/audio/*.ogg $SNAPCRAFT_PART_INSTALL/bin/audio/
-      
-      # Copy custom minimal ALSA config (Pulse redirect)
-      mkdir -p $SNAPCRAFT_PART_INSTALL/etc
-      cp snap/local/asound.conf $SNAPCRAFT_PART_INSTALL/etc/asound.conf
       
       # Copy icons to meta/gui (standard for Snap icons)
       mkdir -p $SNAPCRAFT_PART_INSTALL/meta/gui
@@ -79,8 +76,8 @@ apps:
     autostart: minute-of-silence.desktop
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
-      # Direct redirection to PulseAudio via minimal config
-      ALSA_CONFIG_PATH: $SNAP/etc/asound.conf
+      # Help ALSA find its plugins inside the snap
+      ALSA_PLUGIN_DIR: $SNAP/usr/lib/x86_64-linux-gnu/alsa-lib
     # Required permissions (interfaces)
     plugs:
       - network        # For NTP synchronization
