@@ -14,9 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - MSIX StartupTask extension for autostart in Microsoft Store packages.
 - Windows Task Scheduler module (platform_scheduler_task.rs).
-- Voice announcements from Sonia Sotnyk and Daria Khomutovskyi.
 
 ### Changed
+- Improved voice announcements from Sonia Sotnyk and Daria Khomutovskyi.
 - Version bump to 0.6.6.
 - Bump i18next, typescript-eslint, tokio, and vitest dependencies.
 
