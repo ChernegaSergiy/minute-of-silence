@@ -60,6 +60,10 @@ parts:
       cp src-tauri/target/release/minute-of-silence $SNAPCRAFT_PART_INSTALL/bin/
       cp src-tauri/audio/*.ogg $SNAPCRAFT_PART_INSTALL/bin/audio/
       
+      # Copy custom minimal ALSA config (Pulse redirect)
+      mkdir -p $SNAPCRAFT_PART_INSTALL/etc
+      cp snap/local/asound.conf $SNAPCRAFT_PART_INSTALL/etc/asound.conf
+      
       # Copy icons to meta/gui (standard for Snap icons)
       mkdir -p $SNAPCRAFT_PART_INSTALL/meta/gui
       cp snap/gui/minute-of-silence.png $SNAPCRAFT_PART_INSTALL/meta/gui/
@@ -77,7 +81,7 @@ apps:
     environment:
       TAURI_ENV_RESOURCES_PATH: $SNAP/bin
       # Help ALSA find its configuration and plugins inside the snap
-      ALSA_CONFIG_PATH: $SNAP/usr/share/alsa/alsa.conf
+      ALSA_CONFIG_PATH: $SNAP/etc/asound.conf
       ALSA_PLUGIN_DIR: $SNAP/usr/lib/x86_64-linux-gnu/alsa-lib
     # Required permissions (interfaces)
     plugs:
