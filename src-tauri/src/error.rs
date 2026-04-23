@@ -33,6 +33,9 @@ pub enum AppError {
 
     #[error("Settings error: {0}")]
     Settings(String),
+
+    #[error("Windows API error: {0}")]
+    Windows(String),
 }
 
 // Required so Tauri commands can return `Result<T, AppError>`.
