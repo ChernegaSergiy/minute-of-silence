@@ -13,10 +13,10 @@ pub use core::settings::{AudioPreset, Settings};
 pub use error::{AppError, Result};
 pub use state::AppState;
 
+#[cfg(target_os = "windows")]
+mod is_msix;
 #[cfg(target_os = "linux")]
 mod platform_linux;
-#[cfg(target_os = "windows")]
-mod platform_scheduler_task;
 #[cfg(target_os = "windows")]
 mod platform_windows;
 #[cfg(target_os = "windows")]
@@ -68,7 +68,7 @@ pub fn run() {
                 let is_snap = std::env::var("SNAP").is_ok();
 
                 #[cfg(target_os = "windows")]
-                let is_msix = crate::platform_scheduler_task::is_msix_package();
+                let is_msix = crate::is_msix::is_msix_package();
 
                 #[cfg(not(target_os = "windows"))]
                 let is_msix = false;
