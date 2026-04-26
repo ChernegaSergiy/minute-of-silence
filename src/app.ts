@@ -73,7 +73,15 @@ export class App {
         this.showOverlay();
       }
     });
-    onCeremonyEnd(() => this.hideOverlay());
+    onCeremonyEnd(async () => {
+      this.hideOverlay();
+      const win = getCurrentWindow();
+      if (this.wasWindowMinimized) {
+        await win.minimize();
+      } else if (!this.wasWindowVisible) {
+        await win.hide();
+      }
+    });
     
     // Initial check in case app started during ceremony
     if (this.status.ceremonyActive && this.settings.showVisualOverlay) {
