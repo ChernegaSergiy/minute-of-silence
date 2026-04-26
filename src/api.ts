@@ -6,6 +6,7 @@
  */
 
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Settings, StatusSnapshot } from "./types";
 
 declare global {
@@ -80,4 +81,17 @@ export function onCeremonyStart(callback: () => void): Promise<UnlistenFn> {
 
 export function onCeremonyEnd(callback: () => void): Promise<UnlistenFn> {
   return listen(CEREMONY_END_EVENT, callback);
+}
+
+export async function bringWindowToFront(): Promise<void> {
+  const win = getCurrentWindow();
+  const isMin = await win.isMinimized();
+  if (isMin) {
+    await win.unminimize();
+  }
+  const isVisible = await win.isVisible();
+  if (!isVisible) {
+    await win.show();
+  }
+  await win.setFocus();
 }
