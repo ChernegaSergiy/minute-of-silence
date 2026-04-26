@@ -18,10 +18,10 @@ import {
   triggerCeremonyNow,
   onCeremonyStart,
   onCeremonyEnd,
+  bringWindowToFront,
 } from "./api";
 
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
 import { getVersion } from "@tauri-apps/api/app";
 import type { Settings, StatusSnapshot, AudioPreset } from "./types";
@@ -62,16 +62,7 @@ export class App {
 
   private initOverlay(): void {
     onCeremonyStart(async () => {
-      const win = getCurrentWindow();
-      const isMin = await win.isMinimized();
-      if (isMin) {
-        await win.unminimize();
-      }
-      const isVisible = await win.isVisible();
-      if (!isVisible) {
-        await win.show();
-      }
-      await win.setFocus();
+      await bringWindowToFront();
       if (this.settings.showVisualOverlay) {
         this.showOverlay();
       }
@@ -651,16 +642,7 @@ export class App {
  
   private async subscribeToBackendEvents(): Promise<void> {
     await onCeremonyStart(async () => {
-      const win = getCurrentWindow();
-      const isMin = await win.isMinimized();
-      if (isMin) {
-        await win.unminimize();
-      }
-      const isVisible = await win.isVisible();
-      if (!isVisible) {
-        await win.show();
-      }
-      await win.setFocus();
+      await bringWindowToFront();
       console.log("Ceremony start event received");
       this.refreshStatus();
     });
