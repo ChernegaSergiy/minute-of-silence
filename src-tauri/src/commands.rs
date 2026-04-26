@@ -93,9 +93,7 @@ pub async fn sync_ntp_now(state: State<'_, AppState>) -> Result<StatusSnapshot> 
 #[tauri::command]
 pub async fn trigger_ceremony_now(app: AppHandle) -> Result<()> {
     log::info!("Manual ceremony trigger requested");
-    tauri::async_runtime::spawn(async move {
-        crate::core::scheduler::trigger_now(app).await;
-    });
+    crate::core::scheduler::trigger_now(app).await;
     Ok(())
 }
 
