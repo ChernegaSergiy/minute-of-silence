@@ -9,8 +9,6 @@
     "core:window:allow-unminimize",
     "core:window:allow-show",
     "core:window:allow-set-focus",
-    "core:window:allow-is-minimized",
-    "core:window:allow-is-visible",
     "autostart:default",
     "notification:default",
     "shell:default",
