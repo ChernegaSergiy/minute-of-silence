@@ -1,10 +1,10 @@
 //! Main library entry point for the Minute of Silence application.
 
-mod commands;
+mod app;
 mod core;
 mod error;
+mod platform;
 mod state;
-mod tray;
 
 use tauri::Manager;
 rust_i18n::i18n!("locales");
@@ -12,15 +12,6 @@ rust_i18n::i18n!("locales");
 pub use core::settings::{AudioPreset, Settings};
 pub use error::{AppError, Result};
 pub use state::AppState;
-
-#[cfg(target_os = "windows")]
-mod is_msix;
-#[cfg(target_os = "linux")]
-mod platform_linux;
-#[cfg(target_os = "windows")]
-mod platform_windows;
-#[cfg(target_os = "windows")]
-mod platform_windows_notifications;
 
 /// Application entry point — called from `main.rs`.
 pub fn run() {
@@ -68,7 +59,7 @@ pub fn run() {
                 let is_snap = std::env::var("SNAP").is_ok();
 
                 #[cfg(target_os = "windows")]
-                let is_msix = crate::is_msix::is_msix_package();
+                let is_msix = crate::platform::is_msix_package();
 
                 #[cfg(not(target_os = "windows"))]
                 let is_msix = false;
@@ -86,7 +77,7 @@ pub fn run() {
                     // with the current setting (e.g. after a setting change
                     // that happened while snap was running).
                     #[cfg(target_os = "linux")]
-                    crate::platform_linux::autostart::manage(settings.autostart_enabled);
+                    crate::platform::linux::autostart::manage(settings.autostart_enabled);
 
                     if is_hidden && !settings.autostart_enabled {
                         log::info!(
@@ -107,7 +98,7 @@ pub fn run() {
             }
 
             // --- 4. UI Initialization ---
-            tray::build_tray(app)?;
+            app::tray::build_tray(app)?;
 
             if let Some(window) = app.get_webview_window("main") {
                 if is_hidden {
@@ -126,14 +117,14 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::get_settings,
-            commands::save_settings,
-            commands::get_status,
-            commands::sync_ntp_now,
-            commands::skip_next,
-            commands::unskip_next,
-            commands::trigger_ceremony_now,
-            commands::finish_ceremony_now,
+            app::commands::get_settings,
+            app::commands::save_settings,
+            app::commands::get_status,
+            app::commands::sync_ntp_now,
+            app::commands::skip_next,
+            app::commands::unskip_next,
+            app::commands::trigger_ceremony_now,
+            app::commands::finish_ceremony_now,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

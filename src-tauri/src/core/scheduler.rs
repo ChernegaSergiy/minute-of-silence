@@ -203,8 +203,8 @@ impl CeremonyScheduler {
         };
 
         #[cfg(target_os = "windows")]
-        if crate::is_msix::is_msix_package() {
-            match crate::platform_windows_notifications::send_toast(&title, &body) {
+        if crate::platform::is_msix_package() {
+            match crate::platform::windows::notifications::send_toast(&title, &body) {
                 Ok(_) => log::info!(
                     "Reminder notification sent via WinRT ({} min before)",
                     mins_before
@@ -296,7 +296,7 @@ impl CeremonyScheduler {
     }
 
     pub async fn trigger_ceremony(&self) {
-        let platform = crate::core::platform::get_platform();
+        let platform = crate::platform::get_platform();
         let manager = CeremonyManager::new(self.app.clone(), platform, Arc::clone(&self.audio));
         manager.run_ceremony().await;
     }

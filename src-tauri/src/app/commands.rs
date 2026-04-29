@@ -30,12 +30,12 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Setti
     if is_snap {
         // Snap: manage the .desktop file in $SNAP_USER_DATA/.config/autostart
         #[cfg(target_os = "linux")]
-        crate::platform_linux::autostart::manage(settings.autostart_enabled);
+        crate::platform::linux::autostart::manage(settings.autostart_enabled);
     } else {
         #[cfg(not(test))]
         {
             #[cfg(target_os = "windows")]
-            let is_msix = crate::is_msix::is_msix_package();
+            let is_msix = crate::platform::is_msix_package();
             #[cfg(not(target_os = "windows"))]
             let is_msix = false;
 
@@ -116,7 +116,7 @@ pub async fn trigger_ceremony_now(app: AppHandle) -> Result<()> {
 #[tauri::command]
 pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
     log::info!("Ceremony finish requested by audio engine");
-    let platform = crate::core::platform::get_platform();
+    let platform = crate::platform::get_platform();
     crate::core::CeremonyManager::finish_ceremony(app, platform).await;
     Ok(())
 }
