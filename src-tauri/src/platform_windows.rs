@@ -117,17 +117,6 @@ pub mod app_volume {
         }
     }
 
-    /// Return the current per-application session volume as a percentage (0–100).
-    pub fn get_volume() -> Result<u8> {
-        unsafe {
-            let volume = get_simple_audio_volume()?;
-            let level = volume
-                .GetMasterVolume()
-                .map_err(|e| AppError::Platform(e.to_string()))?;
-            Ok((level * 100.0) as u8)
-        }
-    }
-
     /// Set the per-application session volume (`level` in the range 0–100).
     ///
     /// This adjusts only our app's contribution to the audio mix and has no
@@ -138,28 +127,6 @@ pub mod app_volume {
             let clamped = (level as f32 / 100.0).clamp(0.0, 1.0);
             volume
                 .SetMasterVolume(clamped, std::ptr::null())
-                .map_err(|e| AppError::Platform(e.to_string()))?;
-            Ok(())
-        }
-    }
-
-    /// Return `true` if the current process's audio session is muted.
-    pub fn is_muted() -> Result<bool> {
-        unsafe {
-            let volume = get_simple_audio_volume()?;
-            let muted = volume
-                .GetMute()
-                .map_err(|e| AppError::Platform(e.to_string()))?;
-            Ok(muted.as_bool())
-        }
-    }
-
-    /// Mute or unmute the current process's audio session.
-    pub fn set_mute(mute: bool) -> Result<()> {
-        unsafe {
-            let volume = get_simple_audio_volume()?;
-            volume
-                .SetMute(mute, std::ptr::null())
                 .map_err(|e| AppError::Platform(e.to_string()))?;
             Ok(())
         }
