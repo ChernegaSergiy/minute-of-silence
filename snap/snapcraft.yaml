@@ -85,6 +85,7 @@ apps:
       ALSA_PLUGIN_DIR: $SNAP/usr/lib/x86_64-linux-gnu/alsa-lib
     # Required permissions (interfaces)
     plugs:
+      - dot-config-autostart
       - home
       - login-session-observe
       - network        # For NTP synchronization
@@ -102,6 +103,15 @@ apps:
       - shared-memory
       - screen-inhibit-control
       - upower-observe
+
+plugs:
+  dot-config-autostart:
+    interface: personal-files
+    write:
+      - $HOME/.config/autostart
+  shmem:
+    interface: shared-memory
+    private: true
 
 layout:
   # Map internal Snap paths to where Tauri expects resources on Linux
