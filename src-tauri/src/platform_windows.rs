@@ -83,7 +83,6 @@ pub mod volume {
 /// other applications completely untouched.
 pub mod app_volume {
     use crate::error::{AppError, Result};
-    use windows::Win32::Foundation::BOOL;
     use windows::Win32::Media::Audio::{
         eConsole, eRender, IAudioSessionManager, IMMDeviceEnumerator, ISimpleAudioVolume,
         MMDeviceEnumerator,
@@ -108,10 +107,10 @@ pub mod app_volume {
                 .Activate(CLSCTX_INPROC_SERVER, None)
                 .map_err(|e| AppError::Platform(e.to_string()))?;
 
-            // NULL GUID → default audio session for this process.
-            // BOOL(0)   → per-process session (not cross-process).
+            // None  → default audio session for this process.
+            // 0u32  → per-process session (streamflags, not cross-process).
             let volume: ISimpleAudioVolume = session_manager
-                .GetSimpleAudioVolume(std::ptr::null(), BOOL(0))
+                .GetSimpleAudioVolume(None, 0)
                 .map_err(|e| AppError::Platform(e.to_string()))?;
 
             Ok(volume)
@@ -160,7 +159,7 @@ pub mod app_volume {
         unsafe {
             let volume = get_simple_audio_volume()?;
             volume
-                .SetMute(BOOL::from(mute), std::ptr::null())
+                .SetMute(mute, std::ptr::null())
                 .map_err(|e| AppError::Platform(e.to_string()))?;
             Ok(())
         }
