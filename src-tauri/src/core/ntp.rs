@@ -4,13 +4,14 @@
 
 #[cfg(test)]
 mod tests {
+    /// Requires outbound UDP to port 123. Run explicitly with:
+    ///   cargo test -- --ignored rsntp_library_works
     #[test]
+    #[ignore]
     fn rsntp_library_works() {
         // Use a more stable NTP server for CI tests
         let result = rsntp::SntpClient::new().synchronize("time.google.com");
 
-        // If it still fails, it might be a network issue in the CI environment.
-        // We log the error but don't want to break the entire build if one NTP server is temporarily down.
         if let Err(e) = result {
             println!("NTP query failed, trying alternative: {:?}", e);
             let alt_result = rsntp::SntpClient::new().synchronize("time.cloudflare.com");
