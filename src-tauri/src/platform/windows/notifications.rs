@@ -16,7 +16,7 @@ use windows::{
 /// For non-MSIX builds, this does nothing.
 #[cfg(target_os = "windows")]
 pub fn send_toast(title: &str, body: &str) -> Result<(), crate::AppError> {
-    if !crate::platform::is_msix_package() {
+    if !crate::platform::is_msix() {
         return Ok(());
     }
 

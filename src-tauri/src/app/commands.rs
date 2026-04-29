@@ -34,10 +34,7 @@ pub fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Setti
     } else {
         #[cfg(not(test))]
         {
-            #[cfg(target_os = "windows")]
-            let is_msix = crate::platform::is_msix_package();
-            #[cfg(not(target_os = "windows"))]
-            let is_msix = false;
+            let is_msix = crate::platform::is_msix();
 
             if !is_msix {
                 use tauri_plugin_autostart::ManagerExt;
