@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-04-29
+
+### Added
+- Robust manual Snap autostart management via `.desktop` file in `$SNAP_USER_DATA/.config/autostart`.
+- `home` and `login-session-observe` plugs to `snapcraft.yaml` for better integration and autostart support.
+
+### Fixed
+- Snap autostart logic to use official `snapd` mechanism for confined applications.
+- `StartupWMClass` in desktop file to match application binary name.
+
+### Changed
+- Moved Snap autostart logic to a dedicated `platform_linux::autostart` module.
+- Bumped dependencies: `i18next`, `typescript`, `typescript-eslint`, `eslint`, `zbus`.
+- Updated `Cargo.lock` and `package-lock.json`.
+
 ## [0.7.2] - 2026-04-28
 
 ### Added
