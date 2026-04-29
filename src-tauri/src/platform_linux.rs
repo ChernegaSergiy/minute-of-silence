@@ -135,14 +135,17 @@ pub mod autostart {
             Err(_) => return, // not running as a snap
         };
 
-        let autostart_dir =
-            std::path::PathBuf::from(&snap_user_data).join(".config/autostart");
+        let autostart_dir = std::path::PathBuf::from(&snap_user_data).join(".config/autostart");
         // Must match `autostart: minute-of-silence.desktop` in snapcraft.yaml
         let desktop_path = autostart_dir.join("minute-of-silence.desktop");
 
         if enable {
             if let Err(e) = std::fs::create_dir_all(&autostart_dir) {
-                log::warn!("snap autostart: cannot create dir {:?}: {}", autostart_dir, e);
+                log::warn!(
+                    "snap autostart: cannot create dir {:?}: {}",
+                    autostart_dir,
+                    e
+                );
                 return;
             }
             // Exec= must use the snap command name (no absolute path).
