@@ -85,23 +85,11 @@ apps:
       ALSA_PLUGIN_DIR: $SNAP/usr/lib/x86_64-linux-gnu/alsa-lib
     # Required permissions (interfaces)
     plugs:
-      - home
-      - login-session-observe
       - network        # For NTP synchronization
       - network-bind   # For potential local server/sockets
       - audio-playback # For ceremony audio output
       - mpris          # For pausing other media players via D-Bus
-      - desktop
-      - desktop-legacy
-      - x11
-      - wayland
-      - opengl         # For WebKit/GPU acceleration
-      - gsettings      # To access system settings
-      - hardware-observe
-      - system-observe
-      - shared-memory
       - screen-inhibit-control
-      - upower-observe
 
 layout:
   # Map internal Snap paths to where Tauri expects resources on Linux
