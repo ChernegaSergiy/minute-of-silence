@@ -203,7 +203,7 @@ impl CeremonyScheduler {
         };
 
         #[cfg(target_os = "windows")]
-        if crate::platform::is_msix_package() {
+        if crate::platform::is_msix() {
             match crate::platform::windows::notifications::send_toast(&title, &body) {
                 Ok(_) => log::info!(
                     "Reminder notification sent via WinRT ({} min before)",

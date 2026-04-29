@@ -58,11 +58,7 @@ pub fn run() {
             {
                 let is_snap = std::env::var("SNAP").is_ok();
 
-                #[cfg(target_os = "windows")]
-                let is_msix = crate::platform::is_msix_package();
-
-                #[cfg(not(target_os = "windows"))]
-                let is_msix = false;
+                let is_msix = crate::platform::is_msix();
 
                 if is_msix {
                     log::info!(
