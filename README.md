@@ -124,24 +124,35 @@ minute-of-silence/
 |   \-- types.ts                               # Shared types, mirrors Rust structs
 +-- src-tauri/
 |   +-- src/
-|   |   +-- core/
+|   |   +-- app/                               # Tauri-специфічні точки входу
+|   |   |   +-- mod.rs
+|   |   |   +-- commands.rs                    # Tauri IPC command handlers
+|   |   |   \-- tray.rs                        # System tray icon and context menu
+|   |   +-- core/                              # Бізнес-логіка
+|   |   |   +-- mod.rs
 |   |   |   +-- audio.rs                       # Backend audio engine (rodio)
+|   |   |   +-- ceremony.rs                    # Ceremony orchestration and lifecycle
 |   |   |   +-- ntp.rs                         # NTP client logic
 |   |   |   +-- ntp_service.rs                 # NTP sync service and offset caching
-|   |   |   +-- platform.rs                    # Platform abstraction trait
 |   |   |   +-- scheduler.rs                   # Daily trigger loop with NTP correction
 |   |   |   \-- settings.rs                    # Persistent settings and audio presets
-|   |   +-- platform/                          # Native platform implementations
-|   |   +-- commands.rs                        # Tauri IPC command handlers
-|   |   +-- tray.rs                            # System tray icon and context menu
-|   |   +-- state.rs                           # Shared application state (Arc<Mutex>)
+|   |   +-- platform/                          # Platform abstraction and implementations
+|   |   |   +-- mod.rs                         # Platform trait and get_platform()
+|   |   |   +-- windows/
+|   |   |   |   +-- mod.rs
+|   |   |   |   +-- media.rs                   # Win32 API — media control
+|   |   |   |   +-- notifications.rs           # MSIX toast notifications via WinRT
+|   |   |   |   +-- power.rs                   # Win32 power events (wake from sleep)
+|   |   |   |   \-- volume.rs                  # Win32 API — system volume control
+|   |   |   \-- linux/
+|   |   |       +-- mod.rs
+|   |   |       +-- autostart.rs               # Snap autostart .desktop management
+|   |   |       +-- media.rs                   # MPRIS D-Bus media control
+|   |   |       \-- volume.rs                  # ALSA system volume control
 |   |   +-- error.rs                           # Unified error type
-|   |   +-- is_msix.rs                         # MSIX package detection
+|   |   +-- state.rs                           # Shared application state (Arc<Mutex>)
 |   |   +-- main.rs                            # Rust entry point
-|   |   +-- lib.rs                             # Library root and Tauri setup
-|   |   +-- platform_windows.rs                # Win32 API — media control, power events
-|   |   +-- platform_windows_notifications.rs  # MSIX toast via WinRT
-|   |   \-- platform_linux.rs                  # MPRIS / xdotool — media control
+|   |   \-- lib.rs                             # Library root and Tauri setup
 |   +-- audio/                                 # Source audio files (.ogg)
 |   \-- tests/                                 # Rust integration tests
 +-- docs/
@@ -154,7 +165,7 @@ minute-of-silence/
 |   \-- dependabot.yml                         # Automated dependency updates
 +-- CHANGELOG.md
 +-- CONTRIBUTING.md
-\-- index.html                                 # App shell with embedded CSS
+\-- index.html
 ```
 
 ## Contributing
