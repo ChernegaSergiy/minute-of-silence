@@ -103,8 +103,7 @@ apps:
       - screen-inhibit-control
       - upower-observe
 
-    layout:
-
+layout:
   # Map internal Snap paths to where Tauri expects resources on Linux
   /usr/lib/minute-of-silence:
     bind: $SNAP/bin
