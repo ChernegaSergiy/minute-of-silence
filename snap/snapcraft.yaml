@@ -64,12 +64,11 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/etc
       cp snap/local/asound.conf $SNAPCRAFT_PART_INSTALL/etc/asound.conf
       
-      # Copy icons and desktop file to meta/gui (standard for Snap)
+      # Copy icons to meta/gui (standard for Snap icons)
       mkdir -p $SNAPCRAFT_PART_INSTALL/meta/gui
       cp snap/gui/minute-of-silence.png $SNAPCRAFT_PART_INSTALL/meta/gui/
-      cp snap/gui/minute-of-silence.desktop $SNAPCRAFT_PART_INSTALL/meta/gui/
       
-      # Install desktop file to standard location
+      # Install desktop file to standard location (Snapcraft will use this for autostart)
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
       cp snap/gui/minute-of-silence.desktop $SNAPCRAFT_PART_INSTALL/usr/share/applications/
 

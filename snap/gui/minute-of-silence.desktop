@@ -7,5 +7,5 @@ Terminal=false
 Type=Application
 Categories=Utility;Clock;
 StartupNotify=true
-StartupWMClass=Minute of Silence
+StartupWMClass=minute-of-silence
 X-GNOME-Autostart-enabled=true
