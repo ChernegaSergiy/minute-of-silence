@@ -118,54 +118,54 @@ Artifacts are written to `src-tauri/target/release/bundle/`.
 
 ```
 minute-of-silence/
-+-- src/                                       # TypeScript frontend (Vite)
-|   +-- api.ts                                 # Typed wrappers around Tauri invoke()
-|   +-- app.ts                                 # Root UI controller
-|   \-- types.ts                               # Shared types, mirrors Rust structs
++-- src/                              # TypeScript frontend (Vite)
+|   +-- api.ts                        # Typed wrappers around Tauri invoke()
+|   +-- app.ts                        # Root UI controller
+|   \-- types.ts                      # Shared types, mirrors Rust structs
 +-- src-tauri/
 |   +-- src/
-|   |   +-- app/                               # Tauri entry points
+|   |   +-- app/                      # Tauri entry points
 |   |   |   +-- mod.rs
-|   |   |   +-- commands.rs                    # Tauri IPC command handlers
-|   |   |   \-- tray.rs                        # System tray icon and context menu
-|   |   +-- core/                              # Business logic
+|   |   |   +-- commands.rs           # Tauri IPC command handlers
+|   |   |   \-- tray.rs               # System tray icon and context menu
+|   |   +-- core/                     # Business logic
 |   |   |   +-- mod.rs
-|   |   |   +-- audio.rs                       # Backend audio engine (rodio)
-|   |   |   +-- ceremony.rs                    # Ceremony orchestration and lifecycle
-|   |   |   +-- ntp.rs                         # NTP client logic
-|   |   |   +-- ntp_service.rs                 # NTP sync service and offset caching
-|   |   |   +-- scheduler.rs                   # Daily trigger loop with NTP correction
-|   |   |   \-- settings.rs                    # Persistent settings and audio presets
-|   |   +-- platform/                          # Platform abstraction and implementations
-|   |   |   +-- mod.rs                         # Platform trait and get_platform()
+|   |   |   +-- audio.rs              # Backend audio engine (rodio)
+|   |   |   +-- ceremony.rs           # Ceremony orchestration and lifecycle
+|   |   |   +-- ntp.rs                # NTP client logic
+|   |   |   +-- ntp_service.rs        # NTP sync service and offset caching
+|   |   |   +-- scheduler.rs          # Daily trigger loop with NTP correction
+|   |   |   \-- settings.rs           # Persistent settings and audio presets
+|   |   +-- platform/                 # Platform abstraction and implementations
+|   |   |   +-- mod.rs                # Platform trait and get_platform()
 |   |   |   +-- windows/
 |   |   |   |   +-- mod.rs
-|   |   |   |   +-- media.rs                   # Win32 API — media control
-|   |   |   |   +-- notifications.rs           # MSIX toast notifications via WinRT
-|   |   |   |   +-- power.rs                   # Win32 power events (wake from sleep)
-|   |   |   |   \-- volume.rs                  # Win32 API — system volume control
+|   |   |   |   +-- media.rs          # Win32 API — media control
+|   |   |   |   +-- notifications.rs  # MSIX toast notifications via WinRT
+|   |   |   |   +-- power.rs          # Win32 power events (wake from sleep)
+|   |   |   |   \-- volume.rs         # Win32 API — system volume control
 |   |   |   \-- linux/
 |   |   |       +-- mod.rs
-|   |   |       +-- autostart.rs               # Snap autostart .desktop management
-|   |   |       +-- media.rs                   # MPRIS D-Bus media control
-|   |   |       \-- volume.rs                  # ALSA system volume control
-|   |   +-- error.rs                           # Unified error type
-|   |   +-- state.rs                           # Shared application state (Arc<Mutex>)
-|   |   +-- main.rs                            # Rust entry point
-|   |   \-- lib.rs                             # Library root and Tauri setup
-|   +-- audio/                                 # Source audio files (.ogg)
-|   \-- tests/                                 # Rust integration tests
+|   |   |       +-- autostart.rs      # Snap autostart .desktop management
+|   |   |       +-- media.rs          # MPRIS D-Bus media control
+|   |   |       \-- volume.rs         # ALSA system volume control
+|   |   +-- error.rs                  # Unified error type
+|   |   +-- state.rs                  # Shared application state (Arc<Mutex>)
+|   |   +-- main.rs                   # Rust entry point
+|   |   \-- lib.rs                    # Library root and Tauri setup
+|   +-- audio/                        # Source audio files (.ogg)
+|   \-- tests/                        # Rust integration tests
 +-- docs/
-|   +-- architecture.md                        # System design and data flow
-|   \-- images/                                # Documentation images (screenshots)
-+-- public/                                    # Static assets (logo, etc.)
+|   +-- architecture.md               # System design and data flow
+|   \-- images/                       # Documentation images (screenshots)
++-- public/                           # Static assets (logo, etc.)
 +-- .github/
-|   +-- workflows/ci.yml                       # CI/CD pipeline (lint, test, build)
-|   +-- ISSUE_TEMPLATE/                        # Bug report and feature request forms
-|   \-- dependabot.yml                         # Automated dependency updates
+|   +-- workflows/ci.yml              # CI/CD pipeline (lint, test, build)
+|   +-- ISSUE_TEMPLATE/               # Bug report and feature request forms
+|   \-- dependabot.yml                # Automated dependency updates
 +-- CHANGELOG.md
 +-- CONTRIBUTING.md
-\-- index.html
+\-- index.html                        # App shell with embedded CSS
 ```
 
 ## Contributing
