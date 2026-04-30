@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-04-30
+
+### Changed
+- Platform code refactored: `platform_windows.rs` + `platform_linux.rs` → `platform/{linux,windows}/` directories.
+- `commands.rs` + `tray.rs` moved to `app/` module.
+- `CeremonyManager` moved to separate `core/ceremony.rs` file.
+- `is_msix()` function moved to `platform/mod.rs`.
+
 ## [0.7.4] - 2026-04-29
 
 ### Changed
