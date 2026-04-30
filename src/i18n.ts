@@ -3,11 +3,20 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import en from "./locales/en.json";
 import uk from "./locales/uk.json";
 
+const detector = new LanguageDetector();
+detector.addDetector({
+  name: "navigator",
+  lookup: () => navigator.language.split("-")[0],
+});
+
 i18next
-  .use(LanguageDetector)
+  .use(detector)
   .init({
     fallbackLng: "uk",
-    debug: false,
+    detection: {
+      order: ["navigator"],
+      caches: [],
+    },
     resources: {
       en: { translation: en },
       uk: { translation: uk },
