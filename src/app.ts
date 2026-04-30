@@ -49,6 +49,9 @@ export class App {
       ]);
       this.cleanSettings = { ...this.settings };
       this.version = await getVersion();
+
+      const win = getCurrentWindow();
+      await win.setTitle(t("app.title"));
     } catch (err) {
       console.error("Failed to load initial data from backend:", err);
       return;
