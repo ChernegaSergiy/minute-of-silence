@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title": "Minute of Silence"
+  },
   "header": {
     "title": "MINUTE OF SILENCE",
     "version": "v{{version}}"

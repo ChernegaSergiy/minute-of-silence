@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title": "Хвилина мовчання"
+  },
   "header": {
     "title": "ХВИЛИНА МОВЧАННЯ",
     "version": "v{{version}}"
