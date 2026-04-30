@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-04-30
+
+### Added
+- Window title localization (uk/en).
+- NTP status strings localization.
+
+### Changed
+- Improved locale detection using navigator.language.
+
 ## [0.7.5] - 2026-04-30
 
 ### Changed
