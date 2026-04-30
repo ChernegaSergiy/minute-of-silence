@@ -11,6 +11,8 @@ use crate::core::settings::Settings;
 
 rust_i18n::i18n!("locales");
 
+use rust_i18n::t;
+
 /// Runtime state shared between the scheduler, commands, and tray.
 #[derive(Debug)]
 pub struct AppState {
