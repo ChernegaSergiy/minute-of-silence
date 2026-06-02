@@ -3,13 +3,19 @@ fn main() {
     if target_os == "macos" {
         let out_dir = std::env::var("OUT_DIR").unwrap();
 
-        // Resolve swiftc path once via xcrun — used for both compilation and lib discovery
         let xcrun_output = std::process::Command::new("xcrun")
             .args(["--find", "swiftc"])
             .output()
             .expect("Failed to execute xcrun to find swiftc");
         let swiftc_path = String::from_utf8(xcrun_output.stdout).unwrap();
         let swiftc = swiftc_path.trim();
+
+        let sdk_output = std::process::Command::new("xcrun")
+            .args(["--show-sdk-path"])
+            .output()
+            .expect("Failed to execute xcrun to find SDK path");
+        let sdk_path = String::from_utf8(sdk_output.stdout).unwrap();
+        let sdk = sdk_path.trim();
 
         let status = std::process::Command::new(swiftc)
             .args([
@@ -18,6 +24,8 @@ fn main() {
                 "-O",
                 "-emit-library",
                 "-static",
+                "-sdk",
+                sdk,
                 "-o",
                 &format!("{}/libMediaVolumeHelper.a", out_dir),
                 "src/platform/macos/MediaVolumeHelper.swift",
@@ -33,8 +41,8 @@ fn main() {
         println!("cargo:rustc-link-lib=static=MediaVolumeHelper");
 
         let swift_lib_path = std::path::Path::new(swiftc)
-            .parent() // bin
-            .and_then(|p| p.parent()) // usr
+            .parent()
+            .and_then(|p| p.parent())
             .map(|p| p.join("lib/swift/macosx"))
             .expect("Failed to resolve Swift library path");
 
