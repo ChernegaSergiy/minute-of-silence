@@ -13,6 +13,15 @@ pub use core::settings::{AudioPreset, Settings};
 pub use error::{AppError, Result};
 pub use state::AppState;
 
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct UpdateAvailablePayload {
+    version: String,
+    current_version: String,
+    date: Option<String>,
+    body: Option<String>,
+}
+
 /// Application entry point — called from `main.rs`.
 pub fn run() {
     tauri::Builder::default()
@@ -181,15 +190,6 @@ pub fn run() {
                                     }
 
                                     // Emit event to frontend
-                                    #[derive(serde::Serialize, Clone)]
-                                    #[serde(rename_all = "camelCase")]
-                                    struct UpdateAvailablePayload {
-                                        version: String,
-                                        current_version: String,
-                                        date: Option<String>,
-                                        body: Option<String>,
-                                    }
-
                                     use tauri::Emitter;
                                     let _ = handle.emit(
                                         "update-available",
