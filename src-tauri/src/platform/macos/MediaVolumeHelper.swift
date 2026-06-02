@@ -88,8 +88,8 @@ public func macosSetVolume(level: UInt8) -> Bool {
 }
 
 @_cdecl("macos_is_muted")
-public func macosIsMuted() -> Bool {
-    guard let deviceID = getDefaultOutputDevice() else { return false }
+public func macosIsMuted() -> Int8 {
+    guard let deviceID = getDefaultOutputDevice() else { return -1 }
     var mute = UInt32(0)
     var size = UInt32(MemoryLayout.size(ofValue: mute))
     var address = AudioObjectPropertyAddress(
@@ -97,14 +97,14 @@ public func macosIsMuted() -> Bool {
         mScope: kAudioDevicePropertyScopeOutput,
         mElement: 0
     )
-    
+
     var status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &mute)
     if status != noErr {
         address.mElement = 0
         status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &mute)
     }
-    
-    return status == noErr && mute != 0
+
+    return status == noErr ? Int8(mute != 0 ? 1 : 0) : -1
 }
 
 @_cdecl("macos_set_mute")
