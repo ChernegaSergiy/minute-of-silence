@@ -13,7 +13,9 @@ unsafe extern "C" {
 pub async fn pause_all() -> Result<Vec<String>> {
     let ptr = unsafe { macos_pause_all() };
     if ptr.is_null() {
-        return Ok(Vec::new());
+        return Err(crate::error::AppError::Platform(
+            "macos_pause_all returned null".to_string(),
+        ));
     }
 
     let c_str = unsafe { CStr::from_ptr(ptr) };
