@@ -103,33 +103,32 @@ export default function UpdateDialog({ updateInfo, onClose }: UpdateDialogProps)
   }, [updateInfo]);
 
   useEffect(() => {
-    let unlistenProgress: (() => void) | null = null;
+    if (!updateInfo) return;
 
-    const setupListener = async () => {
-      unlistenProgress = await listen<{ progress: number; status: string }>(
-        "update-progress",
-        (event) => {
-          const { progress, status } = event.payload;
-          setProgress(progress);
-          if (status === "downloading") {
-            setStatusText(t("update.status_downloading", { progress: Math.round(progress) }));
-          } else if (status === "installing") {
-            setStatusText(t("update.status_installing"));
-          } else if (status === "restarting") {
-            setStatusText(t("update.status_restarting"));
-          }
-        }
-      );
-    };
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
 
-    if (updateInfo) {
-      setupListener();
-    }
+    listen<{ progress: number; status: string }>("update-progress", (event) => {
+      const { progress, status } = event.payload;
+      setProgress(progress);
+      if (status === "downloading") {
+        setStatusText(t("update.status_downloading", { progress: Math.round(progress) }));
+      } else if (status === "installing") {
+        setStatusText(t("update.status_installing"));
+      } else if (status === "restarting") {
+        setStatusText(t("update.status_restarting"));
+      }
+    }).then((fn) => {
+      if (cancelled) {
+        fn();
+      } else {
+        unlisten = fn;
+      }
+    });
 
     return () => {
-      if (unlistenProgress) {
-        unlistenProgress();
-      }
+      cancelled = true;
+      unlisten?.();
     };
   }, [updateInfo]);
 
