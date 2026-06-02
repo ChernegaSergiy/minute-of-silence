@@ -10,7 +10,12 @@ unsafe extern "C" {
 }
 
 pub fn get_volume() -> Result<u8> {
-    Ok(unsafe { macos_get_volume() })
+    let vol = unsafe { macos_get_volume() };
+    if vol == u8::MAX {
+        Err(AppError::Platform("Failed to get macOS volume".to_string()))
+    } else {
+        Ok(vol)
+    }
 }
 
 pub fn set_volume(level: u8) -> Result<()> {
