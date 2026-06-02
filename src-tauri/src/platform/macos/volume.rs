@@ -5,7 +5,7 @@ use crate::error::{AppError, Result};
 unsafe extern "C" {
     fn macos_get_volume() -> u8;
     fn macos_set_volume(level: u8) -> bool;
-    fn macos_is_muted() -> bool;
+    fn macos_is_muted() -> i8;
     fn macos_set_mute(mute: bool) -> bool;
 }
 
@@ -28,7 +28,11 @@ pub fn set_volume(level: u8) -> Result<()> {
 }
 
 pub fn is_muted() -> Result<bool> {
-    Ok(unsafe { macos_is_muted() })
+    match unsafe { macos_is_muted() } {
+        -1 => Err(AppError::Platform("Failed to get macOS mute state".to_string())),
+        0 => Ok(false),
+        _ => Ok(true),
+    }
 }
 
 pub fn set_mute(mute: bool) -> Result<()> {
