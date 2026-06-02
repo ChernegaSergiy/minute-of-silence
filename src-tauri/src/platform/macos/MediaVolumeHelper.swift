@@ -160,8 +160,12 @@ public func macosPauseAll() -> UnsafeMutablePointer<Int8>? {
 public func macosResumePlayers(bundleIDsCsv: UnsafePointer<Int8>) {
     let csv = String(cString: bundleIDsCsv)
     let bundleIDs = csv.split(separator: ",").map(String.init)
-    
+    let runningBundleIDs = Set(
+        NSWorkspace.shared.runningApplications.compactMap { $0.bundleIdentifier }
+    )
+
     for bundleID in bundleIDs {
+        guard runningBundleIDs.contains(bundleID) else { continue }
         let script = """
         tell application id "\(bundleID)"
             try
