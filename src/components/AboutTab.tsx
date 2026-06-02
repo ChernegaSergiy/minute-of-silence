@@ -70,7 +70,7 @@ export default function AboutTab({ version, onCheckForUpdates, onUpdateFound }: 
   const [updateCheckState, setUpdateCheckState] = useState<"initial" | "checking" | "up_to_date" | "error">("initial");
 
   const handleCheckUpdates = useCallback(async () => {
-    if (updateCheckState === "checking") return;
+    if (updateCheckState !== "initial") return;
     setUpdateCheckState("checking");
     try {
       const [update] = await Promise.all([
@@ -135,7 +135,6 @@ export default function AboutTab({ version, onCheckForUpdates, onUpdateFound }: 
             />
           }
           onClick={handleCheckUpdates}
-          disabled={updateCheckState === "checking"}
         >
           {updateCheckState === "checking"
             ? t("about.check_updates_checking")
