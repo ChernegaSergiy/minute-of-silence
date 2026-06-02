@@ -48,7 +48,7 @@ public func macosDetectSystemTheme() -> Bool {
 
 @_cdecl("macos_get_volume")
 public func macosGetVolume() -> UInt8 {
-    guard let deviceID = getDefaultOutputDevice() else { return 0 }
+    guard let deviceID = getDefaultOutputDevice() else { return 255 }
     var volume = Float32(0.0)
     var size = UInt32(MemoryLayout.size(ofValue: volume))
     var address = AudioObjectPropertyAddress(
@@ -56,15 +56,15 @@ public func macosGetVolume() -> UInt8 {
         mScope: kAudioDevicePropertyScopeOutput,
         mElement: 0
     )
-    
+
     var status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &volume)
     if status != noErr {
         // Fallback to ElementMaster (0) if Main fails or is not supported
         address.mElement = 0
         status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &volume)
     }
-    
-    return status == noErr ? UInt8(volume * 100.0) : 0
+
+    return status == noErr ? UInt8(volume * 100.0) : 255
 }
 
 @_cdecl("macos_set_volume")
