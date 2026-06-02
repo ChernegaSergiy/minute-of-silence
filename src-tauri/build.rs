@@ -11,7 +11,7 @@ fn main() {
         let swiftc = swiftc_path.trim();
 
         let sdk_output = std::process::Command::new("xcrun")
-            .args(["--show-sdk-path"])
+            .args(["--sdk", "macosx", "--show-sdk-path"])
             .output()
             .expect("Failed to execute xcrun to find SDK path");
         let sdk_path = String::from_utf8(sdk_output.stdout).unwrap();
