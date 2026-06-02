@@ -29,7 +29,9 @@ pub fn set_volume(level: u8) -> Result<()> {
 
 pub fn is_muted() -> Result<bool> {
     match unsafe { macos_is_muted() } {
-        -1 => Err(AppError::Platform("Failed to get macOS mute state".to_string())),
+        -1 => Err(AppError::Platform(
+            "Failed to get macOS mute state".to_string(),
+        )),
         0 => Ok(false),
         _ => Ok(true),
     }
