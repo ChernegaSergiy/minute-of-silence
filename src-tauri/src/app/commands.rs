@@ -191,67 +191,68 @@ pub async fn check_for_updates(
 pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     log::info!("Installing update...");
     let update = {
-        let inner = state.lock();
-        inner.pending_update.clone()
+        let mut inner = state.lock();
+        inner.pending_update.take()
     };
 
-    if let Some(update) = update {
-        use tauri::Emitter;
-
-        #[derive(serde::Serialize, Clone)]
-        struct ProgressPayload {
-            progress: f64,
-            status: String,
-        }
-
-        let app_clone = app.clone();
-        let mut downloaded = 0;
-
-        let res = update
-            .download_and_install(
-                move |chunk_length, total_length| {
-                    downloaded += chunk_length;
-                    if let Some(total) = total_length {
-                        let progress = (downloaded as f64 / total as f64) * 100.0;
-                        let _ = app_clone.emit(
-                            "update-progress",
-                            ProgressPayload {
-                                progress,
-                                status: "downloading".to_string(),
-                            },
-                        );
-                    }
-                },
-                {
-                    let app = app.clone();
-                    move || {
-                        let _ = app.emit(
-                            "update-progress",
-                            ProgressPayload {
-                                progress: 100.0,
-                                status: "installing".to_string(),
-                            },
-                        );
-                    }
-                },
-            )
-            .await;
-
-        match res {
-            Ok(_) => {
-                log::info!("Update installed. Restarting...");
-                state.lock().pending_update = None;
-                app.restart();
-            }
-            Err(e) => {
-                let err_str = e.to_string();
-                log::error!("Failed to download and install update: {}", err_str);
-                Err(crate::AppError::Update(err_str))
-            }
-        }
-    } else {
-        Err(crate::AppError::Update(
+    let Some(update) = update else {
+        return Err(crate::AppError::Update(
             "No pending update found".to_string(),
-        ))
+        ));
+    };
+
+    use tauri::Emitter;
+
+    #[derive(serde::Serialize, Clone)]
+    struct ProgressPayload {
+        progress: f64,
+        status: String,
+    }
+
+    let app_clone = app.clone();
+    let mut downloaded = 0;
+
+    let res = update
+        .download_and_install(
+            move |chunk_length, total_length| {
+                downloaded += chunk_length;
+                if let Some(total) = total_length {
+                    let progress = (downloaded as f64 / total as f64) * 100.0;
+                    let _ = app_clone.emit(
+                        "update-progress",
+                        ProgressPayload {
+                            progress,
+                            status: "downloading".to_string(),
+                        },
+                    );
+                }
+            },
+            {
+                let app = app.clone();
+                move || {
+                    let _ = app.emit(
+                        "update-progress",
+                        ProgressPayload {
+                            progress: 100.0,
+                            status: "installing".to_string(),
+                        },
+                    );
+                }
+            },
+        )
+        .await;
+
+    match res {
+        Ok(_) => {
+            log::info!("Update installed. Restarting...");
+            app.restart();
+        }
+        Err(e) => {
+            let err_str = e.to_string();
+            log::error!("Failed to download and install update: {}", err_str);
+            // Restore the update so the user can retry
+            state.lock().pending_update = Some(update);
+            Err(crate::AppError::Update(err_str))
+        }
     }
 }
