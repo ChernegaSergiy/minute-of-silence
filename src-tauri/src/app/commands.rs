@@ -191,8 +191,8 @@ pub async fn check_for_updates(
 pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     log::info!("Installing update...");
     let update = {
-        let mut inner = state.lock();
-        inner.pending_update.take()
+        let inner = state.lock();
+        inner.pending_update.clone()
     };
 
     if let Some(update) = update {
@@ -240,6 +240,7 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
         match res {
             Ok(_) => {
                 log::info!("Update installed. Restarting...");
+                state.lock().pending_update = None;
                 app.restart();
             }
             Err(e) => {
