@@ -251,7 +251,10 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
             let err_str = e.to_string();
             log::error!("Failed to download and install update: {}", err_str);
             // Restore the update so the user can retry
-            state.lock().pending_update = Some(update);
+            let mut inner = state.lock();
+            if inner.pending_update.is_none() {
+                inner.pending_update = Some(update);
+            }
             Err(crate::AppError::Update(err_str))
         }
     }
