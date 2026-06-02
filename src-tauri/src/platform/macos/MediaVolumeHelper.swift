@@ -133,11 +133,10 @@ public func macosPauseAll() -> UnsafeMutablePointer<Int8>? {
     var pausedBundleIDs = [String]()
     
     for app in runningApps {
-        guard let bundleID = app.bundleIdentifier,
-              let name = app.localizedName else { continue }
+        guard let bundleID = app.bundleIdentifier else { continue }
         
         let script = """
-        tell application "\(name)"
+        tell application id "\(bundleID)"
             try
                 if player state is playing then
                     pause
@@ -163,18 +162,14 @@ public func macosResumePlayers(bundleIDsCsv: UnsafePointer<Int8>) {
     let bundleIDs = csv.split(separator: ",").map(String.init)
     
     for bundleID in bundleIDs {
-        let apps = NSWorkspace.shared.runningApplications
-        if let app = apps.first(where: { $0.bundleIdentifier == bundleID }),
-           let name = app.localizedName {
-            let script = """
-            tell application "\(name)"
-                try
-                    play
-                end try
-            end tell
-            """
-            _ = runAppleScript(script)
-        }
+        let script = """
+        tell application id "\(bundleID)"
+            try
+                play
+            end try
+        end tell
+        """
+        _ = runAppleScript(script)
     }
 }
 
