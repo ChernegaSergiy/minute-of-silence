@@ -244,14 +244,9 @@ export default function App() {
 
   const handleManualUpdateCheck = useCallback(async () => {
     setUpdateDismissed(false);
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      const update = await invoke<UpdateInfo | null>("check_for_updates");
-      return update;
-    } catch (err) {
-      console.error(err);
-    }
-    return null;
+    const { invoke } = await import("@tauri-apps/api/core");
+    const update = await invoke<UpdateInfo | null>("check_for_updates");
+    return update;
   }, []);
 
   return (
