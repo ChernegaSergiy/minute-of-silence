@@ -14,7 +14,7 @@ pub fn get_volume() -> Result<u8> {
 }
 
 pub fn set_volume(level: u8) -> Result<()> {
-    let success = unsafe { macos_set_volume(level) };
+    let success = unsafe { macos_set_volume(level.min(100)) };
     if success {
         Ok(())
     } else {
