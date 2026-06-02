@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+﻿import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   FluentProvider,
@@ -128,13 +128,6 @@ export default function App() {
         setVolumeValue(s.volume);
         setVersion(v);
         await getCurrentWindow().setTitle(t("app.title"));
-
-        // Check for updates on startup
-        const { invoke } = await import("@tauri-apps/api/core");
-        const update = await invoke<UpdateInfo | null>("check_for_updates");
-        if (update) {
-          setUpdateInfo(update);
-        }
       } catch (error) {
         console.error(error);
       } finally {
