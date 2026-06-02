@@ -120,7 +120,14 @@ export default function App() {
 
     (async () => {
       try {
-        const [s, dates, st, v] = await Promise.all([getSettings(), getPersonalDates(), getStatus(), getVersion()]);
+        const { invoke } = await import("@tauri-apps/api/core");
+        const [s, dates, st, v, update] = await Promise.all([
+          getSettings(),
+          getPersonalDates(),
+          getStatus(),
+          getVersion(),
+          invoke<UpdateInfo | null>("check_for_updates").catch(() => null),
+        ]);
         setSettings(s);
         setCleanSettings(JSON.stringify(s));
         setPersonalDates(dates);
@@ -128,6 +135,9 @@ export default function App() {
         setVolumeValue(s.volume);
         setVersion(v);
         await getCurrentWindow().setTitle(t("app.title"));
+        if (update) {
+          setUpdateInfo(update);
+        }
       } catch (error) {
         console.error(error);
       } finally {
