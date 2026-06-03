@@ -1,3 +1,17 @@
+- version: "0.10.5"
+  date: "2026-06-03"
+  entries:
+    - category: added
+      key: "interactive_update_dialog"
+    - category: added
+      key: "manual_update_check"
+    - category: added
+      key: "use_idle_hook"
+    - category: changed
+      key: "update_check_migration"
+    - category: changed
+      key: "update_ipc_commands"
+
 - version: "0.10.4"
   date: "2026-06-01"
   entries:
