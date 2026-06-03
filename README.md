@@ -178,7 +178,10 @@ minute-of-silence/
 |   |   +-- ChangelogTab.tsx          # Changelog and version history UI
 |   |   +-- Overlay.tsx               # Active ceremony overlay component
 |   |   +-- PersonalDatesTab.tsx      # Personal remembrance dates management
-|   |   \-- SettingsTab.tsx           # Main settings interface
+|   |   +-- SettingsTab.tsx           # Main settings interface
+|   |   \-- UpdateDialog.tsx          # Update available dialog with progress tracking
+|   +-- hooks/                        # Custom React hooks
+|   |   \-- useIdle.ts                # User inactivity detection hook
 |   +-- locales/                      # JSON translation files (UK, EN)
 |   +-- utils/                        # Core utilities and services
 |   |   +-- api.ts                    # Typed wrappers around Tauri IPC invoke()
