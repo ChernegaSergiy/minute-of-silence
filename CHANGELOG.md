@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.5] - 2026-06-03
+
+### Added
+- Add interactive update dialog with changelog display, download progress tracking, and install button.
+- Add manual update check button to the About tab with animated spinner.
+- Add `useIdle` hook to detect user inactivity and defer update dialog display until the user is idle.
+
+### Changed
+- Migrate background update check to store pending update in app state and emit `update-available` event to the frontend instead of installing silently.
+- Expose `check_for_updates` and `install_update` as IPC commands.
+
 ## [0.10.4] - 2026-06-01
 
 ### Added

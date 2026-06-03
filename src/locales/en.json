@@ -197,6 +197,13 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.10.5": {
+      "interactive_update_dialog": "Add interactive update dialog with changelog display, download progress tracking, and install button.",
+      "manual_update_check": "Add manual update check button to the About tab with animated spinner.",
+      "use_idle_hook": "Add `useIdle` hook to detect user inactivity and defer update dialog display until the user is idle.",
+      "update_check_migration": "Migrate background update check to store pending update in app state and emit `update-available` event to the frontend instead of installing silently.",
+      "update_ipc_commands": "Expose `check_for_updates` and `install_update` as IPC commands."
+    },
     "0.10.4": {
       "tauri_updater_integration": "Integrate Tauri Auto-Updater system to check for and install updates in the background on startup (except for sandboxed package environments like Snap, Flatpak, and MSIX).",
       "macos_system_theme": "Implement native system theme (light/dark mode) detection on macOS.",
