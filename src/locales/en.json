@@ -157,6 +157,10 @@
     "copy_logs": "Copy debug logs",
     "copy_logs_copied": "Copied.",
     "copy_logs_error": "Copy failed",
+    "check_updates": "Check for updates",
+    "check_updates_checking": "Checking...",
+    "check_updates_up_to_date": "No updates available",
+    "check_updates_error": "Check failed",
     "license": "License: CSSM Unlimited License v2.0",
     "glory": "Every day at 09:00 we remember everyone whose lives were taken by the war. Glory to the Heroes."
   },
@@ -172,6 +176,17 @@
     "list_title": "Saved dates",
     "empty": "No personal dates.",
     "edit_title": "Edit date"
+  },
+  "update": {
+    "title": "Update Available",
+    "version_info": "Available version: v{{newVersion}} (current: v{{currentVersion}})",
+    "changelog": "Changelog:",
+    "btn_install": "Install Now",
+    "btn_later": "Remind me later",
+    "status_downloading": "Downloading update... {{progress}}%",
+    "status_installing": "Installing update...",
+    "status_restarting": "Restarting...",
+    "error": "Update failed: {{error}}"
   },
   "changelog": {
     "categories": {

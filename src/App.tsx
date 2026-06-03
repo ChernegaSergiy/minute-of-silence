@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+﻿import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   FluentProvider,
@@ -40,6 +40,8 @@ import AboutTab from "./components/AboutTab";
 import Overlay from "./components/Overlay";
 import SettingsTab from "./components/SettingsTab";
 import PersonalDatesTab from "./components/PersonalDatesTab";
+import UpdateDialog, { type UpdateInfo } from "./components/UpdateDialog";
+import { useIdle } from "./hooks/useIdle";
 
 const ChangelogTab = lazy(() => import("./components/ChangelogTab"));
 
@@ -103,6 +105,10 @@ export default function App() {
   const [volumeValue, setVolumeValue] = useState(80);
   const [syncing, setSyncing] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [updateDismissed, setUpdateDismissed] = useState(false);
+  const isIdle = useIdle(15000); // 15 seconds idle timeout
   const initRef = useRef(false);
 
   const isDirty = hydrated && JSON.stringify(settings) !== cleanSettings;
@@ -114,7 +120,14 @@ export default function App() {
 
     (async () => {
       try {
-        const [s, dates, st, v] = await Promise.all([getSettings(), getPersonalDates(), getStatus(), getVersion()]);
+        const { invoke } = await import("@tauri-apps/api/core");
+        const [s, dates, st, v, update] = await Promise.all([
+          getSettings(),
+          getPersonalDates(),
+          getStatus(),
+          getVersion(),
+          invoke<UpdateInfo | null>("check_for_updates").catch(() => null),
+        ]);
         setSettings(s);
         setCleanSettings(JSON.stringify(s));
         setPersonalDates(dates);
@@ -122,6 +135,9 @@ export default function App() {
         setVolumeValue(s.volume);
         setVersion(v);
         await getCurrentWindow().setTitle(t("app.title"));
+        if (update) {
+          setUpdateInfo(update);
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -145,7 +161,10 @@ export default function App() {
         await onCeremonyStart((_p) => refresh()),
         await onCeremonyEnd(refresh),
         await listen("ntp-synced", refresh),
-        await listen("status-updated", refresh)
+        await listen("status-updated", refresh),
+        await listen<UpdateInfo>("update-available", (event) => {
+          setUpdateInfo(event.payload);
+        })
       );
       setInterval(refresh, 60000);
     })();
@@ -206,6 +225,15 @@ export default function App() {
     return () => media.removeEventListener("change", updateTheme);
   }, []);
 
+  // Trigger the update dialog when user is idle
+  useEffect(() => {
+    if (!updateInfo || updateDismissed || showUpdateDialog) return;
+
+    if (isIdle && document.hasFocus()) {
+      setShowUpdateDialog(true);
+    }
+  }, [updateInfo, updateDismissed, showUpdateDialog, isIdle]);
+
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   }, []);
@@ -222,6 +250,13 @@ export default function App() {
     } finally {
       setSyncing(false);
     }
+  }, []);
+
+  const handleManualUpdateCheck = useCallback(async () => {
+    setUpdateDismissed(false);
+    const { invoke } = await import("@tauri-apps/api/core");
+    const update = await invoke<UpdateInfo | null>("check_for_updates");
+    return update;
   }, []);
 
   return (
@@ -284,7 +319,14 @@ export default function App() {
                       onPersonalDatesChange={setPersonalDates}
                     />
                   ) : (
-                    <AboutTab version={version} />
+                    <AboutTab
+                      version={version}
+                      onCheckForUpdates={handleManualUpdateCheck}
+                      onUpdateFound={(update) => {
+                        setUpdateInfo(update);
+                        setShowUpdateDialog(true);
+                      }}
+                    />
                   )}
                 </div>
               )}
@@ -312,6 +354,13 @@ export default function App() {
             </div>
           )}
         </div>
+        <UpdateDialog
+          updateInfo={showUpdateDialog ? updateInfo : null}
+          onClose={() => {
+            setShowUpdateDialog(false);
+            setUpdateDismissed(true);
+          }}
+        />
       </FluentProvider>
 
       <Overlay
