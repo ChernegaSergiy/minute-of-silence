@@ -70,7 +70,7 @@ windows-future = "0.3.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 alsa = "0.11"
-zbus = "5.15"
+zbus = "5.16"
 cpal = { version = "0.17", features = ["jack"], default-features = false }
 glib = "0.18"
 
