@@ -72,7 +72,7 @@ windows-future = "0.3.2"
 alsa = "0.11"
 zbus = "5.15"
 cpal = { version = "0.17", features = ["jack"], default-features = false }
-glib = "0.18"
+glib = "0.21"
 
 
 [profile.release]
