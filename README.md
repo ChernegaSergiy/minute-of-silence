@@ -109,6 +109,11 @@ npm install -g @tauri-apps/cli
 sudo apt-get install -y \
   libwebkit2gtk-4.1-dev libappindicator3-dev \
   librsvg2-dev patchelf libasound2-dev
+
+# Fedora:
+# sudo dnf install -y \
+#   webkit2gtk4.1-devel libappindicator-gtk3-devel \
+#   librsvg2-devel patchelf alsa-lib-devel
 ```
 
 ### Development
