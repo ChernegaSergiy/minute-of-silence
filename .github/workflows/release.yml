@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-release:
-    name: Build & Release — ${{ matrix.os }}
+    name: Build & Release — ${{ matrix.title }}
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ${{ matrix.os }}
     permissions:
