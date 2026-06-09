@@ -2,6 +2,16 @@ fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     if target_os == "macos" {
         let out_dir = std::env::var("OUT_DIR").unwrap();
+        let target = std::env::var("TARGET").unwrap();
+
+        // Map Rust target to Swift target
+        let swift_target = if target == "x86_64-apple-darwin" {
+            "x86_64-apple-macosx11.0"
+        } else if target == "aarch64-apple-darwin" {
+            "arm64-apple-macosx11.0"
+        } else {
+            &target
+        };
 
         let xcrun_output = std::process::Command::new("xcrun")
             .args(["--find", "swiftc"])
@@ -19,6 +29,8 @@ fn main() {
 
         let status = std::process::Command::new(swiftc)
             .args([
+                "-target",
+                swift_target,
                 "-parse-as-library",
                 "-g",
                 "-O",
