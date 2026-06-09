@@ -37,7 +37,7 @@
     "@eslint/js": "^10.0.1",
     "@tauri-apps/cli": "^2.11.1",
     "@types/node": "^25.9.1",
-    "@types/react": "^19.2.16",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/upng-js": "^2.1.5",
     "@typescript-eslint/eslint-plugin": "^8.61.0",
