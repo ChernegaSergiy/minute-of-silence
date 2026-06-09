@@ -228,7 +228,10 @@ minute-of-silence/
 |   |   |   |   \-- volume.rs         # Linux ALSA volume control API wrapper
 |   |   |   \-- macos/
 |   |   |       +-- mod.rs
+|   |   |       +-- autostart.rs      # macOS autostart via tauri_plugin_autostart
 |   |   |       +-- media.rs          # macOS media player keys muting
+|   |   |       +-- MediaVolumeHelper.swift  # Swift helper for CoreAudio and AppleScript
+|   |   |       +-- theme.rs          # macOS system dark theme detection
 |   |   |       \-- volume.rs         # macOS system volume controller API
 |   |   +-- error.rs                  # Unified custom application error types
 |   |   +-- state.rs                  # Thread-safe global application state
