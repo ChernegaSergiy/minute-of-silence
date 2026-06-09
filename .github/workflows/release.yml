@@ -5,11 +5,15 @@ on:
     workflows: ["CI Checks Pipeline"]
     branches: ["main"]
     types: [completed]
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 jobs:
   build-release:
     name: Build & Release — ${{ matrix.title }}
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -72,7 +76,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
-          tagName: nightly-${{ github.sha }}
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('nightly-{0}', github.sha) }}
           releaseName: "Nightly Build"
           releaseDraft: true
           prerelease: true
