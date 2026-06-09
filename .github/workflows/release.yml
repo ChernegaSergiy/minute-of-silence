@@ -18,6 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -42,10 +43,6 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Add Apple Silicon target
-        if: runner.os == 'macOS'
-        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -54,9 +51,9 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
-      - name: Tauri build (Windows & Linux)
+      - name: Build for Windows & Linux
         if: runner.os != 'macOS'
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -66,9 +63,9 @@ jobs:
           releaseDraft: true
           prerelease: true
 
-      - name: Tauri build (macOS Universal)
+      - name: Build for macOS (Intel)
         if: runner.os == 'macOS'
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -77,4 +74,18 @@ jobs:
           releaseName: "Nightly build"
           releaseDraft: true
           prerelease: true
-          args: --target universal-apple-darwin
+          args: --target x86_64-apple-darwin
+
+      - name: Build for macOS (Apple Silicon)
+        if: runner.os == 'macOS'
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          tagName: nightly-${{ github.sha }}
+          releaseName: "Nightly build"
+          releaseDraft: true
+          prerelease: true
+          args: --target aarch64-apple-darwin
+
