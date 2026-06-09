@@ -106,9 +106,9 @@ committing single files.
 ### Examples
 
 ```
-feat(scheduler): add NTP-aware trigger with late-start grace window
-fix(tray): prevent double menu registration on settings reload
-docs: add CONTRIBUTING guide and commit convention table
+feat(scheduler): Add NTP-aware trigger with late-start grace window
+fix(tray): Prevent double menu registration on settings reload
+docs: Add CONTRIBUTING guide and commit convention table
 ```
 
 ---
