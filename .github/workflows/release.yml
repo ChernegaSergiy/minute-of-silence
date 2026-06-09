@@ -17,7 +17,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-22.04
+            title: Linux
+          - os: windows-latest
+            title: Windows
+          - os: macos-latest
+            title: macOS Intel
+            args: --target x86_64-apple-darwin
+            rust-target: x86_64-apple-darwin
+          - os: macos-latest
+            title: macOS Silicon
+            args: --target aarch64-apple-darwin
+            rust-target: aarch64-apple-darwin
 
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +41,7 @@ jobs:
           cache: "npm"
 
       - name: Install Linux system deps
-        if: runner.os == 'Linux'
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -42,50 +54,27 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "src-tauri -> target"
+          key: ${{ matrix.os }}-${{ matrix.rust-target }}
 
       - name: Install frontend deps
         run: npm ci
 
-      - name: Build for Windows & Linux
-        if: runner.os != 'macOS'
+      - name: Tauri build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           tagName: nightly-${{ github.sha }}
-          releaseName: "Nightly build"
+          releaseName: "Nightly Build"
           releaseDraft: true
           prerelease: true
-
-      - name: Build for macOS (Intel)
-        if: runner.os == 'macOS'
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-        with:
-          tagName: nightly-${{ github.sha }}
-          releaseName: "Nightly build"
-          releaseDraft: true
-          prerelease: true
-          args: --target x86_64-apple-darwin
-
-      - name: Build for macOS (Apple Silicon)
-        if: runner.os == 'macOS'
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-        with:
-          tagName: nightly-${{ github.sha }}
-          releaseName: "Nightly build"
-          releaseDraft: true
-          prerelease: true
-          args: --target aarch64-apple-darwin
+          args: ${{ matrix.args }}
 
