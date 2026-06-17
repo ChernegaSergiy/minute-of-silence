@@ -48,15 +48,22 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
     let buf_size = reader.output_buffer_size().unwrap_or(width as usize * height as usize * 4);
     let mut raw_buf = vec![0u8; buf_size];
 
-    loop {
+    // How many frames the APNG declares (acTL chunk).
+    // Falls back to 1 for plain (non-animated) PNGs.
+    let num_frames = reader
+        .info()
+        .animation_control
+        .map(|ac| ac.num_frames as usize)
+        .unwrap_or(1);
+
+    for _ in 0..num_frames {
         let frame_info = match reader.next_frame(&mut raw_buf) {
             Ok(fi) => fi,
-            Err(png::DecodingError::IoError(e))
-                if e.kind() == std::io::ErrorKind::UnexpectedEof =>
-            {
+            Err(e) => {
+                // Fewer frames than acTL declared — stop gracefully.
+                log::warn!("APNG: next_frame stopped early: {}", e);
                 break;
             }
-            Err(e) => return Err(e.to_string()),
         };
 
         // The raw pixel buffer for this frame (may be a subframe).
@@ -116,11 +123,6 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
                 // Restore what was saved before this frame.
                 canvas.clone_from(&previous_canvas);
             }
-        }
-
-        // Stop if there are no more frames in the animation.
-        if reader.info().frame_control.is_none() {
-            break;
         }
     }
 
