@@ -9,7 +9,7 @@ import {
   webDarkTheme,
   mergeClasses,
 } from "@fluentui/react-components";
-import UPNG from "upng-js";
+import { invoke } from "@tauri-apps/api/core";
 import { t } from "../utils/i18n";
 import type { PersonalDate } from "../types";
 
@@ -124,29 +124,48 @@ const useStyles = makeStyles({
   }
 });
 
-async function loadApngFrames(src: string): Promise<{ frames: HTMLCanvasElement[]; width: number; height: number }> {
+interface ApngInfo {
+  width: number;
+  height: number;
+  /** Each entry is a base64-encoded lossless PNG of the composited canvas. */
+  frames: string[];
+}
+
+/**
+ * Decode APNG frames via the Rust backend.
+ *
+ * The backend uses the pure-Rust `png` crate which works identically on every
+ * platform (Windows, macOS, Linux/WebKitGTK) without relying on any browser
+ * or OS-level image decoder API.
+ */
+async function loadApngFrames(
+  src: string,
+): Promise<{ frames: HTMLCanvasElement[]; width: number; height: number }> {
+  // Fetch the raw APNG bytes and pass them to the Rust decoder.
   const resp = await fetch(src);
-  const buf = await resp.arrayBuffer();
-  const img = UPNG.decode(buf);
-  const rgbaFrames = UPNG.toRGBA8(img);
+  const arrayBuf = await resp.arrayBuffer();
+  const bytes = Array.from(new Uint8Array(arrayBuf));
 
-  const canvases: HTMLCanvasElement[] = [];
-  for (const rgbaBuf of rgbaFrames) {
-    const rawData = new Uint8ClampedArray(rgbaBuf);
-    const imageData = new ImageData(rawData, img.width, img.height);
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    const ctx = canvas.getContext("2d")!;
-    ctx.putImageData(imageData, 0, 0);
-    canvases.push(canvas);
-  }
+  const info = await invoke<ApngInfo>("decode_apng_frames", { data: bytes });
 
-  return {
-    frames: canvases,
-    width: img.width,
-    height: img.height,
-  };
+  // Convert each base64 PNG string into an HTMLCanvasElement.
+  const canvases: HTMLCanvasElement[] = await Promise.all(
+    info.frames.map((b64) => {
+      return new Promise<HTMLCanvasElement>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = info.width;
+          canvas.height = info.height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0);
+          resolve(canvas);
+        };
+        img.src = `data:image/png;base64,${b64}`;
+      });
+    }),
+  );
+
+  return { frames: canvases, width: info.width, height: info.height };
 }
 
 function useApngPlayer(
