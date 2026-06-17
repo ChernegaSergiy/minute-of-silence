@@ -151,7 +151,7 @@ async function loadApngFrames(
   // Convert each base64 PNG string into an HTMLCanvasElement.
   const canvases: HTMLCanvasElement[] = await Promise.all(
     info.frames.map((b64) => {
-      return new Promise<HTMLCanvasElement>((resolve) => {
+      return new Promise<HTMLCanvasElement>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement("canvas");
@@ -160,6 +160,7 @@ async function loadApngFrames(
           canvas.getContext("2d")!.drawImage(img, 0, 0);
           resolve(canvas);
         };
+        img.onerror = () => reject(new Error("Failed to load decoded APNG frame"));
         img.src = `data:image/png;base64,${b64}`;
       });
     }),
