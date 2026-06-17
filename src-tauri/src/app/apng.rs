@@ -73,30 +73,41 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
 
         // APNG frame control (position / size / blend / dispose).
         // If absent this is a plain PNG — treat it as a single full frame.
-        let (fx, fy, fw, fh, blend_op, dispose_op) = if let Some(fc) = reader.info().frame_control {
+        let (rect, blend_op, dispose_op) = if let Some(fc) = reader.info().frame_control {
             (
-                fc.x_offset,
-                fc.y_offset,
-                fc.width,
-                fc.height,
+                FrameRect {
+                    x: fc.x_offset,
+                    y: fc.y_offset,
+                    w: fc.width,
+                    h: fc.height,
+                },
                 fc.blend_op,
                 fc.dispose_op,
             )
         } else {
-            (0, 0, width, height, BlendOp::Source, DisposeOp::None)
+            (
+                FrameRect {
+                    x: 0,
+                    y: 0,
+                    w: width,
+                    h: height,
+                },
+                BlendOp::Source,
+                DisposeOp::None,
+            )
         };
 
         // Convert the raw frame pixels to RGBA (the png crate gives us the
         // output colour type we asked for; we always ask for RGBA below —
         // actually the crate exposes the file's native colour type, so we
         // must handle the most common cases ourselves).
-        let frame_rgba = to_rgba(frame_bytes, &frame_info.color_type, fw, fh)?;
+        let frame_rgba = to_rgba(frame_bytes, &frame_info.color_type, rect.w, rect.h)?;
 
         // Save the canvas before touching it (for DisposeOp::Previous).
         previous_canvas.clone_from(&canvas);
 
         // Composite the subframe onto the canvas.
-        composite(&mut canvas, &frame_rgba, fx, fy, fw, fh, width, blend_op);
+        composite(&mut canvas, &frame_rgba, &rect, width, blend_op);
 
         // Encode the current canvas state as a PNG and push it.
         let png_bytes = encode_rgba_to_png(&canvas, width, height)?;
@@ -109,7 +120,7 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
             }
             DisposeOp::Background => {
                 // Clear the frame area to fully transparent black.
-                fill_rect(&mut canvas, fx, fy, fw, fh, width, [0, 0, 0, 0]);
+                fill_rect(&mut canvas, &rect, width, [0, 0, 0, 0]);
             }
             DisposeOp::Previous => {
                 // Restore what was saved before this frame.
@@ -132,6 +143,14 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Bounding rectangle of an APNG subframe within the canvas.
+struct FrameRect {
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+}
 
 /// Convert raw pixel bytes from any common PNG colour type to packed RGBA.
 fn to_rgba(
@@ -181,20 +200,11 @@ fn to_rgba(
 }
 
 /// Composite `src` (subframe) onto `dst` (full canvas) using the given blend op.
-fn composite(
-    dst: &mut [u8],
-    src: &[u8],
-    fx: u32,
-    fy: u32,
-    fw: u32,
-    fh: u32,
-    canvas_width: u32,
-    blend_op: BlendOp,
-) {
-    for row in 0..fh {
-        for col in 0..fw {
-            let src_idx = ((row * fw + col) * 4) as usize;
-            let dst_idx = (((fy + row) * canvas_width + (fx + col)) * 4) as usize;
+fn composite(dst: &mut [u8], src: &[u8], rect: &FrameRect, canvas_width: u32, blend_op: BlendOp) {
+    for row in 0..rect.h {
+        for col in 0..rect.w {
+            let src_idx = ((row * rect.w + col) * 4) as usize;
+            let dst_idx = (((rect.y + row) * canvas_width + (rect.x + col)) * 4) as usize;
 
             if src_idx + 4 > src.len() || dst_idx + 4 > dst.len() {
                 continue;
@@ -244,18 +254,10 @@ fn composite(
 }
 
 /// Fill a rectangular region of the canvas with a constant RGBA value.
-fn fill_rect(
-    canvas: &mut [u8],
-    fx: u32,
-    fy: u32,
-    fw: u32,
-    fh: u32,
-    canvas_width: u32,
-    pixel: [u8; 4],
-) {
-    for row in 0..fh {
-        for col in 0..fw {
-            let idx = (((fy + row) * canvas_width + (fx + col)) * 4) as usize;
+fn fill_rect(canvas: &mut [u8], rect: &FrameRect, canvas_width: u32, pixel: [u8; 4]) {
+    for row in 0..rect.h {
+        for col in 0..rect.w {
+            let idx = (((rect.y + row) * canvas_width + (rect.x + col)) * 4) as usize;
             if idx + 4 <= canvas.len() {
                 canvas[idx..idx + 4].copy_from_slice(&pixel);
             }
