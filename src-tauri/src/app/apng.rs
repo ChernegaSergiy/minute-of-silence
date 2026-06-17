@@ -45,7 +45,9 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
     let mut frames_base64: Vec<String> = Vec::new();
 
     // Temporary pixel buffer — sized for the largest possible frame.
-    let buf_size = reader.output_buffer_size().unwrap_or(width as usize * height as usize * 4);
+    let buf_size = reader
+        .output_buffer_size()
+        .unwrap_or(width as usize * height as usize * 4);
     let mut raw_buf = vec![0u8; buf_size];
 
     // How many frames the APNG declares (acTL chunk).
@@ -71,8 +73,7 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
 
         // APNG frame control (position / size / blend / dispose).
         // If absent this is a plain PNG — treat it as a single full frame.
-        let (fx, fy, fw, fh, blend_op, dispose_op) = if let Some(fc) = reader.info().frame_control
-        {
+        let (fx, fy, fw, fh, blend_op, dispose_op) = if let Some(fc) = reader.info().frame_control {
             (
                 fc.x_offset,
                 fc.y_offset,
@@ -95,16 +96,7 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
         previous_canvas.clone_from(&canvas);
 
         // Composite the subframe onto the canvas.
-        composite(
-            &mut canvas,
-            &frame_rgba,
-            fx,
-            fy,
-            fw,
-            fh,
-            width,
-            blend_op,
-        );
+        composite(&mut canvas, &frame_rgba, fx, fy, fw, fh, width, blend_op);
 
         // Encode the current canvas state as a PNG and push it.
         let png_bytes = encode_rgba_to_png(&canvas, width, height)?;
@@ -208,12 +200,17 @@ fn composite(
                 continue;
             }
 
-            let [sr, sg, sb, sa] = [src[src_idx], src[src_idx+1], src[src_idx+2], src[src_idx+3]];
+            let [sr, sg, sb, sa] = [
+                src[src_idx],
+                src[src_idx + 1],
+                src[src_idx + 2],
+                src[src_idx + 3],
+            ];
 
             match blend_op {
                 BlendOp::Source => {
                     // Replace destination pixel directly.
-                    dst[dst_idx]     = sr;
+                    dst[dst_idx] = sr;
                     dst[dst_idx + 1] = sg;
                     dst[dst_idx + 2] = sb;
                     dst[dst_idx + 3] = sa;
@@ -230,12 +227,12 @@ fn composite(
                             let d = d as f32 / 255.0;
                             ((s * sa_f + d * da_f * (1.0 - sa_f)) / out_a * 255.0).round() as u8
                         };
-                        dst[dst_idx]     = blend(sr, dst[dst_idx]);
+                        dst[dst_idx] = blend(sr, dst[dst_idx]);
                         dst[dst_idx + 1] = blend(sg, dst[dst_idx + 1]);
                         dst[dst_idx + 2] = blend(sb, dst[dst_idx + 2]);
                         dst[dst_idx + 3] = (out_a * 255.0).round() as u8;
                     } else {
-                        dst[dst_idx]     = 0;
+                        dst[dst_idx] = 0;
                         dst[dst_idx + 1] = 0;
                         dst[dst_idx + 2] = 0;
                         dst[dst_idx + 3] = 0;
@@ -247,7 +244,15 @@ fn composite(
 }
 
 /// Fill a rectangular region of the canvas with a constant RGBA value.
-fn fill_rect(canvas: &mut [u8], fx: u32, fy: u32, fw: u32, fh: u32, canvas_width: u32, pixel: [u8; 4]) {
+fn fill_rect(
+    canvas: &mut [u8],
+    fx: u32,
+    fy: u32,
+    fw: u32,
+    fh: u32,
+    canvas_width: u32,
+    pixel: [u8; 4],
+) {
     for row in 0..fh {
         for col in 0..fw {
             let idx = (((fy + row) * canvas_width + (fx + col)) * 4) as usize;
