@@ -1,3 +1,4 @@
+pub mod apng;
 pub mod commands;
 pub mod tray;
 
