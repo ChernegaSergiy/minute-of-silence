@@ -26,11 +26,11 @@ jobs:
             title: Linux
           - os: windows-latest
             title: Windows
-          - os: macos-13
+          - os: macos-latest
             title: macOS Intel
             args: --target x86_64-apple-darwin
             rust-target: x86_64-apple-darwin
-          - os: macos-13
+          - os: macos-latest
             title: macOS Silicon
             args: --target aarch64-apple-darwin
             rust-target: aarch64-apple-darwin
@@ -75,6 +75,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          MACOSX_DEPLOYMENT_TARGET: "13.0"
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('nightly-{0}', github.sha) }}
           releaseName: "Nightly Build"
