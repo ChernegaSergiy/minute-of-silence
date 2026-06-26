@@ -1,4 +1,4 @@
-//! APNG frame decoder — exposes decoded frames to the frontend as base64 PNG data.
+//! APNG frame decoder — exposes decoded frames to the frontend as raw RGBA base64.
 //!
 //! Uses the pure-Rust `png` crate which works identically on all platforms
 //! (Windows, macOS, Linux/WebKitGTK) without relying on any browser or OS APIs.
@@ -24,8 +24,8 @@ pub struct ApngInfo {
 /// - `blend_op`: Over / Source
 /// - `dispose_op`: None / Background / Previous
 ///
-/// Returns each composited frame as a lossless base64-encoded PNG string so the
-/// frontend can draw them directly onto a `<canvas>` with `drawImage`.
+/// Returns each composited frame as raw RGBA base64 so the frontend can feed
+/// it directly into `ImageData` + `putImageData` — no system image decoder needed.
 #[tauri::command]
 pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
     let cursor = Cursor::new(&data);
