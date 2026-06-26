@@ -17,7 +17,7 @@ fn send_command(command: i32) {
         Library::new("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote").ok()
     });
 
-    if let Some(ref lib) = lib {
+    if let Some(lib) = lib {
         unsafe {
             let func: Symbol<unsafe extern "C" fn(i32, *const c_void)> =
                 match lib.get(b"MRMediaRemoteSendCommand") {

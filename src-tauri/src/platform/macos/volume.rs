@@ -28,7 +28,7 @@ struct AudioObjectPropertyAddress {
     m_element: u32,
 }
 
-extern "C" {
+unsafe extern "C" {
     fn AudioObjectGetPropertyData(
         object: AudioObjectID,
         address: *const AudioObjectPropertyAddress,
