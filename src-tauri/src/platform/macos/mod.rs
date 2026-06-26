@@ -1,5 +1,6 @@
 pub mod autostart;
 pub mod media;
+pub mod now_playing;
 pub mod theme;
 pub mod volume;
 

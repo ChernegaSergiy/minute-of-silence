@@ -38,6 +38,12 @@ pub async fn resume_specific(players: Vec<String>) -> Result<()> {
     if players.is_empty() {
         return Ok(());
     }
+    // Don't send kMRPlay if there's no active Now Playing session.
+    // Otherwise, kMRPlay with nil originator falls through to the
+    // default media app (Apple Music) and opens its window.
+    if !super::now_playing::has_now_playing_session() {
+        return Ok(());
+    }
     send_command(MR_COMMAND_PLAY);
     Ok(())
 }
