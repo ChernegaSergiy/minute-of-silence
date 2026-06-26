@@ -15,7 +15,7 @@ pub struct ApngInfo {
     pub width: u32,
     pub height: u32,
     /// Each entry is a base64-encoded raw RGBA pixel buffer (full canvas size).
-    pub frames_raw: Vec<String>,
+    pub frames: Vec<String>,
 }
 
 /// Decode every frame of an APNG file into fully-composited RGBA canvases.
@@ -42,7 +42,7 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
     // Saved copy used by DisposeOp::Previous.
     let mut previous_canvas = vec![0u8; canvas_size];
 
-    let mut frames_raw: Vec<String> = Vec::new();
+    let mut frames: Vec<String> = Vec::new();
 
     // Temporary pixel buffer — sized for the largest possible frame.
     let buf_size = reader
@@ -109,7 +109,7 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
         // Composite the subframe onto the canvas.
         composite(&mut canvas, &frame_rgba, &rect, width, blend_op);
 
-        frames_raw.push(B64.encode(&canvas));
+        frames.push(B64.encode(&canvas));
 
         // Apply dispose_op to prepare the canvas for the next frame.
         match dispose_op {
@@ -130,7 +130,7 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
     Ok(ApngInfo {
         width,
         height,
-        frames_raw,
+        frames,
     })
 }
 
