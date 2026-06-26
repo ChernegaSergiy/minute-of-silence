@@ -83,21 +83,4 @@ jobs:
           prerelease: true
           args: ${{ matrix.args }}
 
-      - name: Embed Swift runtime dylibs (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          APP_BUNDLE="src-tauri/target/release/bundle/macos/MinuteOfSilence.app"
-          echo "Looking for bundle at: $APP_BUNDLE"
-          if [ -d "$APP_BUNDLE" ]; then
-            xcrun swift-stdlib-tool \
-              --copy \
-              --scan-executable "$APP_BUNDLE/Contents/MacOS/MinuteOfSilence" \
-              --destination "$APP_BUNDLE/Contents/Frameworks" \
-              --platform macosx
-            echo "Swift dylibs embedded successfully"
-          else
-            echo "Bundle not found at $APP_BUNDLE"
-            echo "Contents of bundle dir:"
-            ls -la src-tauri/target/release/bundle/macos/ 2>/dev/null || echo "No macos bundle dir"
-          fi
 
