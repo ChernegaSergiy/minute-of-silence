@@ -31,6 +31,8 @@ fn main() {
             .args([
                 "-target",
                 swift_target,
+                "-runtime-compatibility-version",
+                "5.8",
                 "-parse-as-library",
                 "-g",
                 "-O",
