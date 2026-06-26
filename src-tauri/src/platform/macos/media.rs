@@ -14,10 +14,7 @@ static MEDIA_REMOTE: OnceLock<Option<Library>> = OnceLock::new();
 
 fn send_command(command: i32) {
     let lib = MEDIA_REMOTE.get_or_init(|| unsafe {
-        Library::new(
-            "/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote",
-        )
-        .ok()
+        Library::new("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote").ok()
     });
 
     if let Some(ref lib) = lib {
