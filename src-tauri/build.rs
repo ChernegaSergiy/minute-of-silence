@@ -20,32 +20,39 @@ fn main() {
             String::from_utf8(output.stdout).unwrap().trim().to_string()
         };
 
-        let status = std::process::Command::new("clang")
-            .args([
-                "-target",
-                clang_target,
-                "-fobjc-arc",
-                "-O2",
-                "-isysroot",
-                &sdk,
-                "-c",
-                "-o",
-                &format!("{}/theme.o", out_dir),
-                "src/platform/macos/theme.m",
-            ])
-            .status()
-            .unwrap();
+        let m_sources = [
+            "src/platform/macos/theme.m",
+            "src/platform/macos/now_playing.m",
+        ];
 
-        if !status.success() {
-            panic!("Objective-C compilation failed");
+        for (i, src) in m_sources.iter().enumerate() {
+            let obj = format!("{out_dir}/obj{i}.o");
+            let status = std::process::Command::new("clang")
+                .args([
+                    "-target",
+                    clang_target,
+                    "-fobjc-arc",
+                    "-O2",
+                    "-isysroot",
+                    &sdk,
+                    "-c",
+                    "-o",
+                    &obj,
+                    src,
+                ])
+                .status()
+                .unwrap();
+
+            if !status.success() {
+                panic!("Objective-C compilation failed for {}", src);
+            }
         }
 
         let ar_status = std::process::Command::new("ar")
-            .args([
-                "rcs",
-                &format!("{}/libmacos_theme.a", out_dir),
-                &format!("{}/theme.o", out_dir),
-            ])
+            .arg("rcs")
+            .arg(format!("{out_dir}/libmacos_theme.a"))
+            .arg(format!("{out_dir}/obj0.o"))
+            .arg(format!("{out_dir}/obj1.o"))
             .status()
             .unwrap();
 
@@ -59,6 +66,7 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-framework,Foundation");
         println!("cargo:rustc-link-arg=-Wl,-framework,AppKit");
         println!("cargo:rustc-link-arg=-Wl,-framework,CoreAudio");
+        println!("cargo:rustc-link-arg=-Wl,-framework,MediaRemote");
     }
 
     tauri_build::build();
