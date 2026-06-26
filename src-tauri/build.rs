@@ -66,6 +66,7 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-framework,Foundation");
         println!("cargo:rustc-link-arg=-Wl,-framework,AppKit");
         println!("cargo:rustc-link-arg=-Wl,-framework,CoreAudio");
+        println!("cargo:rustc-link-search=framework=/System/Library/PrivateFrameworks");
         println!("cargo:rustc-link-arg=-Wl,-framework,MediaRemote");
     }
 
