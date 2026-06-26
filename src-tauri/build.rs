@@ -4,7 +4,6 @@ fn main() {
         let out_dir = std::env::var("OUT_DIR").unwrap();
         let target = std::env::var("TARGET").unwrap();
 
-        // Map Rust target to Swift target
         let swift_target = if target == "x86_64-apple-darwin" {
             "x86_64-apple-macosx11.0"
         } else if target == "aarch64-apple-darwin" {
@@ -71,6 +70,8 @@ fn main() {
         );
         println!("cargo:rustc-link-lib=dylib=swiftCore");
         println!("cargo:rustc-link-lib=dylib=swiftAppKit");
+
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
     }
 
     tauri_build::build();
