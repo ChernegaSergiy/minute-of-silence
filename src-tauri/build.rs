@@ -13,12 +13,18 @@ fn main() {
             &target
         };
 
-        let xcrun_output = std::process::Command::new("xcrun")
-            .args(["--find", "swiftc"])
-            .output()
-            .expect("Failed to execute xcrun to find swiftc");
-        let swiftc_path = String::from_utf8(xcrun_output.stdout).unwrap();
-        let swiftc = swiftc_path.trim();
+        let swiftc = if let Ok(path) = std::env::var("SWIFTC") {
+            path.trim().to_string()
+        } else {
+            let xcrun_output = std::process::Command::new("xcrun")
+                .args(["--find", "swiftc"])
+                .output()
+                .expect("Failed to execute xcrun to find swiftc");
+            String::from_utf8(xcrun_output.stdout)
+                .unwrap()
+                .trim()
+                .to_string()
+        };
 
         let sdk_output = std::process::Command::new("xcrun")
             .args(["--sdk", "macosx", "--show-sdk-path"])
@@ -31,8 +37,6 @@ fn main() {
             .args([
                 "-target",
                 swift_target,
-                "-runtime-compatibility-version",
-                "5.8",
                 "-parse-as-library",
                 "-g",
                 "-O",
@@ -54,7 +58,7 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", out_dir);
         println!("cargo:rustc-link-lib=static=MediaVolumeHelper");
 
-        let swift_lib_path = std::path::Path::new(swiftc)
+        let swift_lib_path = std::path::Path::new(&swiftc)
             .parent()
             .and_then(|p| p.parent())
             .map(|p| p.join("lib/swift/macosx"))
