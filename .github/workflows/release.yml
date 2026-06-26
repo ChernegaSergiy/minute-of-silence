@@ -70,6 +70,14 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
+      - name: Install Swift 5.8 toolchain (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          curl -L -o swift-5.8.pkg \
+            https://download.swift.org/swift-5.8-release/xcode/swift-5.8-RELEASE/swift-5.8-RELEASE-osx.pkg
+          sudo installer -pkg swift-5.8.pkg -target /
+          echo "SWIFTC=/Library/Developer/Toolchains/swift-5.8-RELEASE.xctoolchain/usr/bin/swiftc" >> $GITHUB_ENV
+
       - name: Tauri build
         uses: tauri-apps/tauri-action@v0
         env:
