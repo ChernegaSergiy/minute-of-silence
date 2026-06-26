@@ -1,12 +1,24 @@
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
 #import <CoreAudio/CoreAudio.h>
+#import <dlfcn.h>
 
-static NSString* runAppleScript(NSString *source) {
-    NSAppleScript *script = [[NSAppleScript alloc] initWithSource:source];
-    NSDictionary *error = nil;
-    NSAppleEventDescriptor *result = [script executeAndReturnError:&error];
-    return error ? nil : [result stringValue];
+// MediaRemote private framework — used by media keys (F7/F8/F9).
+// Works with Chrome, Safari, Spotify, Apple Music, VLC, IINA, etc.
+static BOOL mediaRemoteAvailable = NO;
+static void (*MRMediaRemoteSendCommand)(int command, id userInfo);
+
+static void initMediaRemote(void) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        void *handle = dlopen("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote", RTLD_NOW);
+        if (handle) {
+            MRMediaRemoteSendCommand = dlsym(handle, "MRMediaRemoteSendCommand");
+            if (MRMediaRemoteSendCommand) {
+                mediaRemoteAvailable = YES;
+            }
+        }
+    });
 }
 
 static AudioObjectID getDefaultOutputDevice(void) {
@@ -122,59 +134,26 @@ bool macos_set_mute(bool mute) {
     return status == noErr;
 }
 
+// kMRPause = 1, kMRPlay = 0
+#define kMRPause 1
+#define kMRPlay 0
+
 char* macos_pause_all(void) {
     @autoreleasepool {
-        NSArray<NSRunningApplication *> *runningApps = NSWorkspace.sharedWorkspace.runningApplications;
-        NSMutableArray<NSString *> *pausedBundleIDs = [NSMutableArray array];
-
-        for (NSRunningApplication *app in runningApps) {
-            NSString *bundleID = app.bundleIdentifier;
-            if (!bundleID) continue;
-
-            NSString *script = [NSString stringWithFormat:
-                @"tell application id \"%@\"\n"
-                 "    try\n"
-                 "        if player state is playing then\n"
-                 "            pause\n"
-                 "            return \"paused\"\n"
-                 "        end if\n"
-                 "    end try\n"
-                 "    return \"not_playing\"\n"
-                 "end tell",
-                bundleID];
-
-            NSString *result = runAppleScript(script);
-            if ([result isEqualToString:@"paused"]) {
-                [pausedBundleIDs addObject:bundleID];
-            }
+        initMediaRemote();
+        if (mediaRemoteAvailable) {
+            MRMediaRemoteSendCommand(kMRPause, nil);
+            return strdup("__mr__");
         }
-
-        NSString *joined = [pausedBundleIDs componentsJoinedByString:@","];
-        return strdup(joined.UTF8String ?: "");
+        return strdup("");
     }
 }
 
 void macos_resume_players(const char *bundleIDsCsv) {
     @autoreleasepool {
-        NSString *csv = [NSString stringWithUTF8String:bundleIDsCsv];
-        if (!csv) return;
-
-        NSArray<NSString *> *bundleIDs = [csv componentsSeparatedByString:@","];
-        NSSet<NSString *> *runningBundleIDs = [NSSet setWithArray:
-            [[NSWorkspace.sharedWorkspace.runningApplications valueForKey:@"bundleIdentifier"] allObjects]];
-
-        for (NSString *bundleID in bundleIDs) {
-            if (bundleID.length == 0) continue;
-            if (![runningBundleIDs containsObject:bundleID]) continue;
-
-            NSString *script = [NSString stringWithFormat:
-                @"tell application id \"%@\"\n"
-                 "    try\n"
-                 "        play\n"
-                 "    end try\n"
-                 "end tell",
-                bundleID];
-            runAppleScript(script);
+        initMediaRemote();
+        if (mediaRemoteAvailable) {
+            MRMediaRemoteSendCommand(kMRPlay, nil);
         }
     }
 }
