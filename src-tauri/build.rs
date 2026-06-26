@@ -4,25 +4,12 @@ fn main() {
         let out_dir = std::env::var("OUT_DIR").unwrap();
         let target = std::env::var("TARGET").unwrap();
 
-        let swift_target = if target == "x86_64-apple-darwin" {
-            "x86_64-apple-macosx11.0"
+        let clang_target = if target == "x86_64-apple-darwin" {
+            "x86_64-apple-macosx13.0"
         } else if target == "aarch64-apple-darwin" {
-            "arm64-apple-macosx11.0"
+            "arm64-apple-macosx13.0"
         } else {
             &target
-        };
-
-        let swiftc = if let Ok(path) = std::env::var("SWIFTC") {
-            path.trim().to_string()
-        } else {
-            let xcrun_output = std::process::Command::new("xcrun")
-                .args(["--find", "swiftc"])
-                .output()
-                .expect("Failed to execute xcrun to find swiftc");
-            String::from_utf8(xcrun_output.stdout)
-                .unwrap()
-                .trim()
-                .to_string()
         };
 
         let sdk_output = std::process::Command::new("xcrun")
@@ -32,46 +19,45 @@ fn main() {
         let sdk_path = String::from_utf8(sdk_output.stdout).unwrap();
         let sdk = sdk_path.trim();
 
-        let status = std::process::Command::new(&swiftc)
+        let obj_status = std::process::Command::new("clang")
             .args([
                 "-target",
-                swift_target,
-                "-parse-as-library",
-                "-g",
-                "-O",
-                "-emit-library",
-                "-static",
-                "-sdk",
+                clang_target,
+                "-fobjc-arc",
+                "-O2",
+                "-isysroot",
                 sdk,
+                "-c",
                 "-o",
-                &format!("{}/libMediaVolumeHelper.a", out_dir),
-                "src/platform/macos/MediaVolumeHelper.swift",
+                &format!("{}/MediaVolumeHelper.o", out_dir),
+                "src/platform/macos/MediaVolumeHelper.m",
             ])
             .status()
             .unwrap();
 
-        if !status.success() {
-            panic!("Swift compilation failed");
+        if !obj_status.success() {
+            panic!("Objective-C compilation failed");
+        }
+
+        let ar_status = std::process::Command::new("ar")
+            .args([
+                "rcs",
+                &format!("{}/libMediaVolumeHelper.a", out_dir),
+                &format!("{}/MediaVolumeHelper.o", out_dir),
+            ])
+            .status()
+            .unwrap();
+
+        if !ar_status.success() {
+            panic!("ar failed to create static library");
         }
 
         println!("cargo:rustc-link-search=native={}", out_dir);
         println!("cargo:rustc-link-lib=static=MediaVolumeHelper");
-
-        let swift_lib_path = std::path::Path::new(&swiftc)
-            .parent()
-            .and_then(|p| p.parent())
-            .map(|p| p.join("lib/swift/macosx"))
-            .expect("Failed to resolve Swift library path");
-
-        println!("cargo:rustc-link-search=native=/usr/lib/swift");
-        println!(
-            "cargo:rustc-link-search=native={}",
-            swift_lib_path.display()
-        );
-        println!("cargo:rustc-link-lib=dylib=swiftCore");
-        println!("cargo:rustc-link-lib=dylib=swiftAppKit");
-
-        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
+        println!("cargo:rustc-link-lib=objc");
+        println!("cargo:rustc-link-arg=-Wl,-framework,Foundation");
+        println!("cargo:rustc-link-arg=-Wl,-framework,AppKit");
+        println!("cargo:rustc-link-arg=-Wl,-framework,CoreAudio");
     }
 
     tauri_build::build();

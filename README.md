@@ -230,7 +230,7 @@ minute-of-silence/
 |   |   |       +-- mod.rs
 |   |   |       +-- autostart.rs      # macOS autostart via tauri_plugin_autostart
 |   |   |       +-- media.rs          # macOS media player keys muting
-|   |   |       +-- MediaVolumeHelper.swift  # Swift helper for CoreAudio and AppleScript
+|   |   |       +-- MediaVolumeHelper.m  # ObjC helper for CoreAudio and AppleScript
 |   |   |       +-- theme.rs          # macOS system dark theme detection
 |   |   |       \-- volume.rs         # macOS system volume controller API
 |   |   +-- error.rs                  # Unified custom application error types
