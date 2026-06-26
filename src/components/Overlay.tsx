@@ -127,7 +127,7 @@ const useStyles = makeStyles({
 interface ApngInfo {
   width: number;
   height: number;
-  /** Each entry is a base64-encoded lossless PNG of the composited canvas. */
+  /** Each entry is a base64-encoded raw RGBA pixel buffer of the composited canvas. */
   frames: string[];
 }
 
@@ -148,23 +148,22 @@ async function loadApngFrames(
 
   const info = await invoke<ApngInfo>("decode_apng_frames", { data: bytes });
 
-  // Convert each base64 PNG string into an HTMLCanvasElement.
-  const canvases: HTMLCanvasElement[] = await Promise.all(
-    info.frames.map((b64) => {
-      return new Promise<HTMLCanvasElement>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = info.width;
-          canvas.height = info.height;
-          canvas.getContext("2d")!.drawImage(img, 0, 0);
-          resolve(canvas);
-        };
-        img.onerror = () => reject(new Error("Failed to load decoded APNG frame"));
-        img.src = `data:image/png;base64,${b64}`;
-      });
-    }),
-  );
+  // Convert each base64 raw RGBA buffer into an HTMLCanvasElement via ImageData.
+  const canvases: HTMLCanvasElement[] = info.frames.map((b64) => {
+    const binaryStr = atob(b64);
+    const len = binaryStr.length;
+    const pixels = new Uint8ClampedArray(len);
+    for (let i = 0; i < len; i++) {
+      pixels[i] = binaryStr.charCodeAt(i);
+    }
+
+    const imageData = new ImageData(pixels, info.width, info.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = info.width;
+    canvas.height = info.height;
+    canvas.getContext("2d")!.putImageData(imageData, 0, 0);
+    return canvas;
+  });
 
   return { frames: canvases, width: info.width, height: info.height };
 }
