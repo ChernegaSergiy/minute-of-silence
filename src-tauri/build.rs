@@ -33,7 +33,7 @@ fn main() {
         let sdk_path = String::from_utf8(sdk_output.stdout).unwrap();
         let sdk = sdk_path.trim();
 
-        let status = std::process::Command::new(swiftc)
+        let status = std::process::Command::new(&swiftc)
             .args([
                 "-target",
                 swift_target,
