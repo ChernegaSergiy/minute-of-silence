@@ -152,16 +152,20 @@ async function loadApngFrames(
   const canvases: HTMLCanvasElement[] = info.frames.map((b64) => {
     const binaryStr = atob(b64);
     const len = binaryStr.length;
-    const pixels = new Uint8ClampedArray(len);
+    const buf = new ArrayBuffer(len);
+    const view = new Uint8Array(buf);
     for (let i = 0; i < len; i++) {
-      pixels[i] = binaryStr.charCodeAt(i);
+      view[i] = binaryStr.charCodeAt(i);
     }
 
-    const imageData = new ImageData(pixels, info.width, info.height);
+    const imageData = new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
     const canvas = document.createElement("canvas");
     canvas.width = info.width;
     canvas.height = info.height;
-    canvas.getContext("2d")!.putImageData(imageData, 0, 0);
+    const ctx = canvas.getContext("2d")!;
+    ctx.putImageData(imageData, 0, 0);
+    // Force Safari to retain the GPU backing store for offscreen canvases.
+    ctx.getImageData(0, 0, 1, 1);
     return canvas;
   });
 
