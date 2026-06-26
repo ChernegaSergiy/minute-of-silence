@@ -1,43 +1,46 @@
-//! Pause / resume media players on macOS via Swift helper and NSWorkspace.
+//! Pause / resume media on macOS via MediaRemote private framework.
+//! Uses the same system API that media keys (F7/F8/F9) use.
 
 use crate::error::Result;
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
+use libloading::{Library, Symbol};
+use std::ffi::c_void;
+use std::ptr;
+use std::sync::OnceLock;
 
-unsafe extern "C" {
-    fn macos_pause_all() -> *mut c_char;
-    fn macos_resume_players(bundle_ids_csv: *const c_char);
-    fn macos_free_string(ptr: *mut c_char);
+const MR_COMMAND_PAUSE: i32 = 1;
+const MR_COMMAND_PLAY: i32 = 0;
+
+static MEDIA_REMOTE: OnceLock<Option<Library>> = OnceLock::new();
+
+fn send_command(command: i32) {
+    let lib = MEDIA_REMOTE.get_or_init(|| unsafe {
+        Library::new(
+            "/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote",
+        )
+        .ok()
+    });
+
+    if let Some(ref lib) = lib {
+        unsafe {
+            let func: Symbol<unsafe extern "C" fn(i32, *const c_void)> =
+                match lib.get(b"MRMediaRemoteSendCommand") {
+                    Ok(f) => f,
+                    Err(_) => return,
+                };
+            func(command, ptr::null());
+        }
+    }
 }
 
 pub async fn pause_all() -> Result<Vec<String>> {
-    let ptr = unsafe { macos_pause_all() };
-    if ptr.is_null() {
-        return Err(crate::error::AppError::Platform(
-            "macos_pause_all returned null".to_string(),
-        ));
-    }
-
-    let c_str = unsafe { CStr::from_ptr(ptr) };
-    let str_slice = c_str.to_string_lossy();
-    let bundle_ids: Vec<String> = str_slice
-        .split(',')
-        .filter(|s| !s.is_empty())
-        .map(|s| s.to_string())
-        .collect();
-
-    unsafe { macos_free_string(ptr) };
-    Ok(bundle_ids)
+    send_command(MR_COMMAND_PAUSE);
+    Ok(vec!["__mr__".to_string()])
 }
 
 pub async fn resume_specific(players: Vec<String>) -> Result<()> {
     if players.is_empty() {
         return Ok(());
     }
-
-    let csv = players.join(",");
-    if let Ok(c_string) = CString::new(csv) {
-        unsafe { macos_resume_players(c_string.as_ptr()) };
-    }
+    send_command(MR_COMMAND_PLAY);
     Ok(())
 }
