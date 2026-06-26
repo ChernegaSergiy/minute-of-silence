@@ -14,10 +14,7 @@ use png::{BlendOp, DisposeOp};
 pub struct ApngInfo {
     pub width: u32,
     pub height: u32,
-    /// Each entry is a base64-encoded PNG image (RGBA, full canvas size).
-    pub frames: Vec<String>,
     /// Each entry is a base64-encoded raw RGBA pixel buffer (full canvas size).
-    /// This replaces `frames` in a follow-up commit.
     pub frames_raw: Vec<String>,
 }
 
@@ -45,7 +42,6 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
     // Saved copy used by DisposeOp::Previous.
     let mut previous_canvas = vec![0u8; canvas_size];
 
-    let mut frames_base64: Vec<String> = Vec::new();
     let mut frames_raw: Vec<String> = Vec::new();
 
     // Temporary pixel buffer — sized for the largest possible frame.
@@ -113,10 +109,6 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
         // Composite the subframe onto the canvas.
         composite(&mut canvas, &frame_rgba, &rect, width, blend_op);
 
-        // Encode the current canvas state as a PNG and push it.
-        let png_bytes = encode_rgba_to_png(&canvas, width, height)?;
-        frames_base64.push(B64.encode(&png_bytes));
-        // Temporary: also push raw RGBA alongside PNG.
         frames_raw.push(B64.encode(&canvas));
 
         // Apply dispose_op to prepare the canvas for the next frame.
@@ -135,14 +127,9 @@ pub fn decode_apng_frames(data: Vec<u8>) -> Result<ApngInfo, String> {
         }
     }
 
-    if frames_base64.is_empty() {
-        return Err("No frames decoded from APNG".to_string());
-    }
-
     Ok(ApngInfo {
         width,
         height,
-        frames: frames_base64,
         frames_raw,
     })
 }
@@ -270,17 +257,4 @@ fn fill_rect(canvas: &mut [u8], rect: &FrameRect, canvas_width: u32, pixel: [u8;
             }
         }
     }
-}
-
-/// Encode raw RGBA pixels as a lossless PNG byte stream.
-fn encode_rgba_to_png(rgba: &[u8], width: u32, height: u32) -> Result<Vec<u8>, String> {
-    let mut out = Vec::new();
-    {
-        let mut encoder = png::Encoder::new(&mut out, width, height);
-        encoder.set_color(png::ColorType::Rgba);
-        encoder.set_depth(png::BitDepth::Eight);
-        let mut writer = encoder.write_header().map_err(|e| e.to_string())?;
-        writer.write_image_data(rgba).map_err(|e| e.to_string())?;
-    }
-    Ok(out)
 }
