@@ -134,22 +134,20 @@ interface ApngInfo {
 /**
  * Decode APNG frames via the Rust backend.
  *
- * The backend uses the pure-Rust `png` crate which works identically on every
- * platform (Windows, macOS, Linux/WebKitGTK) without relying on any browser
- * or OS-level image decoder API.
+ * Returns raw ImageData[] — no intermediate canvases.
+ * The display canvas uses putImageData directly in the animation tick,
+ * avoiding WebKit offscreen-canvas backing-store bugs (bug #229986).
  */
 async function loadApngFrames(
   src: string,
-): Promise<{ frames: HTMLCanvasElement[]; width: number; height: number }> {
-  // Fetch the raw APNG bytes and pass them to the Rust decoder.
+): Promise<{ frames: ImageData[]; width: number; height: number }> {
   const resp = await fetch(src);
   const arrayBuf = await resp.arrayBuffer();
   const bytes = Array.from(new Uint8Array(arrayBuf));
 
   const info = await invoke<ApngInfo>("decode_apng_frames", { data: bytes });
 
-  // Convert each base64 raw RGBA buffer into an HTMLCanvasElement via ImageData.
-  const canvases: HTMLCanvasElement[] = info.frames.map((b64) => {
+  const frames: ImageData[] = info.frames.map((b64) => {
     const binaryStr = atob(b64);
     const len = binaryStr.length;
     const buf = new ArrayBuffer(len);
@@ -157,19 +155,10 @@ async function loadApngFrames(
     for (let i = 0; i < len; i++) {
       view[i] = binaryStr.charCodeAt(i);
     }
-
-    const imageData = new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
-    const canvas = document.createElement("canvas");
-    canvas.width = info.width;
-    canvas.height = info.height;
-    const ctx = canvas.getContext("2d")!;
-    ctx.putImageData(imageData, 0, 0);
-    // Force Safari to retain the GPU backing store for offscreen canvases.
-    ctx.getImageData(0, 0, 1, 1);
-    return canvas;
+    return new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
   });
 
-  return { frames: canvases, width: info.width, height: info.height };
+  return { frames, width: info.width, height: info.height };
 }
 
 function useApngPlayer(
@@ -181,7 +170,7 @@ function useApngPlayer(
   useEffect(() => {
     if (!active) return;
     let rafId: number;
-    let frames: HTMLCanvasElement[] = [];
+    let frames: ImageData[] = [];
     let startTime: number | null = null;
     let isCancelled = false;
 
@@ -198,13 +187,13 @@ function useApngPlayer(
           return;
         }
 
-        // Handle high DPI screens
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = RING_SIZE * dpr;
-        canvas.height = RING_SIZE * dpr;
+        // Size canvas to match the native APNG dimensions.
+        // No DPR multiplication: putImageData writes physical pixels directly,
+        // and CSS stretches the canvas to fill the wrapper on retina displays.
+        canvas.width = data.width;
+        canvas.height = data.height;
 
         const ctx = canvas.getContext("2d")!;
-        ctx.scale(dpr, dpr);
 
         const tick = (now: number) => {
           if (!startTime) startTime = now;
@@ -212,10 +201,7 @@ function useApngPlayer(
           const progress = Math.min(elapsed / durationSeconds, 1);
           const frameIdx = Math.min(Math.floor(progress * frames.length), frames.length - 1);
 
-          ctx.clearRect(0, 0, RING_SIZE, RING_SIZE);
-          if (frames[frameIdx]) {
-            ctx.drawImage(frames[frameIdx], 0, 0, RING_SIZE, RING_SIZE);
-          }
+          ctx.putImageData(frames[frameIdx], 0, 0);
 
           if (progress < 1) {
             rafId = requestAnimationFrame(tick);
