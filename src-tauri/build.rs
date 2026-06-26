@@ -12,48 +12,49 @@ fn main() {
             &target
         };
 
-        let sdk_output = std::process::Command::new("xcrun")
-            .args(["--sdk", "macosx", "--show-sdk-path"])
-            .output()
-            .expect("Failed to execute xcrun to find SDK path");
-        let sdk_path = String::from_utf8(sdk_output.stdout).unwrap();
-        let sdk = sdk_path.trim();
+        let sdk = {
+            let output = std::process::Command::new("xcrun")
+                .args(["--sdk", "macosx", "--show-sdk-path"])
+                .output()
+                .expect("xcrun failed");
+            String::from_utf8(output.stdout).unwrap().trim().to_string()
+        };
 
-        let obj_status = std::process::Command::new("clang")
+        let status = std::process::Command::new("clang")
             .args([
                 "-target",
                 clang_target,
                 "-fobjc-arc",
                 "-O2",
                 "-isysroot",
-                sdk,
+                &sdk,
                 "-c",
                 "-o",
-                &format!("{}/MediaVolumeHelper.o", out_dir),
-                "src/platform/macos/MediaVolumeHelper.m",
+                &format!("{}/theme.o", out_dir),
+                "src/platform/macos/theme.m",
             ])
             .status()
             .unwrap();
 
-        if !obj_status.success() {
+        if !status.success() {
             panic!("Objective-C compilation failed");
         }
 
         let ar_status = std::process::Command::new("ar")
             .args([
                 "rcs",
-                &format!("{}/libMediaVolumeHelper.a", out_dir),
-                &format!("{}/MediaVolumeHelper.o", out_dir),
+                &format!("{}/libmacos_theme.a", out_dir),
+                &format!("{}/theme.o", out_dir),
             ])
             .status()
             .unwrap();
 
         if !ar_status.success() {
-            panic!("ar failed to create static library");
+            panic!("ar failed");
         }
 
         println!("cargo:rustc-link-search=native={}", out_dir);
-        println!("cargo:rustc-link-lib=static=MediaVolumeHelper");
+        println!("cargo:rustc-link-lib=static=macos_theme");
         println!("cargo:rustc-link-lib=objc");
         println!("cargo:rustc-link-arg=-Wl,-framework,Foundation");
         println!("cargo:rustc-link-arg=-Wl,-framework,AppKit");
