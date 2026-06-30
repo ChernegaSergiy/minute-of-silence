@@ -299,16 +299,35 @@ impl CeremonyScheduler {
         }
     }
 
-    fn get_synchronized_now(&self) -> chrono::DateTime<Local> {
+    fn get_synchronized_now(&self) -> chrono::DateTime<FixedOffset> {
+        let utc_now = Utc::now();
+
         let state = self.app.state::<AppState>();
         let ntp_offset = state.ntp_service.get_offset();
+        let corrected_utc = if let Some(offset_ms) = ntp_offset {
+            utc_now + chrono::Duration::milliseconds(offset_ms)
+        } else {
+            utc_now
+        };
 
-        if let Some(offset_ms) = ntp_offset {
-            let now = Local::now();
-            let corrected = now + chrono::Duration::milliseconds(offset_ms);
-            return corrected;
+        corrected_utc.with_timezone(&Self::detect_local_offset())
+    }
+
+    fn detect_local_offset() -> FixedOffset {
+        if let Ok(link) = std::fs::read_link("/etc/localtime") {
+            let path_str = link.to_string_lossy();
+            if let Some(tz_name) = path_str.rsplit("/zoneinfo/").next() {
+                let tz_name = tz_name.trim();
+                if !tz_name.is_empty() {
+                    if let Ok(tz) = tz_name.parse::<chrono_tz::Tz>() {
+                        let now = Utc::now();
+                        return tz.offset_from_utc_datetime(&now.naive_utc()).fix();
+                    }
+                }
+            }
         }
-        Local::now()
+
+        *Local::now().offset()
     }
 
     pub async fn trigger_ceremony(&self) {
