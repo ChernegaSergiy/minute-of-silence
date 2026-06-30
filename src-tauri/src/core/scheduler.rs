@@ -1,6 +1,6 @@
 //! Ceremony scheduler and execution logic.
 
-use chrono::{Datelike, FixedOffset, Local, NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
+use chrono::{Datelike, FixedOffset, Local, NaiveDate, NaiveTime, Offset, TimeZone, Timelike, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
