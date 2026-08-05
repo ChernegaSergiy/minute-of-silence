@@ -48,6 +48,14 @@ parts:
     override-build: |
       # Setup Rust environment
       export PATH="$PATH:$HOME/.cargo/bin"
+
+      # The gnome extension exports LD_LIBRARY_PATH pointing at the
+      # gnome-46-2404-sdk content snap's own libc, which shadows the base's
+      # glibc and breaks the rustup snap binary at startup with:
+      #   symbol lookup error: .../libc.so.6: undefined symbol: __nptl_change_stack_perm
+      # rustup/cargo/rustc only need the base image's own libraries, so drop
+      # the SDK's LD_LIBRARY_PATH override before invoking them.
+      unset LD_LIBRARY_PATH
       rustup default stable
       
       # Build the application
