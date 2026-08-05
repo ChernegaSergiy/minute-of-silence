@@ -80,7 +80,7 @@ pub fn detect_system_theme() -> bool {
                     "--file",
                     "kdeglobals",
                     "--group",
-                    "KDE",
+                    "General",
                     "--key",
                     "ColorScheme",
                 ])
