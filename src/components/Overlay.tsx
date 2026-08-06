@@ -141,20 +141,19 @@ interface ApngInfo {
 /**
  * Decode APNG frames via the Rust backend.
  *
- * Returns HTMLCanvasElement[] for use with drawImage(), which goes through the
- * WebKit compositing pipeline — unlike putImageData which bypasses it.
- * Using a hidden canvas buffer is the most reliable cross-platform method for WebKit.
+ * Returns raw ImageData[] so we store pixels in RAM, avoiding WebKit's aggressive
+ * GPU backing store purging which happens if we store 72 HTMLCanvasElements.
  */
 async function loadApngFrames(
   src: string,
-): Promise<{ frames: HTMLCanvasElement[]; width: number; height: number }> {
+): Promise<{ frames: ImageData[]; width: number; height: number }> {
   const resp = await fetch(src);
   const arrayBuf = await resp.arrayBuffer();
   const bytes = Array.from(new Uint8Array(arrayBuf));
 
   const info = await invoke<ApngInfo>("decode_apng_frames", { data: bytes });
 
-  const frames: HTMLCanvasElement[] = info.frames.map((b64) => {
+  const frames: ImageData[] = info.frames.map((b64) => {
     const binaryStr = atob(b64);
     const len = binaryStr.length;
     const buf = new ArrayBuffer(len);
@@ -162,15 +161,7 @@ async function loadApngFrames(
     for (let i = 0; i < len; i++) {
       view[i] = binaryStr.charCodeAt(i);
     }
-    const imageData = new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
-    
-    const canvas = document.createElement("canvas");
-    canvas.width = info.width;
-    canvas.height = info.height;
-    const ctx = canvas.getContext("2d");
-    if (ctx) ctx.putImageData(imageData, 0, 0);
-    
-    return canvas;
+    return new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
   });
 
   return { frames, width: info.width, height: info.height };
@@ -185,7 +176,7 @@ function useApngPlayer(
   useEffect(() => {
     if (!active) return;
     let rafId: number;
-    let frames: HTMLCanvasElement[] = [];
+    let frames: ImageData[] = [];
     let startTime: number | null = null;
     let isCancelled = false;
 
@@ -203,11 +194,17 @@ function useApngPlayer(
           return;
         }
 
-        // Size canvas to match the native APNG dimensions.
+        // Size main canvas
         canvas.width = data.width;
         canvas.height = data.height;
 
         const ctx = canvas.getContext("2d")!;
+        
+        // Single offscreen buffer to avoid WebKit GPU memory purges
+        const offscreen = document.createElement("canvas");
+        offscreen.width = data.width;
+        offscreen.height = data.height;
+        const offscreenCtx = offscreen.getContext("2d")!;
 
         const tick = (now: number) => {
           if (!startTime) startTime = now;
@@ -215,8 +212,12 @@ function useApngPlayer(
           const progress = Math.min(elapsed / durationSeconds, 1);
           const frameIdx = Math.min(Math.floor(progress * frames.length), frames.length - 1);
 
+          // Write pixels to offscreen buffer
+          offscreenCtx.putImageData(frames[frameIdx], 0, 0);
+          
+          // Draw buffer to main canvas to trigger WebKit compositing
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(frames[frameIdx], 0, 0);
+          ctx.drawImage(offscreen, 0, 0);
 
           // Force WKWebView to invalidate and repaint the canvas layer.
           // WebKit aggressively optimizes canvas layers and often ignores
