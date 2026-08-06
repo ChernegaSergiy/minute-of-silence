@@ -19,7 +19,6 @@
     "store:default",
     "updater:default",
     "clipboard-manager:allow-write-text",
-    "clipboard-manager:allow-read-text",
     "process:allow-restart"
   ]
 }
