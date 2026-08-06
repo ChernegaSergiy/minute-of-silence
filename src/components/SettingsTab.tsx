@@ -273,6 +273,14 @@ export default function SettingsTab({
             else unskipNext();
           }}
         />
+        <Divider />
+        <SwitchRow
+          id="showNearbyPersonalDatesToggle"
+          label={t("controls.show_nearby_personal_dates.label")}
+          desc={t("controls.show_nearby_personal_dates.description")}
+          checked={settings.showNearbyPersonalDates}
+          onChange={(v) => onUpdateSetting("showNearbyPersonalDates", v)}
+        />
       </Card>
 
       <Card className={styles.card}>
