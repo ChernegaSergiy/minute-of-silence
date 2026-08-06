@@ -76,7 +76,7 @@ export async function getLogContents(): Promise<string> {
 export const CEREMONY_START_EVENT = "ceremony-start";
 export const CEREMONY_END_EVENT = "ceremony-end";
 
-export type CeremonyStartPayload = { duration_ms?: number };
+export type CeremonyStartPayload = { duration_ms?: number; is_test?: boolean };
 
 export function onCeremonyStart(callback: (payload: CeremonyStartPayload) => void): Promise<UnlistenFn> {
   return listen(CEREMONY_START_EVENT, (e) => callback((e.payload as unknown) as CeremonyStartPayload));
