@@ -30,6 +30,7 @@ export interface Settings {
   resumeAfterCeremony: boolean;
   showVisualOverlay: boolean;
   showFlagAnimation: boolean;
+  /** Show personal dates on nearby days with weighted proximity. */
   showNearbyPersonalDates: boolean;
   systemTimeOnly: boolean;
   volumePriority: boolean;
