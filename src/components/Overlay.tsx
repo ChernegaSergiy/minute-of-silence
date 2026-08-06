@@ -194,17 +194,11 @@ function useApngPlayer(
           return;
         }
 
-        // Size main canvas
+        // Size canvas
         canvas.width = data.width;
         canvas.height = data.height;
 
         const ctx = canvas.getContext("2d")!;
-        
-        // Single offscreen buffer to avoid WebKit GPU memory purges
-        const offscreen = document.createElement("canvas");
-        offscreen.width = data.width;
-        offscreen.height = data.height;
-        const offscreenCtx = offscreen.getContext("2d")!;
 
         const tick = () => {
           const now = performance.now();
@@ -213,12 +207,10 @@ function useApngPlayer(
           const progress = Math.min(elapsed / durationSeconds, 1);
           const frameIdx = Math.min(Math.floor(progress * frames.length), frames.length - 1);
 
-          // Write pixels to offscreen buffer
-          offscreenCtx.putImageData(frames[frameIdx], 0, 0);
-          
-          // Draw buffer to main canvas to trigger WebKit compositing
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(offscreen, 0, 0);
+          // Force pixels directly to the screen using putImageData.
+          // This bypasses QEMU's broken hardware-accelerated drawImage pipeline
+          // and ensures the frame is painted on macOS without Metal acceleration.
+          ctx.putImageData(frames[frameIdx], 0, 0);
 
           if (progress < 1) {
             rafId = window.setTimeout(tick, 16);
