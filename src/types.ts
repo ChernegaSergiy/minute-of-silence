@@ -21,20 +21,32 @@ export type AudioPreset =
   | "silence";
 
 export interface Settings {
+  /** Enable daily activation at 09:00. */
   ceremonyEnabled: boolean;
+  /** Enable app autostart when the system boots. */
   autostartEnabled: boolean;
+  /** Run ceremony only on weekdays (Mon-Fri). */
   weekdaysOnly: boolean;
+  /** Selected audio preset. */
   preset: AudioPreset;
   volume: number; // 0–100
+  /** Pause other media players before the ceremony. */
   pauseOtherPlayers: boolean;
+  /** Automatically resume paused players after the ceremony. */
   resumeAfterCeremony: boolean;
+  /** Show a visual overlay window when the ceremony starts. */
   showVisualOverlay: boolean;
+  /** Show the flag animation window when the ceremony starts. */
   showFlagAnimation: boolean;
   /** Show personal dates on nearby days with weighted proximity. */
   showNearbyPersonalDates: boolean;
+  /** Use system time instead of NTP. */
   systemTimeOnly: boolean;
+  /** Prioritize app volume over system controls. */
   volumePriority: boolean;
+  /** Automatically unmute system if muted during ceremony. */
   autoUnmute: boolean;
+  /** NTP server hostname (used when system_time_only is false). */
   ntpServer: string;
   lateStartGraceMinutes: number; // 0–5
   /** Enable reminder notifications. */
