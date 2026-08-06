@@ -30,9 +30,14 @@ const ringUrl   = "/img/progress_ring.png";
 const RING_SIZE   = 260;
 const CANDLE_SIZE = RING_SIZE;
 
-/** Convert month/day to day-of-year (1-366). */
-function dayOfYear(month: number, day: number): number {
-  const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+/** Check if a year is a leap year. */
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/** Convert month/day to day-of-year (1-366) for a given year. */
+function dayOfYear(year: number, month: number, day: number): number {
+  const daysInMonth = [0, 31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   let doy = day;
   for (let m = 1; m < month; m++) {
     doy += daysInMonth[m];
@@ -41,11 +46,12 @@ function dayOfYear(month: number, day: number): number {
 }
 
 /** Circular distance in days between two month/day pairs (0-182). */
-function circularDistance(m1: number, d1: number, m2: number, d2: number): number {
-  const a = dayOfYear(m1, d1);
-  const b = dayOfYear(m2, d2);
+function circularDistance(year: number, m1: number, d1: number, m2: number, d2: number): number {
+  const a = dayOfYear(year, m1, d1);
+  const b = dayOfYear(year, m2, d2);
   const diff = Math.abs(a - b);
-  return Math.min(diff, 365 - diff);
+  const daysInYear = isLeapYear(year) ? 366 : 365;
+  return Math.min(diff, daysInYear - diff);
 }
 
 /** Weighted random selection of a personal date based on proximity to today. */
@@ -56,11 +62,12 @@ function selectNearbyDate(
 ): PersonalDate | null {
   if (dates.length === 0) return null;
 
+  const year = today.getFullYear();
   const month = today.getMonth() + 1;
   const day = today.getDate();
 
   const weighted = dates.map((d) => {
-    const dist = circularDistance(month, day, d.month, d.day);
+    const dist = circularDistance(year, month, day, d.month, d.day);
     let weight = 1 / (dist + 1);
     if (d.id && d.id === lastShownId) {
       weight *= 0.3;
