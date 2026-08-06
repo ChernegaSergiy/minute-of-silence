@@ -29,6 +29,55 @@ const ringUrl   = "/img/progress_ring.png";
 const RING_SIZE   = 260;
 const CANDLE_SIZE = RING_SIZE;
 
+/** Convert month/day to day-of-year (1-366). */
+function dayOfYear(month: number, day: number): number {
+  const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  let doy = day;
+  for (let m = 1; m < month; m++) {
+    doy += daysInMonth[m];
+  }
+  return doy;
+}
+
+/** Circular distance in days between two month/day pairs (0-182). */
+function circularDistance(m1: number, d1: number, m2: number, d2: number): number {
+  const a = dayOfYear(m1, d1);
+  const b = dayOfYear(m2, d2);
+  const diff = Math.abs(a - b);
+  return Math.min(diff, 365 - diff);
+}
+
+/** Weighted random selection of a personal date based on proximity to today. */
+function selectNearbyDate(
+  dates: PersonalDate[],
+  today: Date,
+  lastShownId: string | null,
+): PersonalDate | null {
+  if (dates.length === 0) return null;
+
+  const month = today.getMonth() + 1;
+  const day = today.getDate();
+
+  const weighted = dates.map((d) => {
+    const dist = circularDistance(month, day, d.month, d.day);
+    let weight = 1 / (dist + 1);
+    if (d.id && d.id === lastShownId) {
+      weight *= 0.3;
+    }
+    return { date: d, weight };
+  });
+
+  const totalWeight = weighted.reduce((sum, w) => sum + w.weight, 0);
+  let roll = Math.random() * totalWeight;
+
+  for (const item of weighted) {
+    roll -= item.weight;
+    if (roll <= 0) return item.date;
+  }
+
+  return weighted[weighted.length - 1].date;
+}
+
 const useStyles = makeStyles({
   container: {
     display: "flex",
@@ -226,7 +275,13 @@ function useApngPlayer(
   }, [active, src, durationSeconds, canvasRef]);
 }
 
-export default function Overlay({ show, durationSeconds = 60, personalDates = [] }: OverlayProps) {
+export default function Overlay({
+  show,
+  durationSeconds = 60,
+  personalDates = [],
+  settings,
+  onUpdateSetting,
+}: OverlayProps) {
   const styles = useStyles();
   const ringCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -267,7 +322,23 @@ export default function Overlay({ show, durationSeconds = 60, personalDates = []
     return active;
   }, [personalDates]);
 
-  const hasActiveDates = activeDates.length > 0;
+  // Nearby date selection when no exact match and setting is enabled
+  const nearbyDate = useMemo(() => {
+    if (activeDates.length > 0) return null;
+    if (!settings?.showNearbyPersonalDates) return null;
+    if (personalDates.length === 0) return null;
+    return selectNearbyDate(personalDates, new Date(), settings.lastShownNearbyDateId ?? null);
+  }, [activeDates, personalDates, settings?.showNearbyPersonalDates, settings?.lastShownNearbyDateId]);
+
+  const displayDates = activeDates.length > 0 ? activeDates : (nearbyDate ? [nearbyDate] : []);
+  const hasActiveDates = displayDates.length > 0;
+
+  // Save last shown nearby date ID
+  useEffect(() => {
+    if (nearbyDate && show && onUpdateSetting) {
+      onUpdateSetting("lastShownNearbyDateId", nearbyDate.id ?? null);
+    }
+  }, [nearbyDate, show, onUpdateSetting]);
 
   // Name carousel/slider state
   const [currentNameIndex, setCurrentNameIndex] = useState(0);
@@ -277,25 +348,25 @@ export default function Overlay({ show, durationSeconds = 60, personalDates = []
   useEffect(() => {
     setCurrentNameIndex(0);
     setNameFadeState(true);
-  }, [activeDates, show]);
+  }, [displayDates, show]);
 
   // Rotator effect for multiple names
   useEffect(() => {
-    if (activeDates.length <= 1 || !show) return;
+    if (displayDates.length <= 1 || !show) return;
 
     const interval = setInterval(() => {
       setNameFadeState(false); // Start fade-out animation
 
       setTimeout(() => {
-        setCurrentNameIndex((prev) => (prev + 1) % activeDates.length);
+        setCurrentNameIndex((prev) => (prev + 1) % displayDates.length);
         setNameFadeState(true); // Start fade-in animation
       }, 500);
     }, 4000); // 4 seconds total interval for each slide
 
     return () => clearInterval(interval);
-  }, [activeDates, show]);
+  }, [displayDates, show]);
 
-  const currentCommemorationName = activeDates[currentNameIndex]?.label || "";
+  const currentCommemorationName = displayDates[currentNameIndex]?.label || "";
 
   if (!shouldRender) return null;
 
