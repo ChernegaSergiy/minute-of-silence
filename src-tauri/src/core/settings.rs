@@ -40,6 +40,9 @@ pub struct Settings {
     /// Show the flag animation window when the ceremony starts.
     pub show_flag_animation: bool,
 
+    /// Show personal dates on nearby days with weighted proximity.
+    pub show_nearby_personal_dates: bool,
+
     /// Use system time instead of NTP.
     pub system_time_only: bool,
 
@@ -73,6 +76,10 @@ pub struct Settings {
 
     /// Manual UI theme when `use_system_theme` is false.
     pub ui_theme: UiTheme,
+
+    /// ID of the last personal date shown via nearby-days algorithm.
+    #[serde(default)]
+    pub last_shown_nearby_date_id: Option<String>,
 
     /// Date to skip the next ceremony (one-time skip). Persisted to disk.
     #[serde(default)]
@@ -116,6 +123,7 @@ impl Default for Settings {
             resume_after_ceremony: false,
             show_visual_overlay: true,
             show_flag_animation: false,
+            show_nearby_personal_dates: false,
             system_time_only: false,
             volume_priority: false,
             auto_unmute: false,
@@ -127,6 +135,7 @@ impl Default for Settings {
             anthem_voice: AnthemVoice::Default,
             use_system_theme: true,
             ui_theme: UiTheme::Light,
+            last_shown_nearby_date_id: None,
             skip_date: None,
         }
     }
