@@ -141,31 +141,37 @@ interface ApngInfo {
 /**
  * Decode APNG frames via the Rust backend.
  *
- * Returns raw ImageBitmap[] — converted from ImageData so drawImage can be used.
- * drawImage goes through the WebKit compositing pipeline on macOS, ensuring reliable rendering.
+ * Returns HTMLCanvasElement[] for use with drawImage(), which goes through the
+ * WebKit compositing pipeline — unlike putImageData which bypasses it.
+ * Using a hidden canvas buffer is the most reliable cross-platform method for WebKit.
  */
 async function loadApngFrames(
   src: string,
-): Promise<{ frames: ImageBitmap[]; width: number; height: number }> {
+): Promise<{ frames: HTMLCanvasElement[]; width: number; height: number }> {
   const resp = await fetch(src);
   const arrayBuf = await resp.arrayBuffer();
   const bytes = Array.from(new Uint8Array(arrayBuf));
 
   const info = await invoke<ApngInfo>("decode_apng_frames", { data: bytes });
 
-  const frames: ImageBitmap[] = await Promise.all(
-    info.frames.map(async (b64) => {
-      const binaryStr = atob(b64);
-      const len = binaryStr.length;
-      const buf = new ArrayBuffer(len);
-      const view = new Uint8Array(buf);
-      for (let i = 0; i < len; i++) {
-        view[i] = binaryStr.charCodeAt(i);
-      }
-      const imageData = new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
-      return createImageBitmap(imageData);
-    }),
-  );
+  const frames: HTMLCanvasElement[] = info.frames.map((b64) => {
+    const binaryStr = atob(b64);
+    const len = binaryStr.length;
+    const buf = new ArrayBuffer(len);
+    const view = new Uint8Array(buf);
+    for (let i = 0; i < len; i++) {
+      view[i] = binaryStr.charCodeAt(i);
+    }
+    const imageData = new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
+    
+    const canvas = document.createElement("canvas");
+    canvas.width = info.width;
+    canvas.height = info.height;
+    const ctx = canvas.getContext("2d");
+    if (ctx) ctx.putImageData(imageData, 0, 0);
+    
+    return canvas;
+  });
 
   return { frames, width: info.width, height: info.height };
 }
@@ -179,7 +185,7 @@ function useApngPlayer(
   useEffect(() => {
     if (!active) return;
     let rafId: number;
-    let frames: ImageBitmap[] = [];
+    let frames: HTMLCanvasElement[] = [];
     let startTime: number | null = null;
     let isCancelled = false;
 
@@ -187,7 +193,7 @@ function useApngPlayer(
       try {
         const data = await loadApngFrames(src);
         if (isCancelled) {
-          data.frames.forEach((frame) => frame.close());
+          // No manual cleanup needed for canvas elements
           return;
         }
         frames = data.frames;
@@ -230,7 +236,6 @@ function useApngPlayer(
     return () => {
       isCancelled = true;
       cancelAnimationFrame(rafId);
-      frames.forEach((frame) => frame.close());
     };
   }, [active, src, durationSeconds, canvasRef]);
 }
