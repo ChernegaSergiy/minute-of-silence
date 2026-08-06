@@ -138,6 +138,10 @@
     "flag_animation": {
       "label": "Anthem flag animation",
       "description": "Show the flag animation during the anthem segment when the visual overlay is enabled."
+    },
+    "show_nearby_personal_dates": {
+      "label": "Show personal dates on nearby days",
+      "description": "Display personal dates even when it's not the exact day, with higher probability for closer dates."
     }
   },
   "buttons": {
