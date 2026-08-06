@@ -367,6 +367,8 @@ export default function App() {
         show={showOverlay}
         durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
         personalDates={personalDates}
+        settings={settings}
+        onUpdateSetting={updateSetting}
       />
     </>
   );
