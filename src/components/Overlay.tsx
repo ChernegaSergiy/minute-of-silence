@@ -141,29 +141,31 @@ interface ApngInfo {
 /**
  * Decode APNG frames via the Rust backend.
  *
- * Returns raw ImageData[] — no intermediate canvases.
- * The display canvas uses putImageData directly in the animation tick,
- * avoiding WebKit offscreen-canvas backing-store bugs (bug #229986).
+ * Returns raw ImageBitmap[] — converted from ImageData so drawImage can be used.
+ * drawImage goes through the WebKit compositing pipeline on macOS, ensuring reliable rendering.
  */
 async function loadApngFrames(
   src: string,
-): Promise<{ frames: ImageData[]; width: number; height: number }> {
+): Promise<{ frames: ImageBitmap[]; width: number; height: number }> {
   const resp = await fetch(src);
   const arrayBuf = await resp.arrayBuffer();
   const bytes = Array.from(new Uint8Array(arrayBuf));
 
   const info = await invoke<ApngInfo>("decode_apng_frames", { data: bytes });
 
-  const frames: ImageData[] = info.frames.map((b64) => {
-    const binaryStr = atob(b64);
-    const len = binaryStr.length;
-    const buf = new ArrayBuffer(len);
-    const view = new Uint8Array(buf);
-    for (let i = 0; i < len; i++) {
-      view[i] = binaryStr.charCodeAt(i);
-    }
-    return new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
-  });
+  const frames: ImageBitmap[] = await Promise.all(
+    info.frames.map(async (b64) => {
+      const binaryStr = atob(b64);
+      const len = binaryStr.length;
+      const buf = new ArrayBuffer(len);
+      const view = new Uint8Array(buf);
+      for (let i = 0; i < len; i++) {
+        view[i] = binaryStr.charCodeAt(i);
+      }
+      const imageData = new ImageData(new Uint8ClampedArray(buf), info.width, info.height);
+      return createImageBitmap(imageData);
+    }),
+  );
 
   return { frames, width: info.width, height: info.height };
 }
@@ -177,7 +179,7 @@ function useApngPlayer(
   useEffect(() => {
     if (!active) return;
     let rafId: number;
-    let frames: ImageData[] = [];
+    let frames: ImageBitmap[] = [];
     let startTime: number | null = null;
     let isCancelled = false;
 
@@ -185,6 +187,7 @@ function useApngPlayer(
       try {
         const data = await loadApngFrames(src);
         if (isCancelled) {
+          data.frames.forEach((frame) => frame.close());
           return;
         }
         frames = data.frames;
@@ -195,8 +198,6 @@ function useApngPlayer(
         }
 
         // Size canvas to match the native APNG dimensions.
-        // No DPR multiplication: putImageData writes physical pixels directly,
-        // and CSS stretches the canvas to fill the wrapper on retina displays.
         canvas.width = data.width;
         canvas.height = data.height;
 
@@ -208,9 +209,13 @@ function useApngPlayer(
           const progress = Math.min(elapsed / durationSeconds, 1);
           const frameIdx = Math.min(Math.floor(progress * frames.length), frames.length - 1);
 
-          ctx.putImageData(frames[frameIdx], 0, 0);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(frames[frameIdx], 0, 0);
 
           if (progress < 1) {
+            rafId = requestAnimationFrame(tick);
+          } else {
+            startTime = null;
             rafId = requestAnimationFrame(tick);
           }
         };
@@ -225,6 +230,7 @@ function useApngPlayer(
     return () => {
       isCancelled = true;
       cancelAnimationFrame(rafId);
+      frames.forEach((frame) => frame.close());
     };
   }, [active, src, durationSeconds, canvasRef]);
 }
