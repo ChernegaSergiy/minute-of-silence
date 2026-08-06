@@ -96,9 +96,15 @@ export default function AboutTab({ version, onCheckForUpdates, onUpdateFound }: 
     if (copyState !== "idle") return;
     try {
       const logs = await getLogContents();
-      await writeText(logs);
+      try {
+        await writeText(logs);
+      } catch (err) {
+        console.error("Failed to copy logs via Tauri clipboard plugin, falling back to navigator.clipboard:", err);
+        await navigator.clipboard.writeText(logs);
+      }
       setCopyState("copied");
-    } catch {
+    } catch (err) {
+      console.error("Failed to copy logs:", err);
       setCopyState("error");
     }
 
