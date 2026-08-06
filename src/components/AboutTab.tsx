@@ -2,6 +2,7 @@ import { Button, Link, makeStyles, tokens } from "@fluentui/react-components";
 import { ArrowSyncRegular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
 import { useCallback, useState } from "react";
 import { open } from "@tauri-apps/plugin-shell";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { getLogContents } from "../utils/api";
 import { t } from "../utils/i18n";
 import { type UpdateInfo } from "./UpdateDialog";
@@ -95,7 +96,7 @@ export default function AboutTab({ version, onCheckForUpdates, onUpdateFound }: 
     if (copyState !== "idle") return;
     try {
       const logs = await getLogContents();
-      await navigator.clipboard.writeText(logs);
+      await writeText(logs);
       setCopyState("copied");
     } catch {
       setCopyState("error");
