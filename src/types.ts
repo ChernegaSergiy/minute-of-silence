@@ -30,6 +30,7 @@ export interface Settings {
   resumeAfterCeremony: boolean;
   showVisualOverlay: boolean;
   showFlagAnimation: boolean;
+  showNearbyPersonalDates: boolean;
   systemTimeOnly: boolean;
   volumePriority: boolean;
   autoUnmute: boolean;
@@ -47,6 +48,8 @@ export interface Settings {
   useSystemTheme?: boolean;
   /** Manual UI theme when not using system theme: 'light' | 'dark' */
   uiTheme?: "light" | "dark";
+  /** ID of the last personal date shown via nearby-days algorithm. */
+  lastShownNearbyDateId: string | null;
 }
 
 // Mirror of Rust `StatusSnapshot` struct
@@ -70,6 +73,7 @@ export const DEFAULT_SETTINGS: Settings = {
   resumeAfterCeremony: false,
   showVisualOverlay: true,
   showFlagAnimation: false,
+  showNearbyPersonalDates: false,
   systemTimeOnly: false,
   volumePriority: false,
   autoUnmute: false,
@@ -81,6 +85,7 @@ export const DEFAULT_SETTINGS: Settings = {
   anthemVoice: "default",
   useSystemTheme: true,
   uiTheme: "light",
+  lastShownNearbyDateId: null,
 };
 
 export interface PersonalDate {
