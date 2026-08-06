@@ -142,8 +142,7 @@ interface ApngInfo {
  * Decode APNG frames via the Rust backend.
  *
  * Returns raw ImageData[] — no intermediate canvases.
- * The display canvas uses putImageData directly in the animation tick,
- * avoiding WebKit offscreen-canvas backing-store bugs (bug #229986).
+ * The display canvas uses putImageData directly in the animation tick.
  */
 async function loadApngFrames(
   src: string,
