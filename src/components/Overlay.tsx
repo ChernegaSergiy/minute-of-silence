@@ -330,7 +330,7 @@ export default function Overlay({
     if (!settings?.showNearbyPersonalDates) return null;
     if (personalDates.length === 0) return null;
     return selectNearbyDate(personalDates, new Date(), settings.lastShownNearbyDateId ?? null);
-  }, [activeDates, personalDates, settings?.showNearbyPersonalDates, settings?.lastShownNearbyDateId, show]);
+  }, [activeDates, personalDates, settings?.showNearbyPersonalDates, show]);
 
   const displayDates = activeDates.length > 0 ? activeDates : (nearbyDate ? [nearbyDate] : []);
   const hasActiveDates = displayDates.length > 0;
