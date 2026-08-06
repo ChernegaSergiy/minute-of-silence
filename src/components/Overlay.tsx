@@ -218,6 +218,14 @@ function useApngPlayer(
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(frames[frameIdx], 0, 0);
 
+          // Force WKWebView to invalidate and repaint the canvas layer.
+          // WebKit aggressively optimizes canvas layers and often ignores
+          // drawImage updates inside requestAnimationFrame unless a CSS
+          // property on the layer changes.
+          canvas.style.transform = canvas.style.transform === "translateZ(0px)"
+            ? "translateZ(0.001px)"
+            : "translateZ(0px)";
+
           if (progress < 1) {
             rafId = requestAnimationFrame(tick);
           } else {
