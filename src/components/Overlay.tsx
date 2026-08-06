@@ -206,7 +206,8 @@ function useApngPlayer(
         offscreen.height = data.height;
         const offscreenCtx = offscreen.getContext("2d")!;
 
-        const tick = (now: number) => {
+        const tick = () => {
+          const now = performance.now();
           if (!startTime) startTime = now;
           const elapsed = (now - startTime) / 1000;
           const progress = Math.min(elapsed / durationSeconds, 1);
@@ -219,22 +220,14 @@ function useApngPlayer(
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(offscreen, 0, 0);
 
-          // Force WKWebView to invalidate and repaint the canvas layer.
-          // WebKit aggressively optimizes canvas layers and often ignores
-          // drawImage updates inside requestAnimationFrame unless a CSS
-          // property on the layer changes.
-          canvas.style.transform = canvas.style.transform === "translateZ(0px)"
-            ? "translateZ(0.001px)"
-            : "translateZ(0px)";
-
           if (progress < 1) {
-            rafId = requestAnimationFrame(tick);
+            rafId = window.setTimeout(tick, 16);
           } else {
             startTime = null;
-            rafId = requestAnimationFrame(tick);
+            rafId = window.setTimeout(tick, 16);
           }
         };
-        rafId = requestAnimationFrame(tick);
+        rafId = window.setTimeout(tick, 16);
       } catch (e) {
         console.error("APNG decode failed:", e);
       }
@@ -244,7 +237,7 @@ function useApngPlayer(
 
     return () => {
       isCancelled = true;
-      cancelAnimationFrame(rafId);
+      window.clearTimeout(rafId);
     };
   }, [active, src, durationSeconds, canvasRef]);
 }
