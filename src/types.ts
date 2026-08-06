@@ -45,9 +45,9 @@ export interface Settings {
   announcementVoice: AnnouncementVoice;
   /** Selected anthem voice. */
   anthemVoice: AnthemVoice;
-  /** Whether to follow the OS theme */
+  /** Whether to follow the OS theme. */
   useSystemTheme?: boolean;
-  /** Manual UI theme when not using system theme: 'light' | 'dark' */
+  /** Manual UI theme when not using system theme: 'light' | 'dark'. */
   uiTheme?: "light" | "dark";
   /** ID of the last personal date shown via nearby-days algorithm. */
   lastShownNearbyDateId: string | null;
