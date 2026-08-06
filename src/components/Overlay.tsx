@@ -299,6 +299,7 @@ export default function Overlay({
 }: OverlayProps) {
   const styles = useStyles();
   const ringCanvasRef = useRef<HTMLCanvasElement>(null);
+  const lastSavedNearbyIdRef = useRef<string | null>(null);
 
   // Manage mounting delay for smooth transitions
   const [shouldRender, setShouldRender] = useState(show);
@@ -350,8 +351,9 @@ export default function Overlay({
 
   // Save last shown nearby date ID (skip for test ceremonies)
   useEffect(() => {
-    if (nearbyDate && show && settings && onUpdateSetting && !isTest) {
-      const newId = nearbyDate.id ?? null;
+    const newId = nearbyDate?.id ?? null;
+    if (nearbyDate && show && settings && onUpdateSetting && !isTest && lastSavedNearbyIdRef.current !== newId) {
+      lastSavedNearbyIdRef.current = newId;
       onUpdateSetting("lastShownNearbyDateId", newId);
       saveSettings({ ...settings, lastShownNearbyDateId: newId }).catch(() => {});
     }
