@@ -38,7 +38,12 @@ function isLeapYear(year: number): boolean {
 
 /** Convert month/day to day-of-year (1-366) for a given year. */
 function dayOfYear(year: number, month: number, day: number): number {
-  const daysInMonth = [0, 31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const leap = isLeapYear(year);
+  if (!leap && month === 2 && day === 29) {
+    month = 2;
+    day = 28;
+  }
+  const daysInMonth = [0, 31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   let doy = day;
   for (let m = 1; m < month; m++) {
     doy += daysInMonth[m];
