@@ -12,6 +12,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { t } from "../utils/i18n";
 import { saveSettings } from "../utils/api";
+import { isLeapYear, selectNearbyDate } from "../utils/nearbyDateSelection";
 import type { PersonalDate, Settings } from "../types";
 
 type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => void;
@@ -30,67 +31,6 @@ const ringUrl   = "/img/progress_ring.png";
 
 const RING_SIZE   = 260;
 const CANDLE_SIZE = RING_SIZE;
-
-/** Check if a year is a leap year. */
-function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-/** Convert month/day to day-of-year (1-366) for a given year. */
-function dayOfYear(year: number, month: number, day: number): number {
-  const leap = isLeapYear(year);
-  if (!leap && month === 2 && day === 29) {
-    month = 2;
-    day = 28;
-  }
-  const daysInMonth = [0, 31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  let doy = day;
-  for (let m = 1; m < month; m++) {
-    doy += daysInMonth[m];
-  }
-  return doy;
-}
-
-/** Circular distance in days between two month/day pairs (0-182). */
-function circularDistance(year: number, m1: number, d1: number, m2: number, d2: number): number {
-  const a = dayOfYear(year, m1, d1);
-  const b = dayOfYear(year, m2, d2);
-  const diff = Math.abs(a - b);
-  const daysInYear = isLeapYear(year) ? 366 : 365;
-  return Math.min(diff, daysInYear - diff);
-}
-
-/** Weighted random selection of a personal date based on proximity to today. */
-function selectNearbyDate(
-  dates: PersonalDate[],
-  today: Date,
-  lastShownId: string | null,
-): PersonalDate | null {
-  if (dates.length === 0) return null;
-
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const day = today.getDate();
-
-  const weighted = dates.map((d) => {
-    const dist = circularDistance(year, month, day, d.month, d.day);
-    let weight = 1 / (dist + 1);
-    if (d.id && d.id === lastShownId) {
-      weight *= 0.3;
-    }
-    return { date: d, weight };
-  });
-
-  const totalWeight = weighted.reduce((sum, w) => sum + w.weight, 0);
-  let roll = Math.random() * totalWeight;
-
-  for (const item of weighted) {
-    roll -= item.weight;
-    if (roll <= 0) return item.date;
-  }
-
-  return weighted[weighted.length - 1].date;
-}
 
 const useStyles = makeStyles({
   container: {
@@ -325,7 +265,6 @@ export default function Overlay({
     const currentMonth = today.getMonth() + 1;
     const currentDay = today.getDate();
     const currentYear = today.getFullYear();
-    const isLeapYear = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 
     let active = personalDates.filter(
       (d) => d.month === currentMonth && d.day === currentDay
@@ -344,6 +283,8 @@ export default function Overlay({
     if (!settings?.showNearbyPersonalDates) return null;
     if (personalDates.length === 0) return null;
     return selectNearbyDate(personalDates, new Date(), settings.lastShownNearbyDateId ?? null);
+    // `show` is intentionally in deps though unused in the body —
+    // it forces a fresh weighted draw each time the overlay reopens.
   }, [activeDates, personalDates, settings?.showNearbyPersonalDates, show]);
 
   const displayDates = activeDates.length > 0 ? activeDates : (nearbyDate ? [nearbyDate] : []);
