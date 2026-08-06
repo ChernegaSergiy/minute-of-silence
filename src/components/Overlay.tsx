@@ -11,6 +11,7 @@ import {
 } from "@fluentui/react-components";
 import { invoke } from "@tauri-apps/api/core";
 import { t } from "../utils/i18n";
+import { saveSettings } from "../utils/api";
 import type { PersonalDate, Settings } from "../types";
 
 type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => void;
@@ -344,10 +345,12 @@ export default function Overlay({
 
   // Save last shown nearby date ID (skip for test ceremonies)
   useEffect(() => {
-    if (nearbyDate && show && onUpdateSetting && !isTest) {
-      onUpdateSetting("lastShownNearbyDateId", nearbyDate.id ?? null);
+    if (nearbyDate && show && settings && onUpdateSetting && !isTest) {
+      const newId = nearbyDate.id ?? null;
+      onUpdateSetting("lastShownNearbyDateId", newId);
+      saveSettings({ ...settings, lastShownNearbyDateId: newId }).catch(() => {});
     }
-  }, [nearbyDate, show, onUpdateSetting, isTest]);
+  }, [nearbyDate, show, settings, onUpdateSetting, isTest]);
 
   // Name carousel/slider state
   const [currentNameIndex, setCurrentNameIndex] = useState(0);
