@@ -203,7 +203,7 @@ impl CeremonyScheduler {
 
             if should_trigger {
                 log::info!("Ceremony triggered at {}", now_time);
-                self.trigger_ceremony().await;
+                self.trigger_ceremony(false).await;
             }
         }
     }
@@ -330,10 +330,10 @@ impl CeremonyScheduler {
         *Local::now().offset()
     }
 
-    pub async fn trigger_ceremony(&self) {
+    pub async fn trigger_ceremony(&self, is_test: bool) {
         let platform = crate::platform::get_platform();
         let manager = CeremonyManager::new(self.app.clone(), platform, Arc::clone(&self.audio));
-        manager.run_ceremony().await;
+        manager.run_ceremony(is_test).await;
     }
 }
 
@@ -342,7 +342,7 @@ pub async fn run(app: AppHandle) {
     scheduler.run().await;
 }
 
-pub async fn trigger_now(app: AppHandle) {
+pub async fn trigger_now(app: AppHandle, is_test: bool) {
     let scheduler = CeremonyScheduler::new(app);
-    scheduler.trigger_ceremony().await;
+    scheduler.trigger_ceremony(is_test).await;
 }

@@ -201,6 +201,7 @@ minute-of-silence/
 |   +-- src/
 |   |   +-- app/                      # Tauri application modules
 |   |   |   +-- mod.rs
+|   |   |   +-- apng.rs               # Pure-Rust APNG decoder for progress ring
 |   |   |   +-- commands.rs           # Tauri IPC command handlers
 |   |   |   \-- tray.rs               # System tray menu and setup
 |   |   +-- core/                     # Core business logic
@@ -230,6 +231,7 @@ minute-of-silence/
 |   |   |       +-- mod.rs
 |   |   |       +-- autostart.rs      # macOS autostart via tauri_plugin_autostart
 |   |   |       +-- media.rs          # macOS media player keys muting
+|   |   |       +-- now_playing.rs    # macOS now playing info via MediaPlayer framework
 |   |   |       +-- theme.m           # ObjC helper for system theme detection
 |   |   |       +-- theme.rs          # macOS system dark theme detection
 |   |   |       \-- volume.rs         # macOS system volume controller API

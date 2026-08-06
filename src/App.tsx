@@ -102,6 +102,7 @@ export default function App() {
   const [version, setVersion] = useState("...");
   const [showOverlay, setShowOverlay] = useState(false);
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
+  const [isTestCeremony, setIsTestCeremony] = useState(false);
   const [volumeValue, setVolumeValue] = useState(80);
   const [syncing, setSyncing] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -187,6 +188,7 @@ export default function App() {
           if (cancelled) return;
           setShowOverlay(true);
           setCeremonyDurationMs(payload?.duration_ms);
+          setIsTestCeremony(payload?.is_test ?? false);
           try {
             await bringWindowToFront();
           } catch {
@@ -197,6 +199,7 @@ export default function App() {
           if (!cancelled) {
             setShowOverlay(false);
             setCeremonyDurationMs(undefined);
+            setIsTestCeremony(false);
           }
         })
       );
@@ -367,6 +370,9 @@ export default function App() {
         show={showOverlay}
         durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
         personalDates={personalDates}
+        settings={settings}
+        onUpdateSetting={updateSetting}
+        isTest={isTestCeremony}
       />
     </>
   );

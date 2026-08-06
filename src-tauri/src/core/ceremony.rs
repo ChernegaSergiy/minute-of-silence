@@ -32,7 +32,7 @@ impl CeremonyManager {
         }
     }
 
-    pub async fn run_ceremony(&self) {
+    pub async fn run_ceremony(&self, is_test: bool) {
         let (
             should_pause_players,
             should_resume_players,
@@ -120,7 +120,7 @@ impl CeremonyManager {
                 }
             };
 
-        let payload = json!({ "duration_ms": duration_ms });
+        let payload = json!({ "duration_ms": duration_ms, "is_test": is_test });
         let _ = self.app.emit("ceremony-start", payload);
 
         // 3. Pause players

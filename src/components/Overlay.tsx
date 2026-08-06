@@ -11,12 +11,19 @@ import {
 } from "@fluentui/react-components";
 import { invoke } from "@tauri-apps/api/core";
 import { t } from "../utils/i18n";
-import type { PersonalDate } from "../types";
+import { saveSettings } from "../utils/api";
+import { isLeapYear, selectNearbyDate } from "../utils/nearbyDateSelection";
+import type { PersonalDate, Settings } from "../types";
+
+type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => void;
 
 interface OverlayProps {
   show: boolean;
   durationSeconds?: number;
   personalDates?: PersonalDate[];
+  settings?: Settings;
+  onUpdateSetting?: UpdateSetting;
+  isTest?: boolean;
 }
 
 const candleUrl = "/img/candle_circle.png";
@@ -222,9 +229,17 @@ function useApngPlayer(
   }, [active, src, durationSeconds, canvasRef]);
 }
 
-export default function Overlay({ show, durationSeconds = 60, personalDates = [] }: OverlayProps) {
+export default function Overlay({
+  show,
+  durationSeconds = 60,
+  personalDates = [],
+  settings,
+  onUpdateSetting,
+  isTest = false,
+}: OverlayProps) {
   const styles = useStyles();
   const ringCanvasRef = useRef<HTMLCanvasElement>(null);
+  const lastSavedNearbyIdRef = useRef<string | null>(null);
 
   // Manage mounting delay for smooth transitions
   const [shouldRender, setShouldRender] = useState(show);
@@ -250,7 +265,6 @@ export default function Overlay({ show, durationSeconds = 60, personalDates = []
     const currentMonth = today.getMonth() + 1;
     const currentDay = today.getDate();
     const currentYear = today.getFullYear();
-    const isLeapYear = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 
     let active = personalDates.filter(
       (d) => d.month === currentMonth && d.day === currentDay
@@ -263,7 +277,28 @@ export default function Overlay({ show, durationSeconds = 60, personalDates = []
     return active;
   }, [personalDates]);
 
-  const hasActiveDates = activeDates.length > 0;
+  // Nearby date selection when no exact match and setting is enabled
+  const nearbyDate = useMemo(() => {
+    if (activeDates.length > 0) return null;
+    if (!settings?.showNearbyPersonalDates) return null;
+    if (personalDates.length === 0) return null;
+    return selectNearbyDate(personalDates, new Date(), settings.lastShownNearbyDateId ?? null);
+    // `show` is intentionally in deps though unused in the body —
+    // it forces a fresh weighted draw each time the overlay reopens.
+  }, [activeDates, personalDates, settings?.showNearbyPersonalDates, show]);
+
+  const displayDates = activeDates.length > 0 ? activeDates : (nearbyDate ? [nearbyDate] : []);
+  const hasActiveDates = displayDates.length > 0;
+
+  // Save last shown nearby date ID (skip for test ceremonies)
+  useEffect(() => {
+    const newId = nearbyDate?.id ?? null;
+    if (nearbyDate && show && settings && onUpdateSetting && !isTest && lastSavedNearbyIdRef.current !== newId) {
+      lastSavedNearbyIdRef.current = newId;
+      onUpdateSetting("lastShownNearbyDateId", newId);
+      saveSettings({ ...settings, lastShownNearbyDateId: newId }).catch(() => {});
+    }
+  }, [nearbyDate, show, settings, onUpdateSetting, isTest]);
 
   // Name carousel/slider state
   const [currentNameIndex, setCurrentNameIndex] = useState(0);
@@ -273,25 +308,25 @@ export default function Overlay({ show, durationSeconds = 60, personalDates = []
   useEffect(() => {
     setCurrentNameIndex(0);
     setNameFadeState(true);
-  }, [activeDates, show]);
+  }, [displayDates, show]);
 
   // Rotator effect for multiple names
   useEffect(() => {
-    if (activeDates.length <= 1 || !show) return;
+    if (displayDates.length <= 1 || !show) return;
 
     const interval = setInterval(() => {
       setNameFadeState(false); // Start fade-out animation
 
       setTimeout(() => {
-        setCurrentNameIndex((prev) => (prev + 1) % activeDates.length);
+        setCurrentNameIndex((prev) => (prev + 1) % displayDates.length);
         setNameFadeState(true); // Start fade-in animation
       }, 500);
     }, 4000); // 4 seconds total interval for each slide
 
     return () => clearInterval(interval);
-  }, [activeDates, show]);
+  }, [displayDates, show]);
 
-  const currentCommemorationName = activeDates[currentNameIndex]?.label || "";
+  const currentCommemorationName = displayDates[currentNameIndex]?.label || "";
 
   if (!shouldRender) return null;
 
