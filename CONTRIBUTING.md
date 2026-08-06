@@ -61,25 +61,25 @@ npm run typecheck
 
 ```
 minute-of-silence/
-+-- src/                     # TypeScript React frontend
-|   +-- components/          # Tab and overlay components
-|   +-- locales/             # Localization files (UK, EN)
-|   +-- utils/               # Helpers (api, i18n, changelog)
-|   +-- App.tsx              # Root component & state management
-|   \-- types.ts             # Shared type definitions (mirrors Rust)
-+-- src-tauri/               # Rust Tauri backend
-|   +-- capabilities/        # Tauri v2 permissions config
++-- src/               # TypeScript React frontend
+|   +-- components/    # Tab and overlay components
+|   +-- locales/       # Localization files (UK, EN)
+|   +-- utils/         # Helpers (api, i18n, changelog)
+|   +-- App.tsx        # Root component & state management
+|   \-- types.ts       # Shared type definitions (mirrors Rust)
++-- src-tauri/         # Rust Tauri backend
+|   +-- capabilities/  # Tauri v2 permissions config
 |   +-- src/
-|   |   +-- app/             # Tauri command handlers & tray menu
-|   |   +-- core/            # Audio engine, ceremony, scheduler, settings
-|   |   +-- platform/        # OS-specific implementations (Linux, Windows, macOS)
-|   |   +-- lib.rs           # Tauri app entry & builder
-|   |   \-- main.rs          # Executable entry point
-|   +-- audio/               # Built-in audio assets
-|   \-- tests/               # Backend integration tests
-+-- docs/                    # Architecture and images documentation
-+-- .github/                 # GitHub CI workflows and templates
-\-- package.json             # Node dependencies and scripts
+|   |   +-- app/       # Tauri command handlers & tray menu
+|   |   +-- core/      # Audio engine, ceremony, scheduler, settings
+|   |   +-- platform/  # OS-specific implementations (Linux, Windows, macOS)
+|   |   +-- lib.rs     # Tauri app entry & builder
+|   |   \-- main.rs    # Executable entry point
+|   +-- audio/         # Built-in audio assets
+|   \-- tests/         # Backend integration tests
++-- docs/              # Architecture and images documentation
++-- .github/           # GitHub CI workflows and templates
+\-- package.json       # Node dependencies and scripts
 ```
 
 ---
