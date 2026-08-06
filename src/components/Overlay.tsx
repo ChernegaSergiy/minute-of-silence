@@ -141,8 +141,9 @@ interface ApngInfo {
 /**
  * Decode APNG frames via the Rust backend.
  *
- * Returns raw ImageData[] so we store pixels in RAM, avoiding WebKit's aggressive
- * GPU backing store purging which happens if we store 72 HTMLCanvasElements.
+ * Returns raw ImageData[] — no intermediate canvases.
+ * The display canvas uses putImageData directly in the animation tick,
+ * avoiding WebKit offscreen-canvas backing-store bugs (bug #229986).
  */
 async function loadApngFrames(
   src: string,
@@ -184,7 +185,6 @@ function useApngPlayer(
       try {
         const data = await loadApngFrames(src);
         if (isCancelled) {
-          // No manual cleanup needed for canvas elements
           return;
         }
         frames = data.frames;
@@ -194,32 +194,27 @@ function useApngPlayer(
           return;
         }
 
-        // Size canvas
+        // Size canvas to match the native APNG dimensions.
+        // No DPR multiplication: putImageData writes physical pixels directly,
+        // and CSS stretches the canvas to fill the wrapper on retina displays.
         canvas.width = data.width;
         canvas.height = data.height;
 
         const ctx = canvas.getContext("2d")!;
 
-        const tick = () => {
-          const now = performance.now();
+        const tick = (now: number) => {
           if (!startTime) startTime = now;
           const elapsed = (now - startTime) / 1000;
           const progress = Math.min(elapsed / durationSeconds, 1);
           const frameIdx = Math.min(Math.floor(progress * frames.length), frames.length - 1);
 
-          // Force pixels directly to the screen using putImageData.
-          // This bypasses QEMU's broken hardware-accelerated drawImage pipeline
-          // and ensures the frame is painted on macOS without Metal acceleration.
           ctx.putImageData(frames[frameIdx], 0, 0);
 
           if (progress < 1) {
-            rafId = window.setTimeout(tick, 16);
-          } else {
-            startTime = null;
-            rafId = window.setTimeout(tick, 16);
+            rafId = requestAnimationFrame(tick);
           }
         };
-        rafId = window.setTimeout(tick, 16);
+        rafId = requestAnimationFrame(tick);
       } catch (e) {
         console.error("APNG decode failed:", e);
       }
@@ -229,7 +224,7 @@ function useApngPlayer(
 
     return () => {
       isCancelled = true;
-      window.clearTimeout(rafId);
+      cancelAnimationFrame(rafId);
     };
   }, [active, src, durationSeconds, canvasRef]);
 }
