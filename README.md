@@ -201,6 +201,7 @@ minute-of-silence/
 |   +-- src/
 |   |   +-- app/                      # Tauri application modules
 |   |   |   +-- mod.rs
+|   |   |   +-- apng.rs               # Pure-Rust APNG decoder for progress ring
 |   |   |   +-- commands.rs           # Tauri IPC command handlers
 |   |   |   \-- tray.rs               # System tray menu and setup
 |   |   +-- core/                     # Core business logic
