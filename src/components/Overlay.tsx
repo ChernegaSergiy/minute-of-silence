@@ -11,12 +11,16 @@ import {
 } from "@fluentui/react-components";
 import { invoke } from "@tauri-apps/api/core";
 import { t } from "../utils/i18n";
-import type { PersonalDate } from "../types";
+import type { PersonalDate, Settings } from "../types";
+
+type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => void;
 
 interface OverlayProps {
   show: boolean;
   durationSeconds?: number;
   personalDates?: PersonalDate[];
+  settings?: Settings;
+  onUpdateSetting?: UpdateSetting;
 }
 
 const candleUrl = "/img/candle_circle.png";
