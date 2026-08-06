@@ -333,7 +333,7 @@ impl CeremonyScheduler {
     pub async fn trigger_ceremony(&self) {
         let platform = crate::platform::get_platform();
         let manager = CeremonyManager::new(self.app.clone(), platform, Arc::clone(&self.audio));
-        manager.run_ceremony().await;
+        manager.run_ceremony(false).await;
     }
 }
 
