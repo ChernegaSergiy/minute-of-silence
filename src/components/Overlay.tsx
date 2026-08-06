@@ -21,6 +21,7 @@ interface OverlayProps {
   personalDates?: PersonalDate[];
   settings?: Settings;
   onUpdateSetting?: UpdateSetting;
+  isTest?: boolean;
 }
 
 const candleUrl = "/img/candle_circle.png";
@@ -281,6 +282,7 @@ export default function Overlay({
   personalDates = [],
   settings,
   onUpdateSetting,
+  isTest = false,
 }: OverlayProps) {
   const styles = useStyles();
   const ringCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -333,12 +335,12 @@ export default function Overlay({
   const displayDates = activeDates.length > 0 ? activeDates : (nearbyDate ? [nearbyDate] : []);
   const hasActiveDates = displayDates.length > 0;
 
-  // Save last shown nearby date ID
+  // Save last shown nearby date ID (skip for test ceremonies)
   useEffect(() => {
-    if (nearbyDate && show && onUpdateSetting) {
+    if (nearbyDate && show && onUpdateSetting && !isTest) {
       onUpdateSetting("lastShownNearbyDateId", nearbyDate.id ?? null);
     }
-  }, [nearbyDate, show, onUpdateSetting]);
+  }, [nearbyDate, show, onUpdateSetting, isTest]);
 
   // Name carousel/slider state
   const [currentNameIndex, setCurrentNameIndex] = useState(0);
