@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   FluentProvider,
