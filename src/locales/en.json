@@ -201,6 +201,9 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.11.1": {
+      "nanoid_security_fix": "Fix a high severity vulnerability in `nanoid` by upgrading to `3.3.18`."
+    },
     "0.11.0": {
       "apng_rust_migration": "Migrate the progress ring animation decoder to a custom pure-Rust APNG implementation for better performance.",
       "macos_coreaudio_volume": "Rewrite macOS volume control integration to use the native CoreAudio C API instead of `osascript`.",
