@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-08-14
+
+### Fixed
+- Fix a high severity vulnerability in `nanoid` by upgrading to `3.3.18`.
+
 ## [0.11.0] - 2026-08-14
 
 ### Changed
