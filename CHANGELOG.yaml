@@ -1,3 +1,15 @@
+- version: "0.11.0"
+  date: "2026-08-14"
+  entries:
+    - category: changed
+      key: "apng_rust_migration"
+    - category: changed
+      key: "macos_coreaudio_volume"
+    - category: changed
+      key: "nearby_date_selection"
+    - category: fixed
+      key: "macos_media_app_fix"
+
 - version: "0.10.5"
   date: "2026-06-03"
   entries:

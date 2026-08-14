@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-14
+
+### Changed
+- Migrate the progress ring animation decoder to a custom pure-Rust APNG implementation for better performance.
+- Rewrite macOS volume control integration to use the native CoreAudio C API instead of `osascript`.
+- Improve the personal date selection logic to pick a nearby date when there is no exact match for today.
+
+### Fixed
+- Prevent the default media app on macOS from opening unexpectedly during the ceremony when no media is playing.
+
 ## [0.10.5] - 2026-06-03
 
 ### Added
