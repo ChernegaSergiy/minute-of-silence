@@ -201,6 +201,12 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.11.0": {
+      "apng_rust_migration": "Migrate the progress ring animation decoder to a custom pure-Rust APNG implementation for better performance.",
+      "macos_coreaudio_volume": "Rewrite macOS volume control integration to use the native CoreAudio C API instead of `osascript`.",
+      "nearby_date_selection": "Improve the personal date selection logic to pick a nearby date when there is no exact match for today.",
+      "macos_media_app_fix": "Prevent the default media app on macOS from opening unexpectedly during the ceremony when no media is playing."
+    },
     "0.10.5": {
       "interactive_update_dialog": "Add interactive update dialog with changelog display, download progress tracking, and install button.",
       "manual_update_check": "Add manual update check button to the About tab with animated spinner.",
