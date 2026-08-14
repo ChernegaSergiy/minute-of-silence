@@ -1,3 +1,9 @@
+- version: "0.11.1"
+  date: "2026-08-14"
+  entries:
+    - category: fixed
+      key: "nanoid_security_fix"
+
 - version: "0.11.0"
   date: "2026-08-14"
   entries:
