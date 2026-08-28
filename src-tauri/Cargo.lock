@@ -761,9 +761,9 @@ dependencies = [
 
 [[package]]
 name = "cpal"
-version = "0.18.1"
+version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f77b11176c37874be37e8d691c946e31b2b8c357abce9526f6a99eb469e1028"
+checksum = "6f02e8d0327b42d3e2e4ab2119af397344eb9fc54a34bf0ddeaa1277af8681f1"
 dependencies = [
  "alsa",
  "block2",
@@ -2686,7 +2686,7 @@ dependencies = [
  "base64 0.23.1",
  "chrono",
  "chrono-tz",
- "cpal 0.18.1",
+ "cpal 0.18.2",
  "dirs 6.0.0",
  "glib 0.21.5",
  "lazy_static",
