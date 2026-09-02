@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@fluentui/react-calendar-compat": "^0.4.5",
-    "@fluentui/react-components": "^9.74.6",
+    "@fluentui/react-components": "^9.74.7",
     "@fluentui/react-datepicker-compat": "^0.6.34",
     "@fluentui/react-icons": "^2.0.335",
     "@fluentui/web-components": "^3.1.2",
