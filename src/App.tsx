@@ -14,6 +14,7 @@ import {
 } from "@fluentui/react-components";
 import {
   DocumentBulletList20Regular,
+  Home20Regular,
   Info20Regular,
   Play20Regular,
   Save20Regular,
@@ -278,6 +279,9 @@ export default function App() {
               density="small"
             >
               <NavDrawerBody key={selectedNav}>
+                <NavItem value="home" icon={<Home20Regular />}>
+                  {t("tabs.home")}
+                </NavItem>
                 <NavItem value="settings" icon={<Settings20Regular />}>
                   {t("tabs.settings")}
                 </NavItem>
