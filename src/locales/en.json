@@ -5,8 +5,8 @@
   "tabs": {
     "settings": "SETTINGS",
     "about": "ABOUT",
-    "changelog": "CHANGELOG"
-    ,"personal_dates": "PERSONAL DATES"
+    "changelog": "CHANGELOG",
+    "personal_dates": "PERSONAL DATES"
   },
   "sections": {
     "general": "GENERAL",
