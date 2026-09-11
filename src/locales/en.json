@@ -3,6 +3,7 @@
     "title": "Minute of Silence"
   },
   "tabs": {
+    "home": "HOME",
     "settings": "SETTINGS",
     "about": "ABOUT",
     "changelog": "CHANGELOG",
