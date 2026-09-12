@@ -19,6 +19,36 @@ const useStyles = makeStyles({
     maxWidth: "600px",
     margin: "0 auto",
   },
+  storiesContainer: {
+    display: "flex",
+    gap: tokens.spacingHorizontalM,
+    overflowX: "auto",
+    paddingBottom: tokens.spacingVerticalS,
+    scrollbarWidth: "none",
+    "-ms-overflow-style": "none",
+    "&::-webkit-scrollbar": {
+      display: "none"
+    }
+  },
+  storyItem: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: tokens.spacingVerticalXS,
+    cursor: "pointer",
+    minWidth: "72px",
+  },
+  storyAvatarRing: {
+    borderRadius: "50%",
+    padding: "2px",
+    background: tokens.colorBrandBackground,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  storyAvatar: {
+    border: `2px solid ${tokens.colorNeutralBackground1}`,
+  },
   card: {
     width: "100%",
   },
@@ -43,6 +73,22 @@ export const HomeTab = () => {
         {t("tabs.home")}
       </Text>
 
+      {/* Горизонтальна стрічка історій */}
+      <div className={styles.storiesContainer}>
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className={styles.storyItem}>
+            <div className={styles.storyAvatarRing}>
+              <Avatar 
+                name={`Автор ${i}`} 
+                size={56} 
+                className={styles.storyAvatar} 
+              />
+            </div>
+            <Text size={200}>Автор {i}</Text>
+          </div>
+        ))}
+      </div>
+
       {/* Макет публікації (Post) */}
       <Card className={styles.card}>
         <CardHeader
@@ -57,17 +103,20 @@ export const HomeTab = () => {
           <Text>Щоденна хвилина мовчання за всіма загиблими у війні. Пам'ятаємо кожного, хто віддав життя за майбутнє.</Text>
         </div>
       </Card>
-
-      {/* Макет історії (Story) - без заголовку і тексту, лише медіа та автор */}
+      
+      {/* Ще одна публікація для прикладу скролу */}
       <Card className={styles.card}>
         <CardHeader
           image={<Avatar name="Новини" color="brand" />}
-          header={<Text weight="semibold">Історія (Story)</Text>}
+          header={<Text weight="semibold">Оновлення</Text>}
           description={<Text size={200}>Автор: Волонтери • Вчора</Text>}
         />
         <CardPreview className={styles.cardPreview}>
-          <Text size={400} color="neutralSecondary">[Вертикальне Медіа / Відео]</Text>
+          <Text size={400} color="neutralSecondary">[Зображення / Медіа]</Text>
         </CardPreview>
+        <div className={styles.content}>
+          <Text>Продовжуємо роботу над платформою. Дякуємо за вашу підтримку.</Text>
+        </div>
       </Card>
     </div>
   );
