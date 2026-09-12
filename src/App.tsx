@@ -37,6 +37,7 @@ import {
 } from "./utils/api";
 import { DEFAULT_SETTINGS, type PersonalDate, type Settings, type StatusSnapshot } from "./types";
 import { t } from "./utils/i18n";
+import { HomeTab } from "./components/HomeTab";
 import AboutTab from "./components/AboutTab";
 import Overlay from "./components/Overlay";
 import SettingsTab from "./components/SettingsTab";
@@ -310,7 +311,9 @@ export default function App() {
                 </Suspense>
               ) : (
                 <div className={styles.scroll}>
-                  {selectedNav === "settings" ? (
+                  {selectedNav === "home" ? (
+                    <HomeTab />
+                  ) : selectedNav === "settings" ? (
                     <SettingsTab
                       settings={settings}
                       status={status}
