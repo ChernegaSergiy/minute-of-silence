@@ -181,6 +181,7 @@ minute-of-silence/
 |   +-- components/                   # React tab and overlay components
 |   |   +-- AboutTab.tsx              # About application tab
 |   |   +-- ChangelogTab.tsx          # Changelog and version history UI
+|   |   +-- HomeTab.tsx               # Home feed with stories and posts
 |   |   +-- Overlay.tsx               # Active ceremony overlay component
 |   |   +-- PersonalDatesTab.tsx      # Personal remembrance dates management
 |   |   +-- SettingsTab.tsx           # Main settings interface
