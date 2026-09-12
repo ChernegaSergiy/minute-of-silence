@@ -73,7 +73,7 @@ export const HomeTab = () => {
         {t("tabs.home")}
       </Text>
 
-      {/* Горизонтальна стрічка історій */}
+      {/* Horizontal stories feed */}
       <div className={styles.storiesContainer}>
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className={styles.storyItem}>
@@ -89,7 +89,7 @@ export const HomeTab = () => {
         ))}
       </div>
 
-      {/* Макет публікації (Post) */}
+      {/* Post mockup */}
       <Card className={styles.card}>
         <CardHeader
           image={<Avatar name="Офіційне джерело" badge={{ status: "available" }} />}
@@ -104,7 +104,7 @@ export const HomeTab = () => {
         </div>
       </Card>
       
-      {/* Ще одна публікація для прикладу скролу */}
+      {/* Additional post mockup to demonstrate scrolling */}
       <Card className={styles.card}>
         <CardHeader
           image={<Avatar name="Новини" color="brand" />}

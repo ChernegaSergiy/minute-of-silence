@@ -217,7 +217,7 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
 
   return (
     <>
-      {/* Форма додавання */}
+      {/* Add new date form */}
       <Card className={styles.card}>
         <Text weight="semibold" size={200} block>
           {t("personal_dates.title")}
@@ -259,7 +259,7 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
         </div>
       </Card>
 
-      {/* Список */}
+      {/* Dates list */}
       <Card className={styles.card}>
         <Text weight="semibold" size={200} block>
           {t("personal_dates.list_title")}
