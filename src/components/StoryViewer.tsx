@@ -13,16 +13,16 @@ import { Dismiss24Regular, ChevronLeft24Regular, ChevronRight24Regular } from "@
 
 const useStyles = makeStyles({
   dialogSurface: {
-    maxWidth: "100vw",
-    maxHeight: "100vh",
-    width: "100vw",
-    height: "100vh",
+    maxWidth: "calc(90vh * 9 / 16)",
+    width: "100%",
+    height: "90vh",
     padding: 0,
-    margin: 0,
+    margin: "auto",
     backgroundColor: tokens.colorNeutralBackgroundStatic,
-    borderRadius: 0,
+    borderRadius: tokens.borderRadiusLarge,
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden",
   },
   dialogContent: {
     display: "flex",
