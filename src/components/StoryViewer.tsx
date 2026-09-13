@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogSurface,
@@ -109,6 +110,27 @@ interface StoryViewerProps {
 
 export const StoryViewer = ({ isOpen, onClose, authorName = "Автор історії", publishedAt = "Сьогодні" }: StoryViewerProps) => {
   const styles = useStyles();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const totalStories = 3;
+
+  // Reset index when opening
+  useEffect(() => {
+    if (isOpen) setCurrentIndex(0);
+  }, [isOpen]);
+
+  const goNext = () => {
+    if (currentIndex < totalStories - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      onClose(); // Close if it's the last story
+    }
+  };
+
+  const goPrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(_, data) => !data.open && onClose()}>
@@ -117,16 +139,19 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
           <DialogContent className={styles.dialogContent}>
             
             <div className={styles.progressContainer}>
-              <div className={`${styles.progressSegment} ${styles.progressSegmentActive}`} />
-              <div className={styles.progressSegment} />
-              <div className={styles.progressSegment} />
+              {Array.from({ length: totalStories }).map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={`${styles.progressSegment} ${idx <= currentIndex ? styles.progressSegmentActive : ''}`} 
+                />
+              ))}
             </div>
 
             <div className={styles.header}>
               <div className={styles.headerLeft}>
                 <Avatar name={authorName} size={32} />
                 <div className={styles.headerText}>
-                  <Text weight="semibold" style={{ color: tokens.colorNeutralForegroundInverted }}>
+                  <Text weight="semibold" style={{ color: "white" }}>
                     {authorName}
                   </Text>
                   <Text size={200} style={{ color: "rgba(255,255,255,0.7)" }}>
@@ -143,13 +168,13 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
             </div>
 
             <div className={styles.navigation}>
-              <div className={styles.navArea} />
-              <div className={styles.navArea} />
+              <div className={styles.navArea} onClick={goPrev} title="Попередня" />
+              <div className={styles.navArea} onClick={goNext} title="Наступна" />
             </div>
 
             <div className={styles.mediaContainer}>
-              <Text size={600} style={{ color: tokens.colorNeutralForegroundInverted }}>
-                [Повноекранне Медіа]
+              <Text size={600} style={{ color: "white" }}>
+                [Повноекранне Медіа {currentIndex + 1}]
               </Text>
             </div>
 
