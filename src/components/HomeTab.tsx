@@ -80,7 +80,7 @@ const useStyles = makeStyles({
     width: "100%",
     height: "auto",
     maxHeight: "500px",
-    objectFit: "cover",
+    objectFit: "contain",
     scrollSnapAlign: "center",
   },
   carouselWrapper: {
