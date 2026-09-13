@@ -70,7 +70,7 @@ const useStyles = makeStyles({
     overflowX: "auto",
     scrollSnapType: "x mandatory",
     scrollbarWidth: "none",
-    "-ms-overflow-style": "none",
+    msOverflowStyle: "none",
     "&::-webkit-scrollbar": {
       display: "none"
     }
@@ -83,11 +83,74 @@ const useStyles = makeStyles({
     objectFit: "cover",
     scrollSnapAlign: "center",
   },
+  carouselWrapper: {
+    position: "relative",
+  },
+  indicatorContainer: {
+    position: "absolute",
+    bottom: tokens.spacingVerticalM,
+    left: 0,
+    right: 0,
+    display: "flex",
+    justifyContent: "center",
+    gap: "6px",
+    pointerEvents: "none",
+  },
+  indicatorDot: {
+    width: "6px",
+    height: "6px",
+    borderRadius: "50%",
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    transition: "background-color 0.2s ease",
+  },
+  indicatorDotActive: {
+    backgroundColor: "white",
+  },
   content: {
     paddingTop: tokens.spacingVerticalS,
     whiteSpace: "pre-wrap",
   }
 });
+
+const PostMediaCarousel = ({ media }: { media: string[] }) => {
+  const styles = useStyles();
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const index = Math.round(target.scrollLeft / target.clientWidth);
+    if (index !== activeIndex) {
+      setActiveIndex(index);
+    }
+  };
+
+  if (!media || media.length === 0) return null;
+
+  return (
+    <div className={styles.carouselWrapper}>
+      <CardPreview className={styles.cardPreview} onScroll={handleScroll}>
+        {media.map((imgSrc, idx) => (
+          <img 
+            key={idx}
+            src={`${BASE_URL}${imgSrc}`} 
+            alt={`Post media ${idx + 1}`} 
+            className={styles.mediaImage}
+          />
+        ))}
+      </CardPreview>
+      {media.length > 1 && (
+        <div className={styles.indicatorContainer}>
+          {media.map((_, idx) => (
+            <div 
+              key={idx} 
+              className={`${styles.indicatorDot} ${idx === activeIndex ? styles.indicatorDotActive : ""}`} 
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Group stories by author
 const groupStoriesByAuthor = (stories: CmsStory[]) => {
@@ -175,18 +238,7 @@ export const HomeTab = () => {
               header={<Text weight="semibold">{post.title}</Text>}
               description={<Text size={200}>Автор: {post.author} • {date}</Text>}
             />
-            {post.media && post.media.length > 0 && (
-              <CardPreview className={styles.cardPreview}>
-                {post.media.map((imgSrc, idx) => (
-                  <img 
-                    key={idx}
-                    src={`${BASE_URL}${imgSrc}`} 
-                    alt={`Post media ${idx + 1}`} 
-                    className={styles.mediaImage}
-                  />
-                ))}
-              </CardPreview>
-            )}
+            <PostMediaCarousel media={post.media} />
             <div className={styles.content}>
               <Text>{post.content}</Text>
             </div>
