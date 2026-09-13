@@ -176,12 +176,22 @@ const PostContent = ({ content }: { content: string }) => {
 const PostMediaCarousel = ({ media }: { media: string[] }) => {
   const styles = useStyles();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState<string>("auto");
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const index = Math.round(target.scrollLeft / target.clientWidth);
     if (index !== activeIndex) {
       setActiveIndex(index);
+    }
+  };
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>, index: number) => {
+    if (index === 0) {
+      const { naturalWidth, naturalHeight } = e.currentTarget;
+      if (naturalWidth && naturalHeight) {
+        setAspectRatio(`${naturalWidth} / ${naturalHeight}`);
+      }
     }
   };
 
@@ -196,6 +206,8 @@ const PostMediaCarousel = ({ media }: { media: string[] }) => {
             src={`${BASE_URL}${imgSrc}`} 
             alt={`Post media ${idx + 1}`} 
             className={styles.mediaImage}
+            style={{ aspectRatio, objectFit: "cover" }}
+            onLoad={(e) => handleImageLoad(e, idx)}
           />
         ))}
       </CardPreview>
