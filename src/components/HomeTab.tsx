@@ -243,7 +243,15 @@ export const HomeTab = () => {
             />
             <PostMediaCarousel media={post.media} />
             <div className={styles.content}>
-              <Text>{post.content}</Text>
+              {post.content.split('\n').map((line, idx) => (
+                line.trim() === '' ? (
+                  <br key={idx} />
+                ) : (
+                  <Text key={idx} as="p" block style={{ margin: 0, marginBottom: "8px" }}>
+                    {line}
+                  </Text>
+                )
+              ))}
             </div>
           </Card>
         );
