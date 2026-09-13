@@ -78,13 +78,7 @@ const useStyles = makeStyles({
     width: "100%",
   },
   progressFillAnimated: {
-    animationDuration: "5000ms",
-    animationTimingFunction: "linear",
-    animationFillMode: "forwards",
-    animationName: {
-      "0%": { width: "0%" },
-      "100%": { width: "100%" },
-    }
+    // Removed broken Fluent UI keyframes
   },
   mediaContainer: {
     flexGrow: 1,
@@ -127,6 +121,7 @@ interface StoryViewerProps {
 export const StoryViewer = ({ isOpen, onClose, authorName = "Автор історії", publishedAt = "Сьогодні" }: StoryViewerProps) => {
   const styles = useStyles();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFilling, setIsFilling] = useState(false);
   const totalStories = 3;
   const STORY_DURATION_MS = 5000;
 
@@ -134,6 +129,19 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
   useEffect(() => {
     if (isOpen) setCurrentIndex(0);
   }, [isOpen]);
+
+  // Trigger CSS transition for the active segment
+  useEffect(() => {
+    if (isOpen) {
+      setIsFilling(false); // Reset to 0%
+      const raf1 = requestAnimationFrame(() => {
+        const raf2 = requestAnimationFrame(() => {
+          setIsFilling(true); // Start transitioning to 100%
+        });
+      });
+      return () => cancelAnimationFrame(raf1);
+    }
+  }, [isOpen, currentIndex]);
 
   const goNext = React.useCallback(() => {
     if (currentIndex < totalStories - 1) {
@@ -170,16 +178,11 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
               {Array.from({ length: totalStories }).map((_, idx) => (
                 <div key={idx} className={styles.progressSegment}>
                   <div 
-                    className={`${styles.progressFill} ${
-                      idx < currentIndex 
-                        ? styles.progressFillFull 
-                        : idx === currentIndex && isOpen 
-                          ? styles.progressFillAnimated 
-                          : ''
-                    }`}
-                    // Unique key on the animation element forces it to restart if currentIndex stays the same somehow,
-                    // though it typically moves forward.
-                    key={`${idx}-${isOpen ? 'open' : 'closed'}`}
+                    className={styles.progressFill}
+                    style={{
+                      width: idx < currentIndex ? "100%" : idx === currentIndex && isFilling ? "100%" : "0%",
+                      transition: idx === currentIndex && isFilling ? `width ${STORY_DURATION_MS}ms linear` : "none"
+                    }}
                   />
                 </div>
               ))}
