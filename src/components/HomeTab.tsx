@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   makeStyles,
   tokens,
@@ -8,6 +9,7 @@ import {
   Avatar
 } from "@fluentui/react-components";
 import { t } from "../utils/i18n";
+import { StoryViewer } from "./StoryViewer";
 
 const useStyles = makeStyles({
   container: {
@@ -66,6 +68,7 @@ const useStyles = makeStyles({
 
 export const HomeTab = () => {
   const styles = useStyles();
+  const [selectedStoryAuthor, setSelectedStoryAuthor] = useState<string | null>(null);
 
   return (
     <div className={styles.container}>
@@ -76,7 +79,11 @@ export const HomeTab = () => {
       {/* Horizontal stories feed */}
       <div className={styles.storiesContainer}>
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className={styles.storyItem}>
+          <div 
+            key={i} 
+            className={styles.storyItem}
+            onClick={() => setSelectedStoryAuthor(`Автор ${i}`)}
+          >
             <div className={styles.storyAvatarRing}>
               <Avatar 
                 name={`Автор ${i}`} 
