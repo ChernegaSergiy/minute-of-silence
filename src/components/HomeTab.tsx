@@ -89,11 +89,14 @@ const useStyles = makeStyles({
   indicatorContainer: {
     position: "absolute",
     bottom: tokens.spacingVerticalM,
-    left: 0,
-    right: 0,
+    left: "50%",
+    transform: "translateX(-50%)",
     display: "flex",
     justifyContent: "center",
     gap: "6px",
+    padding: "6px 10px",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    borderRadius: "12px",
     pointerEvents: "none",
   },
   indicatorDot: {
