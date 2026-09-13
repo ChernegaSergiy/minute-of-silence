@@ -67,15 +67,21 @@ const useStyles = makeStyles({
   cardPreview: {
     backgroundColor: tokens.colorNeutralBackground3,
     display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
+    overflowX: "auto",
+    scrollSnapType: "x mandatory",
+    scrollbarWidth: "none",
+    "-ms-overflow-style": "none",
+    "&::-webkit-scrollbar": {
+      display: "none"
+    }
   },
   mediaImage: {
+    minWidth: "100%",
     width: "100%",
     height: "auto",
     maxHeight: "500px",
     objectFit: "cover",
+    scrollSnapAlign: "center",
   },
   content: {
     paddingTop: tokens.spacingVerticalS,
@@ -171,11 +177,14 @@ export const HomeTab = () => {
             />
             {post.media && post.media.length > 0 && (
               <CardPreview className={styles.cardPreview}>
-                <img 
-                  src={`${BASE_URL}${post.media[0]}`} 
-                  alt="Post media" 
-                  className={styles.mediaImage}
-                />
+                {post.media.map((imgSrc, idx) => (
+                  <img 
+                    key={idx}
+                    src={`${BASE_URL}${imgSrc}`} 
+                    alt={`Post media ${idx + 1}`} 
+                    className={styles.mediaImage}
+                  />
+                ))}
               </CardPreview>
             )}
             <div className={styles.content}>
