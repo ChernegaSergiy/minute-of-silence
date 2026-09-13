@@ -185,6 +185,7 @@ minute-of-silence/
 |   |   +-- Overlay.tsx               # Active ceremony overlay component
 |   |   +-- PersonalDatesTab.tsx      # Personal remembrance dates management
 |   |   +-- SettingsTab.tsx           # Main settings interface
+|   |   +-- StoryViewer.tsx           # Full-screen stories carousel viewer
 |   |   \-- UpdateDialog.tsx          # Update available dialog with progress tracking
 |   +-- hooks/                        # Custom React hooks
 |   |   \-- useIdle.ts                # User inactivity detection hook
