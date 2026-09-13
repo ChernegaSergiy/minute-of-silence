@@ -11,7 +11,7 @@ import {
 } from "@fluentui/react-components";
 import { t } from "../utils/i18n";
 import { StoryViewer } from "./StoryViewer";
-import { CmsFeed, CmsPost, CmsStory } from "../types";
+import { CmsFeed, CmsStory } from "../types";
 
 const FEED_URL = "https://feed.khvylyna.pp.ua/feed.json";
 const BASE_URL = "https://feed.khvylyna.pp.ua/";

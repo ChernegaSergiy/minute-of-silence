@@ -10,7 +10,7 @@ import {
   Avatar,
   Text,
 } from "@fluentui/react-components";
-import { Dismiss24Regular, ChevronLeft24Regular, ChevronRight24Regular } from "@fluentui/react-icons";
+import { Dismiss24Regular } from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
   dialogSurface: {
@@ -135,7 +135,7 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
     if (isOpen) {
       setIsFilling(false); // Reset to 0%
       const raf1 = requestAnimationFrame(() => {
-        const raf2 = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
           setIsFilling(true); // Start transitioning to 100%
         });
       });
