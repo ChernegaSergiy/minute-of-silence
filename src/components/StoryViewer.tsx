@@ -66,9 +66,25 @@ const useStyles = makeStyles({
     flexGrow: 1,
     backgroundColor: "rgba(255, 255, 255, 0.3)",
     borderRadius: "2px",
+    overflow: "hidden",
   },
-  progressSegmentActive: {
-    backgroundColor: tokens.colorNeutralForegroundInverted,
+  progressFill: {
+    height: "100%",
+    backgroundColor: "white",
+    borderRadius: "2px",
+    width: "0%",
+  },
+  progressFillFull: {
+    width: "100%",
+  },
+  progressFillAnimated: {
+    animationDuration: "5000ms",
+    animationTimingFunction: "linear",
+    animationFillMode: "forwards",
+    animationName: {
+      "0%": { width: "0%" },
+      "100%": { width: "100%" },
+    }
   },
   mediaContainer: {
     flexGrow: 1,
@@ -152,10 +168,20 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
             
             <div className={styles.progressContainer}>
               {Array.from({ length: totalStories }).map((_, idx) => (
-                <div 
-                  key={idx} 
-                  className={`${styles.progressSegment} ${idx <= currentIndex ? styles.progressSegmentActive : ''}`} 
-                />
+                <div key={idx} className={styles.progressSegment}>
+                  <div 
+                    className={`${styles.progressFill} ${
+                      idx < currentIndex 
+                        ? styles.progressFillFull 
+                        : idx === currentIndex && isOpen 
+                          ? styles.progressFillAnimated 
+                          : ''
+                    }`}
+                    // Unique key on the animation element forces it to restart if currentIndex stays the same somehow,
+                    // though it typically moves forward.
+                    key={`${idx}-${isOpen ? 'open' : 'closed'}`}
+                  />
+                </div>
               ))}
             </div>
 
