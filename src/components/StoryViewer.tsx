@@ -112,25 +112,37 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
   const styles = useStyles();
   const [currentIndex, setCurrentIndex] = useState(0);
   const totalStories = 3;
+  const STORY_DURATION_MS = 5000;
 
   // Reset index when opening
   useEffect(() => {
     if (isOpen) setCurrentIndex(0);
   }, [isOpen]);
 
-  const goNext = () => {
+  const goNext = React.useCallback(() => {
     if (currentIndex < totalStories - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
       onClose(); // Close if it's the last story
     }
-  };
+  }, [currentIndex, totalStories, onClose]);
 
-  const goPrev = () => {
+  const goPrev = React.useCallback(() => {
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
     }
-  };
+  }, [currentIndex]);
+
+  // Auto-advance timer
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const timer = setTimeout(() => {
+      goNext();
+    }, STORY_DURATION_MS);
+    
+    return () => clearTimeout(timer);
+  }, [isOpen, currentIndex, goNext]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(_, data) => !data.open && onClose()}>
