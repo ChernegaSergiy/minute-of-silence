@@ -90,7 +90,13 @@ const useStyles = makeStyles({
     cursor: "pointer",
   },
   closeButton: {
-    color: tokens.colorNeutralForegroundInverted,
+    color: "white",
+    "&:hover": {
+      color: "white",
+    },
+    "&:active": {
+      color: "white",
+    }
   }
 });
 
@@ -129,7 +135,7 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
                 </div>
               </div>
               <Button 
-                icon={<Dismiss24Regular />} 
+                icon={<Dismiss24Regular color="white" />} 
                 appearance="transparent" 
                 className={styles.closeButton}
                 onClick={onClose}
