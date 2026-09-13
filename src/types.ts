@@ -108,3 +108,29 @@ export interface PersonalDate {
   label: string;
   year: number;
 }
+
+// CMS API Types
+export interface CmsPost {
+  id: string;
+  type: "post";
+  title: string;
+  content: string;
+  media: string[];
+  author: string;
+  publishedAt: string;
+}
+
+export interface CmsStory {
+  id: string;
+  type: "story";
+  media: string[];
+  author: string;
+  publishedAt: string;
+  expiresAt: string;
+}
+
+export interface CmsFeed {
+  version: number;
+  posts: CmsPost[];
+  stories: CmsStory[];
+}
