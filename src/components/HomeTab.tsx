@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   makeStyles,
   tokens,
@@ -6,10 +6,15 @@ import {
   Card,
   CardHeader,
   CardPreview,
-  Avatar
+  Avatar,
+  Spinner
 } from "@fluentui/react-components";
 import { t } from "../utils/i18n";
 import { StoryViewer } from "./StoryViewer";
+import { CmsFeed, CmsPost, CmsStory } from "../types";
+
+const FEED_URL = "https://feed.khvylyna.pp.ua/feed.json";
+const BASE_URL = "https://feed.khvylyna.pp.ua/";
 
 const useStyles = makeStyles({
   container: {
@@ -20,6 +25,11 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalL,
     maxWidth: "600px",
     margin: "0 auto",
+  },
+  loadingContainer: {
+    padding: tokens.spacingVerticalXXL,
+    display: "flex",
+    justifyContent: "center",
   },
   storiesContainer: {
     display: "flex",
@@ -55,20 +65,71 @@ const useStyles = makeStyles({
     width: "100%",
   },
   cardPreview: {
-    height: "200px",
     backgroundColor: tokens.colorNeutralBackground3,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  mediaImage: {
+    width: "100%",
+    height: "auto",
+    maxHeight: "500px",
+    objectFit: "cover",
   },
   content: {
     paddingTop: tokens.spacingVerticalS,
+    whiteSpace: "pre-wrap",
   }
 });
+
+// Group stories by author
+const groupStoriesByAuthor = (stories: CmsStory[]) => {
+  const grouped: Record<string, CmsStory[]> = {};
+  stories.forEach(story => {
+    if (!grouped[story.author]) {
+      grouped[story.author] = [];
+    }
+    grouped[story.author].push(story);
+  });
+  return Object.entries(grouped).map(([author, authorStories]) => ({
+    author,
+    stories: authorStories
+  }));
+};
 
 export const HomeTab = () => {
   const styles = useStyles();
   const [selectedStoryAuthor, setSelectedStoryAuthor] = useState<string | null>(null);
+  const [feed, setFeed] = useState<CmsFeed | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeed = async () => {
+      try {
+        const response = await fetch(FEED_URL);
+        if (response.ok) {
+          const data: CmsFeed = await response.json();
+          setFeed(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch feed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeed();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Spinner size="large" label="Завантаження..." />
+      </div>
+    );
+  }
+
+  const groupedStories = feed ? groupStoriesByAuthor(feed.stories) : [];
 
   return (
     <div className={styles.container}>
@@ -77,54 +138,52 @@ export const HomeTab = () => {
       </Text>
 
       {/* Horizontal stories feed */}
-      <div className={styles.storiesContainer}>
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div 
-            key={i} 
-            className={styles.storyItem}
-            onClick={() => setSelectedStoryAuthor(`Автор ${i}`)}
-          >
-            <div className={styles.storyAvatarRing}>
-              <Avatar 
-                name={`Автор ${i}`} 
-                size={56} 
-                className={styles.storyAvatar} 
-              />
+      {groupedStories.length > 0 && (
+        <div className={styles.storiesContainer}>
+          {groupedStories.map((group, index) => (
+            <div 
+              key={index} 
+              className={styles.storyItem}
+              onClick={() => setSelectedStoryAuthor(group.author)}
+            >
+              <div className={styles.storyAvatarRing}>
+                <Avatar 
+                  name={group.author} 
+                  size={56} 
+                  className={styles.storyAvatar} 
+                />
+              </div>
+              <Text size={200}>{group.author}</Text>
             </div>
-            <Text size={200}>Автор {i}</Text>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Post mockup */}
-      <Card className={styles.card}>
-        <CardHeader
-          image={<Avatar name="Офіційне джерело" badge={{ status: "available" }} />}
-          header={<Text weight="semibold">Вшанування пам'яті героїв</Text>}
-          description={<Text size={200}>Автор: Адміністрація • Сьогодні о 09:00</Text>}
-        />
-        <CardPreview className={styles.cardPreview}>
-          <Text size={400} color="neutralSecondary">[Зображення / Медіа]</Text>
-        </CardPreview>
-        <div className={styles.content}>
-          <Text>Щоденна хвилина мовчання за всіма загиблими у війні. Пам'ятаємо кожного, хто віддав життя за майбутнє.</Text>
-        </div>
-      </Card>
-      
-      {/* Additional post mockup to demonstrate scrolling */}
-      <Card className={styles.card}>
-        <CardHeader
-          image={<Avatar name="Новини" color="brand" />}
-          header={<Text weight="semibold">Оновлення</Text>}
-          description={<Text size={200}>Автор: Волонтери • Вчора</Text>}
-        />
-        <CardPreview className={styles.cardPreview}>
-          <Text size={400} color="neutralSecondary">[Зображення / Медіа]</Text>
-        </CardPreview>
-        <div className={styles.content}>
-          <Text>Продовжуємо роботу над платформою. Дякуємо за вашу підтримку.</Text>
-        </div>
-      </Card>
+      {/* Posts feed */}
+      {feed?.posts.map((post) => {
+        const date = new Date(post.publishedAt).toLocaleDateString();
+        return (
+          <Card key={post.id} className={styles.card}>
+            <CardHeader
+              image={<Avatar name={post.author} badge={{ status: "available" }} />}
+              header={<Text weight="semibold">{post.title}</Text>}
+              description={<Text size={200}>Автор: {post.author} • {date}</Text>}
+            />
+            {post.media && post.media.length > 0 && (
+              <CardPreview className={styles.cardPreview}>
+                <img 
+                  src={`${BASE_URL}${post.media[0]}`} 
+                  alt="Post media" 
+                  className={styles.mediaImage}
+                />
+              </CardPreview>
+            )}
+            <div className={styles.content}>
+              <Text>{post.content}</Text>
+            </div>
+          </Card>
+        );
+      })}
 
       <StoryViewer 
         isOpen={selectedStoryAuthor !== null} 
