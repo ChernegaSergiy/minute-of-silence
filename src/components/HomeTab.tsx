@@ -125,6 +125,12 @@ export const HomeTab = () => {
           <Text>Продовжуємо роботу над платформою. Дякуємо за вашу підтримку.</Text>
         </div>
       </Card>
+
+      <StoryViewer 
+        isOpen={selectedStoryAuthor !== null} 
+        onClose={() => setSelectedStoryAuthor(null)}
+        authorName={selectedStoryAuthor || undefined}
+      />
     </div>
   );
 };
