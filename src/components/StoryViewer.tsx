@@ -157,6 +157,24 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
     }
   }, [currentIndex]);
 
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") {
+        goNext();
+      } else if (e.key === "ArrowLeft") {
+        goPrev();
+      } else if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, goNext, goPrev, onClose]);
+
   // Auto-advance timer
   useEffect(() => {
     if (!isOpen) return;
