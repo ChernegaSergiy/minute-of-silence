@@ -91,7 +91,7 @@ const useStyles = makeStyles({
 
 export default function App() {
   const styles = useStyles();
-  const [selectedNav, setSelectedNav] = useState<string>("settings");
+  const [selectedNav, setSelectedNav] = useState<string>("home");
   const [prefersDark, setPrefersDark] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
