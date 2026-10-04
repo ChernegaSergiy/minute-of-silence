@@ -232,10 +232,10 @@ export default function App() {
   useEffect(() => {
     if (!updateInfo || updateDismissed || showUpdateDialog) return;
 
-    if (isIdle && document.hasFocus()) {
+    if (isIdle && document.hasFocus() && !status.ceremonyActive && !showOverlay) {
       setShowUpdateDialog(true);
     }
-  }, [updateInfo, updateDismissed, showUpdateDialog, isIdle]);
+  }, [updateInfo, updateDismissed, showUpdateDialog, isIdle, status.ceremonyActive, showOverlay]);
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
