@@ -42,6 +42,7 @@ impl std::fmt::Debug for Inner {
                 "pending_update",
                 &self.pending_update.as_ref().map(|u| &u.version),
             )
+            .field("pending_restart", &self.pending_restart)
             .finish()
     }
 }
