@@ -29,11 +29,6 @@ const useStyles = makeStyles({
     maxWidth: "600px",
     margin: "0 auto",
   },
-  loadingContainer: {
-    padding: tokens.spacingVerticalXXL,
-    display: "flex",
-    justifyContent: "center",
-  },
   stateCard: {
     display: "flex",
     flexDirection: "column",
@@ -298,8 +293,13 @@ export const HomeTab = () => {
 
   if (loading) {
     return (
-      <div className={styles.loadingContainer}>
-        <Spinner size="large" label="Завантаження..." />
+      <div className={styles.container}>
+        <Text size={500} weight="semibold">
+          {t("tabs.home")}
+        </Text>
+        <Card className={styles.stateCard}>
+          <Spinner size="large" label="Завантаження..." />
+        </Card>
       </div>
     );
   }
