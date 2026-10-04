@@ -109,6 +109,7 @@ export default function App() {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [updateDismissed, setUpdateDismissed] = useState(false);
+  const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
   const isIdle = useIdle(15000); // 15 seconds idle timeout
   const initRef = useRef(false);
 
@@ -235,7 +236,7 @@ export default function App() {
     const ceremonyRunning = status.ceremonyActive || showOverlay;
 
     if (showUpdateDialog) {
-      if (ceremonyRunning) {
+      if (ceremonyRunning && !isInstallingUpdate) {
         setShowUpdateDialog(false);
       }
       return;
@@ -244,7 +245,7 @@ export default function App() {
     if (isIdle && document.hasFocus() && !ceremonyRunning) {
       setShowUpdateDialog(true);
     }
-  }, [updateInfo, updateDismissed, showUpdateDialog, isIdle, status.ceremonyActive, showOverlay]);
+  }, [updateInfo, updateDismissed, showUpdateDialog, isIdle, status.ceremonyActive, showOverlay, isInstallingUpdate]);
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -372,6 +373,7 @@ export default function App() {
             setShowUpdateDialog(false);
             setUpdateDismissed(true);
           }}
+          onUpdatingChange={setIsInstallingUpdate}
         />
       </FluentProvider>
 
