@@ -34,22 +34,16 @@ const useStyles = makeStyles({
     display: "flex",
     justifyContent: "center",
   },
-  errorContainer: {
-    padding: tokens.spacingVerticalXXL,
+  stateCard: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
+    justifyContent: "center",
     gap: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalXXL,
     textAlign: "center",
-  },
-  emptyContainer: {
-    padding: tokens.spacingVerticalXL,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: tokens.spacingVerticalS,
-    textAlign: "center",
-    color: tokens.colorNeutralForeground3,
+    backgroundColor: tokens.colorNeutralBackground2,
+    marginTop: tokens.spacingVerticalM,
   },
   storiesContainer: {
     display: "flex",
@@ -316,16 +310,18 @@ export const HomeTab = () => {
         <Text size={500} weight="semibold">
           {t("tabs.home")}
         </Text>
-        <div className={styles.errorContainer}>
+        <Card className={styles.stateCard}>
           <WifiOff48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
             Не вдалося завантажити стрічку
           </Text>
-          <Text size={300}>Перевірте підключення до інтернету.</Text>
+          <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
+            Перевірте підключення до інтернету.
+          </Text>
           <Button onClick={fetchFeed} appearance="primary">
             Спробувати знову
           </Button>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -377,15 +373,15 @@ export const HomeTab = () => {
           );
         })
       ) : (
-        <div className={styles.emptyContainer}>
+        <Card className={styles.stateCard}>
           <Feed48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
             Стрічка порожня
           </Text>
-          <Text size={300}>
+          <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
             Тут з'являться останні новини та публікації.
           </Text>
-        </div>
+        </Card>
       )}
 
       <StoryViewer 
