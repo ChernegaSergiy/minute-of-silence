@@ -230,9 +230,18 @@ export default function App() {
 
   // Trigger the update dialog when user is idle
   useEffect(() => {
-    if (!updateInfo || updateDismissed || showUpdateDialog) return;
+    if (!updateInfo || updateDismissed) return;
 
-    if (isIdle && document.hasFocus() && !status.ceremonyActive && !showOverlay) {
+    const ceremonyRunning = status.ceremonyActive || showOverlay;
+
+    if (showUpdateDialog) {
+      if (ceremonyRunning) {
+        setShowUpdateDialog(false);
+      }
+      return;
+    }
+
+    if (isIdle && document.hasFocus() && !ceremonyRunning) {
       setShowUpdateDialog(true);
     }
   }, [updateInfo, updateDismissed, showUpdateDialog, isIdle, status.ceremonyActive, showOverlay]);
