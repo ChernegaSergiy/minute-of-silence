@@ -37,6 +37,20 @@ export async function savePersonalDates(dates: PersonalDate[]): Promise<void> {
   await store.save();
 }
 
+// Feed Cache
+
+const feedStore = new LazyStore("feed_cache.json");
+
+export async function getFeedCache<CmsFeed>(): Promise<CmsFeed | null> {
+  const feed = await feedStore.get<CmsFeed>("feed");
+  return feed ?? null;
+}
+
+export async function saveFeedCache<CmsFeed>(feed: CmsFeed): Promise<void> {
+  await feedStore.set("feed", feed);
+  await feedStore.save();
+}
+
 // Status
 
 export async function getStatus(): Promise<StatusSnapshot> {
