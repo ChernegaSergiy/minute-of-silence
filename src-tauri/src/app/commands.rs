@@ -244,8 +244,23 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
 
     match res {
         Ok(_) => {
-            log::info!("Update installed. Restarting...");
-            app.restart();
+            log::info!("Update installed.");
+            let should_restart = {
+                let mut inner = state.lock();
+                if inner.ceremony_active {
+                    inner.pending_restart = true;
+                    false
+                } else {
+                    true
+                }
+            };
+            if should_restart {
+                log::info!("Restarting app...");
+                app.restart();
+            } else {
+                log::info!("Ceremony is active. Deferring restart...");
+            }
+            Ok(())
         }
         Err(e) => {
             let err_str = e.to_string();
