@@ -199,11 +199,12 @@ impl CeremonyManager {
             )
         };
 
-        {
+        let pending_restart = {
             let state = app.state::<AppState>();
             let mut inner = state.lock();
             inner.ceremony_active = false;
-        }
+            inner.pending_restart
+        };
 
         // Restore volume and mute
         if volume_priority {
@@ -246,5 +247,10 @@ impl CeremonyManager {
         }
 
         let _ = app.emit("ceremony-end", ());
+
+        if pending_restart {
+            log::info!("Executing deferred app restart after ceremony.");
+            app.restart();
+        }
     }
 }
