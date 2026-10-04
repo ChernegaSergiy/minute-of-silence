@@ -9,6 +9,13 @@
     "changelog": "CHANGELOG",
     "personal_dates": "PERSONAL DATES"
   },
+  "feed": {
+    "errorTitle": "Failed to load feed",
+    "errorSubtitle": "Please check your internet connection.",
+    "retryButton": "Try again",
+    "emptyTitle": "Feed is empty",
+    "emptySubtitle": "The latest news and publications will appear here."
+  },
   "sections": {
     "general": "GENERAL",
     "reminder": "REMINDER",
