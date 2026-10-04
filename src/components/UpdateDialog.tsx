@@ -29,6 +29,7 @@ export interface UpdateInfo {
 interface UpdateDialogProps {
   updateInfo: UpdateInfo | null;
   onClose: () => void;
+  onUpdatingChange?: (updating: boolean) => void;
 }
 
 const useStyles = makeStyles({
@@ -86,12 +87,16 @@ const useStyles = makeStyles({
   },
 });
 
-export default function UpdateDialog({ updateInfo, onClose }: UpdateDialogProps) {
+export default function UpdateDialog({ updateInfo, onClose, onUpdatingChange }: UpdateDialogProps) {
   const styles = useStyles();
   const [updating, setUpdating] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [statusText, setStatusText] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
+
+  useEffect(() => {
+    onUpdatingChange?.(updating);
+  }, [updating, onUpdatingChange]);
 
   useEffect(() => {
     if (!updateInfo) {

@@ -29,6 +29,7 @@ pub struct Inner {
     pub ceremony_active: bool,
     pub last_activation: Option<DateTime<Local>>,
     pub pending_update: Option<tauri_plugin_updater::Update>,
+    pub pending_restart: bool,
 }
 
 impl std::fmt::Debug for Inner {
@@ -41,6 +42,7 @@ impl std::fmt::Debug for Inner {
                 "pending_update",
                 &self.pending_update.as_ref().map(|u| &u.version),
             )
+            .field("pending_restart", &self.pending_restart)
             .finish()
     }
 }
@@ -58,6 +60,7 @@ impl AppState {
                 ceremony_active: false,
                 last_activation: None,
                 pending_update: None,
+                pending_restart: false,
             })),
             ntp_service: NtpService::new(settings.ntp_server.clone()),
             audio: Arc::new(AudioEngine::new(app_handle.clone())),
