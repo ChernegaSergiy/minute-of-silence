@@ -7,8 +7,9 @@ import {
   CardHeader,
   CardPreview,
   Avatar,
-  Spinner,
-  Button
+  Button,
+  Skeleton,
+  SkeletonItem
 } from "@fluentui/react-components";
 import { Feed48Regular, WifiOff48Regular } from "@fluentui/react-icons";
 import { t } from "../utils/i18n";
@@ -39,6 +40,16 @@ const useStyles = makeStyles({
     textAlign: "center",
     backgroundColor: tokens.colorNeutralBackground2,
     marginTop: tokens.spacingVerticalM,
+  },
+  skeletonStories: {
+    display: "flex",
+    gap: tokens.spacingHorizontalM,
+    overflow: "hidden",
+  },
+  skeletonCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalM,
   },
   storiesContainer: {
     display: "flex",
@@ -291,25 +302,41 @@ export const HomeTab = () => {
     fetchFeed();
   }, []);
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <Text size={500} weight="semibold">
-          {t("tabs.home")}
-        </Text>
-        <Card className={styles.stateCard}>
-          <Spinner size="large" label="Завантаження..." />
-        </Card>
-      </div>
-    );
-  }
+  const groupedStories = feed ? groupStoriesByAuthor(feed.stories) : [];
 
-  if (error) {
-    return (
-      <div className={styles.container}>
-        <Text size={500} weight="semibold">
-          {t("tabs.home")}
-        </Text>
+  return (
+    <div className={styles.container}>
+      <Text size={500} weight="semibold">
+        {t("tabs.home")}
+      </Text>
+
+      {loading && !feed && (
+        <Skeleton animation="pulse" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div className={styles.skeletonStories}>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <SkeletonItem shape="circle" size={56} />
+                <SkeletonItem shape="rectangle" style={{ width: '40px', height: '12px' }} />
+              </div>
+            ))}
+          </div>
+          {[1, 2].map(i => (
+            <Card key={i} className={styles.card}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <SkeletonItem shape="circle" size={40} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                  <SkeletonItem shape="rectangle" style={{ width: '40%', height: '16px' }} />
+                  <SkeletonItem shape="rectangle" style={{ width: '20%', height: '12px' }} />
+                </div>
+              </div>
+              <SkeletonItem shape="rectangle" style={{ width: '100%', height: '200px', marginTop: '12px' }} />
+              <SkeletonItem shape="rectangle" style={{ width: '80%', height: '12px', marginTop: '12px' }} />
+            </Card>
+          ))}
+        </Skeleton>
+      )}
+
+      {error && (
         <Card className={styles.stateCard}>
           <WifiOff48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
@@ -322,17 +349,7 @@ export const HomeTab = () => {
             Спробувати знову
           </Button>
         </Card>
-      </div>
-    );
-  }
-
-  const groupedStories = feed ? groupStoriesByAuthor(feed.stories) : [];
-
-  return (
-    <div className={styles.container}>
-      <Text size={500} weight="semibold">
-        {t("tabs.home")}
-      </Text>
+      )}
 
       {/* Horizontal stories feed */}
       {groupedStories.length > 0 && (
@@ -357,7 +374,7 @@ export const HomeTab = () => {
       )}
 
       {/* Posts feed */}
-      {feed?.posts && feed.posts.length > 0 ? (
+      {feed?.posts && feed.posts.length > 0 && (
         feed.posts.map((post) => {
           const date = new Date(post.publishedAt).toLocaleDateString();
           return (
@@ -372,7 +389,9 @@ export const HomeTab = () => {
             </Card>
           );
         })
-      ) : (
+      )}
+      
+      {feed && feed.posts && feed.posts.length === 0 && (
         <Card className={styles.stateCard}>
           <Feed48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
