@@ -10,6 +10,7 @@ import {
   Spinner,
   Button
 } from "@fluentui/react-components";
+import { Feed48Regular, WifiOff48Regular } from "@fluentui/react-icons";
 import { t } from "../utils/i18n";
 import { StoryViewer } from "./StoryViewer";
 import { CmsFeed, CmsStory } from "../types";
@@ -316,6 +317,7 @@ export const HomeTab = () => {
           {t("tabs.home")}
         </Text>
         <div className={styles.errorContainer}>
+          <WifiOff48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
             Не вдалося завантажити стрічку
           </Text>
@@ -376,6 +378,7 @@ export const HomeTab = () => {
         })
       ) : (
         <div className={styles.emptyContainer}>
+          <Feed48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
             Стрічка порожня
           </Text>
