@@ -7,11 +7,13 @@ import {
   CardHeader,
   CardPreview,
   Avatar,
-  Spinner
+  Spinner,
+  Button
 } from "@fluentui/react-components";
 import { t } from "../utils/i18n";
 import { StoryViewer } from "./StoryViewer";
 import { CmsFeed, CmsStory } from "../types";
+import { getFeedCache, saveFeedCache } from "../utils/api";
 
 const FEED_URL = "https://feed.khvylyna.pp.ua/feed.json";
 const BASE_URL = "https://feed.khvylyna.pp.ua/";
@@ -30,6 +32,14 @@ const useStyles = makeStyles({
     padding: tokens.spacingVerticalXXL,
     display: "flex",
     justifyContent: "center",
+  },
+  errorContainer: {
+    padding: tokens.spacingVerticalXXL,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: tokens.spacingVerticalM,
+    textAlign: "center",
   },
   storiesContainer: {
     display: "flex",
@@ -245,21 +255,40 @@ export const HomeTab = () => {
   const [selectedStoryAuthor, setSelectedStoryAuthor] = useState<string | null>(null);
   const [feed, setFeed] = useState<CmsFeed | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchFeed = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      // 1. Instantly load from cache if available
+      const cachedData = await getFeedCache<CmsFeed>();
+      if (cachedData) {
+        setFeed(cachedData);
+        setLoading(false); // Can hide loading immediately since we have data
+      }
+
+      // 2. Fetch fresh data in the background
+      const response = await fetch(FEED_URL);
+      if (response.ok) {
+        const data: CmsFeed = await response.json();
+        setFeed(data);
+        await saveFeedCache(data);
+      } else if (!cachedData) {
+        setError(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch feed:", err);
+      // Only show error state if we have absolutely no data to show
+      if (!feed) {
+        setError(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchFeed = async () => {
-      try {
-        const response = await fetch(FEED_URL);
-        if (response.ok) {
-          const data: CmsFeed = await response.json();
-          setFeed(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch feed:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchFeed();
   }, []);
 
@@ -267,6 +296,25 @@ export const HomeTab = () => {
     return (
       <div className={styles.loadingContainer}>
         <Spinner size="large" label="Завантаження..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <Text size={500} weight="semibold">
+          {t("tabs.home")}
+        </Text>
+        <div className={styles.errorContainer}>
+          <Text size={400} weight="medium">
+            Не вдалося завантажити стрічку
+          </Text>
+          <Text size={300}>Перевірте підключення до інтернету.</Text>
+          <Button onClick={fetchFeed} appearance="primary">
+            Спробувати знову
+          </Button>
+        </div>
       </div>
     );
   }
