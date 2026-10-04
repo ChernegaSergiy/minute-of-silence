@@ -41,6 +41,15 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalM,
     textAlign: "center",
   },
+  emptyContainer: {
+    padding: tokens.spacingVerticalXL,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: tokens.spacingVerticalS,
+    textAlign: "center",
+    color: tokens.colorNeutralForeground3,
+  },
   storiesContainer: {
     display: "flex",
     gap: tokens.spacingHorizontalM,
@@ -350,20 +359,31 @@ export const HomeTab = () => {
       )}
 
       {/* Posts feed */}
-      {feed?.posts.map((post) => {
-        const date = new Date(post.publishedAt).toLocaleDateString();
-        return (
-          <Card key={post.id} className={styles.card}>
-            <CardHeader
-              image={<Avatar name={post.author} badge={{ status: "available" }} />}
-              header={<Text weight="semibold">{post.title}</Text>}
-              description={<Text size={200}>Автор: {post.author} • {date}</Text>}
-            />
-            <PostMediaCarousel media={post.media} />
-            <PostContent content={post.content} />
-          </Card>
-        );
-      })}
+      {feed?.posts && feed.posts.length > 0 ? (
+        feed.posts.map((post) => {
+          const date = new Date(post.publishedAt).toLocaleDateString();
+          return (
+            <Card key={post.id} className={styles.card}>
+              <CardHeader
+                image={<Avatar name={post.author} badge={{ status: "available" }} />}
+                header={<Text weight="semibold">{post.title}</Text>}
+                description={<Text size={200}>Автор: {post.author} • {date}</Text>}
+              />
+              <PostMediaCarousel media={post.media} />
+              <PostContent content={post.content} />
+            </Card>
+          );
+        })
+      ) : (
+        <div className={styles.emptyContainer}>
+          <Text size={400} weight="medium">
+            Стрічка порожня
+          </Text>
+          <Text size={300}>
+            Тут з'являться останні новини та публікації.
+          </Text>
+        </div>
+      )}
 
       <StoryViewer 
         isOpen={selectedStoryAuthor !== null} 
