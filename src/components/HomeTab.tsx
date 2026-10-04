@@ -368,13 +368,13 @@ export const HomeTab = () => {
         <Card className={styles.stateCard}>
           <WifiOff48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
-            Не вдалося завантажити стрічку
+            {t("feed.errorTitle")}
           </Text>
           <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
-            Перевірте підключення до інтернету.
+            {t("feed.errorSubtitle")}
           </Text>
           <Button onClick={fetchFeed} appearance="primary">
-            Спробувати знову
+            {t("feed.retryButton")}
           </Button>
         </Card>
       )}
@@ -423,10 +423,10 @@ export const HomeTab = () => {
         <Card className={styles.stateCard}>
           <Feed48Regular style={{ color: tokens.colorNeutralForeground4 }} />
           <Text size={400} weight="medium">
-            Стрічка порожня
+            {t("feed.emptyTitle")}
           </Text>
           <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
-            Тут з'являться останні новини та публікації.
+            {t("feed.emptySubtitle")}
           </Text>
         </Card>
       )}
