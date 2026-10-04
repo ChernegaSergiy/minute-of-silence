@@ -270,16 +270,32 @@ export const HomeTab = () => {
   const fetchFeed = async () => {
     setLoading(true);
     setError(false);
+    
+    const minLoadingTime = 600; // ms
+    const startTime = Date.now();
+    let isShowingSkeleton = false;
+
     try {
       // 1. Instantly load from cache if available
       const cachedData = await getFeedCache<CmsFeed>();
       if (cachedData) {
         setFeed(cachedData);
-        setLoading(false); // Can hide loading immediately since we have data
+        setLoading(false); // Hide immediately since we have data
+      } else {
+        isShowingSkeleton = true;
       }
 
       // 2. Fetch fresh data in the background
       const response = await fetch(FEED_URL);
+      
+      // Prevent nanosecond flashing if we are showing the skeleton
+      if (isShowingSkeleton) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < minLoadingTime) {
+          await new Promise(r => setTimeout(r, minLoadingTime - elapsed));
+        }
+      }
+
       if (response.ok) {
         const data: CmsFeed = await response.json();
         setFeed(data);
@@ -289,10 +305,22 @@ export const HomeTab = () => {
       }
     } catch (err) {
       console.error("Failed to fetch feed:", err);
-      // Only show error state if we have absolutely no data to show
-      if (!feed) {
-        setError(true);
+      
+      // Delay error appearance as well if we were showing the skeleton
+      if (isShowingSkeleton) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < minLoadingTime) {
+          await new Promise(r => setTimeout(r, minLoadingTime - elapsed));
+        }
       }
+
+      // Check current feed via functional state update to avoid stale closures
+      setFeed(prevFeed => {
+        if (!prevFeed) {
+          setError(true);
+        }
+        return prevFeed;
+      });
     } finally {
       setLoading(false);
     }
