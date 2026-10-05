@@ -1,10 +1,13 @@
+import { useCallback, useState } from "react";
+
 import { Button, Link, makeStyles, tokens } from "@fluentui/react-components";
 import { ArrowSyncRegular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
-import { useCallback, useState } from "react";
-import { open } from "@tauri-apps/plugin-shell";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { open } from "@tauri-apps/plugin-shell";
+
 import { getLogContents } from "../utils/api";
 import { t } from "../utils/i18n";
+
 import { type UpdateInfo } from "./UpdateDialog";
 
 interface AboutTabProps {
