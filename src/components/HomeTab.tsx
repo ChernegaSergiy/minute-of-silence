@@ -228,6 +228,27 @@ export const HomeTab = () => {
 
       if (response.ok) {
         const data: CmsFeed = await response.json();
+        
+        // Garbage Collection for viewed stories
+        const activeIds = new Set(data.stories.map(s => s.id));
+        setViewedIds(prev => {
+          const newSet = new Set<string>();
+          let changed = false;
+          prev.forEach(id => {
+            if (activeIds.has(id)) {
+              newSet.add(id);
+            } else {
+              changed = true; // Found an obsolete ID
+            }
+          });
+          
+          if (changed) {
+            localStorage.setItem("viewedStories", JSON.stringify(Array.from(newSet)));
+            return newSet;
+          }
+          return prev;
+        });
+
         setFeed(data);
         await saveFeedCache(data);
       } else if (!cachedData) {
