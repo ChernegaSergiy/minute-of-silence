@@ -14,6 +14,7 @@
     "showMore": "Read more",
     "showLess": "Show less",
     "author": "Author",
+    "mediaAlt": "Post media",
     "errorTitle": "Failed to load feed",
     "errorSubtitle": "Please check your internet connection.",
     "retryButton": "Try again",
