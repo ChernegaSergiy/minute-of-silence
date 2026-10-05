@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+
 import {
   Button,
   FluentProvider,
@@ -13,21 +14,23 @@ import {
   webLightTheme,
 } from "@fluentui/react-components";
 import {
+  CalendarMonth20Regular,
   DocumentBulletList20Regular,
   Home20Regular,
   Info20Regular,
   Play20Regular,
   Save20Regular,
   Settings20Regular,
-  CalendarMonth20Regular,
 } from "@fluentui/react-icons";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+
+import { DEFAULT_SETTINGS, type PersonalDate, type Settings, type StatusSnapshot } from "./types";
 import {
   bringWindowToFront,
-  getSettings,
   getPersonalDates,
+  getSettings,
   getStatus,
   onCeremonyEnd,
   onCeremonyStart,
@@ -35,15 +38,15 @@ import {
   syncNtpNow,
   triggerCeremonyNow,
 } from "./utils/api";
-import { DEFAULT_SETTINGS, type PersonalDate, type Settings, type StatusSnapshot } from "./types";
 import { t } from "./utils/i18n";
-import { HomeTab } from "./components/HomeTab";
-import AboutTab from "./components/AboutTab";
-import Overlay from "./components/Overlay";
-import SettingsTab from "./components/SettingsTab";
-import PersonalDatesTab from "./components/PersonalDatesTab";
-import UpdateDialog, { type UpdateInfo } from "./components/UpdateDialog";
 import { useIdle } from "./hooks/useIdle";
+
+import AboutTab from "./components/AboutTab";
+import { HomeTab } from "./components/HomeTab";
+import Overlay from "./components/Overlay";
+import PersonalDatesTab from "./components/PersonalDatesTab";
+import SettingsTab from "./components/SettingsTab";
+import UpdateDialog, { type UpdateInfo } from "./components/UpdateDialog";
 
 const ChangelogTab = lazy(() => import("./components/ChangelogTab"));
 
