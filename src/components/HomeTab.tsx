@@ -327,7 +327,7 @@ export const HomeTab = () => {
               <CardHeader
                 image={<Avatar name={post.author} badge={{ status: "available" }} />}
                 header={<Text weight="semibold">{post.title}</Text>}
-                description={<Text size={200}>Автор: {post.author} • {date}</Text>}
+                description={<Text size={200}>{t("feed.author")}: {post.author} • {date}</Text>}
               />
               <PostMediaCarousel mediaUrls={post.media.map(m => BASE_URL + m)} />
               <PostContent content={post.content} />
