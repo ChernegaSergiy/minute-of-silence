@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
+
 import {
+  Button,
   Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
   DialogSurface,
   DialogTitle,
-  DialogContent,
-  DialogBody,
-  DialogActions,
-  Button,
+  Link,
   ProgressBar,
   Text,
   makeStyles,
-  tokens,
   shorthands,
-  Link,
+  tokens,
 } from "@fluentui/react-components";
-import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-shell";
 import Markdown from "react-markdown";
+
 import { t } from "../utils/i18n";
 
 export interface UpdateInfo {
