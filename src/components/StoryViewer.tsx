@@ -177,12 +177,22 @@ export const StoryViewer = ({
   const activeAuthor = isOpen ? authorName : prevAuthorRef.current;
   const activePublishedAt = isOpen ? publishedAt : prevPublishedAtRef.current;
 
-  const totalStories = activeStories.length > 0 ? activeStories.length : 1;
+  const slides = React.useMemo(() => {
+    return activeStories.flatMap(story => 
+      story.media.map(mediaItem => ({
+        storyId: story.id,
+        mediaUrl: `${BASE_URL}${mediaItem}`,
+        publishedAt: story.publishedAt
+      }))
+    );
+  }, [activeStories]);
+
+  const totalStories = slides.length > 0 ? slides.length : 1;
   const STORY_DURATION_MS = 5000;
 
-  const currentStory = activeStories.length > 0 ? activeStories[currentIndex] : null;
-  const displayDate = currentStory ? new Date(currentStory.publishedAt).toLocaleDateString() : activePublishedAt;
-  const mediaUrl = currentStory && currentStory.media.length > 0 ? `${BASE_URL}${currentStory.media[0]}` : null;
+  const currentSlide = slides.length > 0 ? slides[currentIndex] : null;
+  const displayDate = currentSlide ? new Date(currentSlide.publishedAt).toLocaleDateString() : activePublishedAt;
+  const mediaUrl = currentSlide ? currentSlide.mediaUrl : null;
 
   // Reset index when opening
   useEffect(() => {
@@ -206,10 +216,10 @@ export const StoryViewer = ({
   }, [isOpen, currentIndex]);
 
   useEffect(() => {
-    if (isOpen && currentStory && onStoryViewed) {
-      onStoryViewed(currentStory.id);
+    if (isOpen && currentSlide && onStoryViewed) {
+      onStoryViewed(currentSlide.storyId);
     }
-  }, [isOpen, currentStory, onStoryViewed]);
+  }, [isOpen, currentSlide, onStoryViewed]);
 
   const goNext = React.useCallback(() => {
     if (currentIndex < totalStories - 1) {
