@@ -5,16 +5,15 @@ import {
   Text,
   Card,
   CardHeader,
-  CardPreview,
   Avatar,
   Button,
   Skeleton,
-  SkeletonItem,
-  mergeClasses
+  SkeletonItem
 } from "@fluentui/react-components";
 import { Feed48Regular, WifiOff48Regular, ArrowClockwise20Regular } from "@fluentui/react-icons";
 import { t } from "../utils/i18n";
 import { StoryViewer } from "./StoryViewer";
+import { PostMediaCarousel } from "./PostMediaCarousel";
 import { CmsFeed, CmsStory } from "../types";
 import { getFeedCache, saveFeedCache } from "../utils/api";
 
@@ -194,61 +193,6 @@ const PostContent = ({ content }: { content: string }) => {
         >
           {isExpanded ? "Сховати" : "Більше"}
         </Text>
-      )}
-    </div>
-  );
-};
-
-const PostMediaCarousel = ({ media }: { media: string[] }) => {
-  const styles = useStyles();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [aspectRatio, setAspectRatio] = useState<string>("auto");
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const index = Math.round(target.scrollLeft / target.clientWidth);
-    if (index !== activeIndex) {
-      setActiveIndex(index);
-    }
-  };
-
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>, index: number) => {
-    if (index === 0) {
-      const { naturalWidth, naturalHeight } = e.currentTarget;
-      if (naturalWidth && naturalHeight) {
-        setAspectRatio(`${naturalWidth} / ${naturalHeight}`);
-      }
-    }
-  };
-
-  if (!media || media.length === 0) return null;
-
-  return (
-    <div className={styles.carouselWrapper}>
-      <CardPreview className={styles.cardPreview} onScroll={handleScroll}>
-        {media.map((imgSrc, idx) => (
-          <img 
-            key={idx}
-            src={`${BASE_URL}${imgSrc}`} 
-            alt={`Post media ${idx + 1}`} 
-            className={styles.mediaImage}
-            style={{ aspectRatio, objectFit: "cover" }}
-            onLoad={(e) => handleImageLoad(e, idx)}
-          />
-        ))}
-      </CardPreview>
-      {media.length > 1 && (
-        <div className={styles.indicatorContainer}>
-          {media.map((_, idx) => (
-            <div 
-              key={idx} 
-              className={mergeClasses(
-                styles.indicatorDot,
-                idx === activeIndex && styles.indicatorDotActive
-              )} 
-            />
-          ))}
-        </div>
       )}
     </div>
   );
@@ -446,7 +390,7 @@ export const HomeTab = () => {
                 header={<Text weight="semibold">{post.title}</Text>}
                 description={<Text size={200}>Автор: {post.author} • {date}</Text>}
               />
-              <PostMediaCarousel media={post.media} />
+              <PostMediaCarousel mediaUrls={post.media.map(m => BASE_URL + m)} />
               <PostContent content={post.content} />
             </Card>
           );
