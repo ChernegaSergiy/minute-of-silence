@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { makeStyles, tokens, Text } from "@fluentui/react-components";
+
+import { Text, makeStyles, tokens } from "@fluentui/react-components";
+
 import { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
