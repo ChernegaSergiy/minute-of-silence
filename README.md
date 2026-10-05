@@ -180,20 +180,28 @@ minute-of-silence/
 +-- src/                              # TypeScript frontend (Vite)
 |   +-- components/                   # React tab and overlay components
 |   |   +-- AboutTab.tsx              # About application tab
+|   |   +-- CachedAvatar.tsx          # Avatar wrapper backed by media cache
+|   |   +-- CachedImage.tsx           # Image wrapper with cache and fallback
 |   |   +-- ChangelogTab.tsx          # Changelog and version history UI
 |   |   +-- HomeTab.tsx               # Home feed with stories and posts
 |   |   +-- Overlay.tsx               # Active ceremony overlay component
 |   |   +-- PersonalDatesTab.tsx      # Personal remembrance dates management
+|   |   +-- PostContent.tsx           # Post text renderer with read-more toggle
+|   |   +-- PostMediaCarousel.tsx     # Horizontal carousel for post media
 |   |   +-- SettingsTab.tsx           # Main settings interface
 |   |   +-- StoryViewer.tsx           # Full-screen stories carousel viewer
 |   |   \-- UpdateDialog.tsx          # Update available dialog with progress tracking
 |   +-- hooks/                        # Custom React hooks
+|   |   +-- useCachedImage.ts         # Cache API image loader hook
 |   |   \-- useIdle.ts                # User inactivity detection hook
 |   +-- locales/                      # JSON translation files (UK, EN)
 |   +-- utils/                        # Core utilities and services
 |   |   +-- api.ts                    # Typed wrappers around Tauri IPC invoke()
 |   |   +-- changelog.ts              # Changelog parser/loader helper
-|   |   \-- i18n.ts                   # Localization configuration
+|   |   +-- constants.ts              # Feed base URL and endpoint constants
+|   |   +-- i18n.ts                   # Localization configuration
+|   |   +-- mediaCache.ts             # Media prefetch and garbage collection
+|   |   \-- nearbyDateSelection.ts    # Weighted nearby personal date picker
 |   +-- App.tsx                       # Root container, layout, and event handlers
 |   +-- main.tsx                      # React mounting entry point
 |   +-- style.css                     # Custom global CSS overrides
