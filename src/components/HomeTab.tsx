@@ -11,7 +11,7 @@ import {
   Skeleton,
   SkeletonItem
 } from "@fluentui/react-components";
-import { Feed48Regular, WifiOff48Regular } from "@fluentui/react-icons";
+import { Feed48Regular, WifiOff48Regular, ArrowClockwise20Regular } from "@fluentui/react-icons";
 import { t } from "../utils/i18n";
 import { StoryViewer } from "./StoryViewer";
 import { CmsFeed, CmsStory } from "../types";
@@ -29,6 +29,11 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalL,
     maxWidth: "600px",
     margin: "0 auto",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   stateCard: {
     display: "flex",
@@ -267,7 +272,7 @@ export const HomeTab = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const fetchFeed = async () => {
+  const fetchFeed = async (forceRefresh = false) => {
     setLoading(true);
     setError(false);
     
@@ -276,11 +281,16 @@ export const HomeTab = () => {
     let isShowingSkeleton = false;
 
     try {
-      // 1. Instantly load from cache if available
-      const cachedData = await getFeedCache<CmsFeed>();
-      if (cachedData) {
-        setFeed(cachedData);
-        setLoading(false); // Hide immediately since we have data
+      // 1. Instantly load from cache if available (skip if forcing refresh)
+      let cachedData = null;
+      if (!forceRefresh) {
+        cachedData = await getFeedCache<CmsFeed>();
+        if (cachedData) {
+          setFeed(cachedData);
+          setLoading(false); // Hide immediately since we have data
+        } else {
+          isShowingSkeleton = true;
+        }
       } else {
         isShowingSkeleton = true;
       }
@@ -328,15 +338,35 @@ export const HomeTab = () => {
 
   useEffect(() => {
     fetchFeed();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Refresh on F5 or Ctrl/Cmd + R
+      if (e.key === "F5" || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) {
+        e.preventDefault();
+        fetchFeed(true);
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const groupedStories = feed ? groupStoriesByAuthor(feed.stories) : [];
 
   return (
     <div className={styles.container}>
-      <Text size={500} weight="semibold">
-        {t("tabs.home")}
-      </Text>
+      <div className={styles.header}>
+        <Text size={500} weight="semibold">
+          {t("tabs.home")}
+        </Text>
+        <Button 
+          icon={<ArrowClockwise20Regular />} 
+          appearance="transparent" 
+          onClick={() => fetchFeed(true)}
+          disabled={loading}
+          title={t("feed.refresh")}
+        />
+      </div>
 
       {loading && !feed && (
         <Skeleton animation="pulse" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
