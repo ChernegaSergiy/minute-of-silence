@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { makeStyles, tokens, Text } from "@fluentui/react-components";
+import { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
   content: {
@@ -59,7 +60,7 @@ export const PostContent = ({ content }: { content: string }) => {
           className={styles.readMoreButton} 
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          {isExpanded ? "Сховати" : "Більше"}
+          {isExpanded ? t("feed.showLess") : t("feed.showMore")}
         </Text>
       )}
     </div>
