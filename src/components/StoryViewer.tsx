@@ -13,6 +13,7 @@ import {
 import { Dismiss24Regular } from "@fluentui/react-icons";
 import { BASE_URL } from "../utils/constants";
 import { t } from "../utils/i18n";
+import { CmsStory } from "../types";
 
 const useStyles = makeStyles({
   dialogSurface: {
@@ -88,6 +89,12 @@ const useStyles = makeStyles({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: tokens.colorNeutralBackgroundStatic,
+    position: "relative",
+  },
+  mediaImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
   },
   navigation: {
     position: "absolute",
@@ -118,23 +125,34 @@ interface StoryViewerProps {
   onClose: () => void;
   authorName?: string;
   publishedAt?: string;
+  stories?: CmsStory[];
 }
 
 export const StoryViewer = ({ 
   isOpen, 
   onClose, 
   authorName = t("feed.storyAuthorFallback"), 
-  publishedAt = t("feed.today") 
+  publishedAt = t("feed.today"),
+  stories = []
 }: StoryViewerProps) => {
   const styles = useStyles();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFilling, setIsFilling] = useState(false);
-  const totalStories = 3;
+  const [imageError, setImageError] = useState(false);
+  
+  const totalStories = stories.length > 0 ? stories.length : 1;
   const STORY_DURATION_MS = 5000;
+
+  const currentStory = stories.length > 0 ? stories[currentIndex] : null;
+  const displayDate = currentStory ? new Date(currentStory.publishedAt).toLocaleDateString() : publishedAt;
+  const mediaUrl = currentStory && currentStory.media.length > 0 ? `${BASE_URL}${currentStory.media[0]}` : null;
 
   // Reset index when opening
   useEffect(() => {
-    if (isOpen) setCurrentIndex(0);
+    if (isOpen) {
+      setCurrentIndex(0);
+      setImageError(false);
+    }
   }, [isOpen]);
 
   // Trigger CSS transition for the active segment
@@ -153,6 +171,7 @@ export const StoryViewer = ({
   const goNext = React.useCallback(() => {
     if (currentIndex < totalStories - 1) {
       setCurrentIndex(prev => prev + 1);
+      setImageError(false);
     } else {
       onClose(); // Close if it's the last story
     }
@@ -161,6 +180,7 @@ export const StoryViewer = ({
   const goPrev = React.useCallback(() => {
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
+      setImageError(false);
     }
   }, [currentIndex]);
 
@@ -228,7 +248,7 @@ export const StoryViewer = ({
                     {authorName}
                   </Text>
                   <Text size={200} style={{ color: "rgba(255,255,255,0.7)" }}>
-                    {publishedAt}
+                    {displayDate}
                   </Text>
                 </div>
               </div>
@@ -246,9 +266,18 @@ export const StoryViewer = ({
             </div>
 
             <div className={styles.mediaContainer}>
-              <Text size={600} style={{ color: "white" }}>
-                [{t("feed.fullscreenMedia")} {currentIndex + 1}]
-              </Text>
+              {mediaUrl && !imageError ? (
+                <img 
+                  src={mediaUrl} 
+                  alt={t("feed.fullscreenMedia")}
+                  className={styles.mediaImage}
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <Text size={600} style={{ color: "white" }}>
+                  [{t("feed.fullscreenMedia")} {currentIndex + 1}]
+                </Text>
+              )}
             </div>
 
           </DialogContent>
