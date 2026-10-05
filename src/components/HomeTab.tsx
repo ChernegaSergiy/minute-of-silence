@@ -148,7 +148,7 @@ const groupStoriesByAuthor = (stories: CmsStory[]) => {
 
   return Object.entries(grouped)
     .map(([author, authorStories]) => {
-      // Сортуємо історії автора від найстарішої до найновішої (порядок перегляду)
+      // Sort author's stories from oldest to newest (viewing order)
       const sortedStories = [...authorStories].sort((a, b) => 
         new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
       );
@@ -156,11 +156,11 @@ const groupStoriesByAuthor = (stories: CmsStory[]) => {
       return {
         author,
         stories: sortedStories,
-        // Зберігаємо час найсвіжішої історії для сортування кружечків
+        // Timestamp of the newest story for sorting avatar rings
         latestStoryDate: new Date(sortedStories[sortedStories.length - 1].publishedAt).getTime()
       };
     })
-    // Сортуємо самих авторів: чим новіша історія, тим лівіше (індекс 0)
+    // Newer stories go further left (index 0)
     .sort((a, b) => b.latestStoryDate - a.latestStoryDate);
 };
 
