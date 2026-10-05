@@ -9,7 +9,8 @@ import {
   Avatar,
   Button,
   Skeleton,
-  SkeletonItem
+  SkeletonItem,
+  mergeClasses
 } from "@fluentui/react-components";
 import { Feed48Regular, WifiOff48Regular, ArrowClockwise20Regular } from "@fluentui/react-icons";
 import { t } from "../utils/i18n";
@@ -241,7 +242,10 @@ const PostMediaCarousel = ({ media }: { media: string[] }) => {
           {media.map((_, idx) => (
             <div 
               key={idx} 
-              className={`${styles.indicatorDot} ${idx === activeIndex ? styles.indicatorDotActive : ""}`} 
+              className={mergeClasses(
+                styles.indicatorDot,
+                idx === activeIndex && styles.indicatorDotActive
+              )} 
             />
           ))}
         </div>
