@@ -120,7 +120,12 @@ interface StoryViewerProps {
   publishedAt?: string;
 }
 
-export const StoryViewer = ({ isOpen, onClose, authorName = "Автор історії", publishedAt = "Сьогодні" }: StoryViewerProps) => {
+export const StoryViewer = ({ 
+  isOpen, 
+  onClose, 
+  authorName = t("feed.storyAuthorFallback"), 
+  publishedAt = t("feed.today") 
+}: StoryViewerProps) => {
   const styles = useStyles();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFilling, setIsFilling] = useState(false);
@@ -242,7 +247,7 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
 
             <div className={styles.mediaContainer}>
               <Text size={600} style={{ color: "white" }}>
-                [Повноекранне Медіа {currentIndex + 1}]
+                [{t("feed.fullscreenMedia")} {currentIndex + 1}]
               </Text>
             </div>
 
