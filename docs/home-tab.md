@@ -109,12 +109,12 @@ All media rendering goes through two wrappers; only they call the cache hook:
 
 ```
 HomeTab
-├── avatars (399, 415) ────────────→ CachedAvatar           ┐
-└── post media (420) ──→ PostMediaCarousel ──→ CachedImage  ┤
-                                                            ├──→ useCachedImage ──→ media cache khvylyna-media-v1
-StoryViewer                                                 │
-├── avatar (297) ──────────────────→ CachedAvatar           ┤
-└── story media (319) ─────────────→ CachedImage            ┘
+├── avatars (л.399, 415) ───→ CachedAvatar ────────────────────┐
+└── post media (л.420) ─────→ PostMediaCarousel ─→ CachedImage ┤
+                                                               ├──→ useCachedImage ──→ khvylyna-media-v1
+StoryViewer                                                    │
+├── avatar (л.297) ─────────→ CachedAvatar ────────────────────┤
+└── story media (л.319) ────→ CachedImage ─────────────────────┘
 ```
 
 - `CachedImage` — `<img>` wrapper: accepts `srcUrl?: string | null`, renders a `fallback` node when there is no URL or the image failed to load, resets its error state when `srcUrl` changes.
