@@ -1,24 +1,27 @@
 import { useState, useEffect } from "react";
+
 import {
-  makeStyles,
-  tokens,
-  Text,
+  Button,
   Card,
   CardHeader,
-  Button,
   Skeleton,
-  SkeletonItem
+  SkeletonItem,
+  Text,
+  makeStyles,
+  tokens,
 } from "@fluentui/react-components";
-import { Feed48Regular, WifiOff48Regular, ArrowClockwise20Regular } from "@fluentui/react-icons";
-import { t } from "../utils/i18n";
-import { StoryViewer } from "./StoryViewer";
-import { prefetchMedia, gcMediaCache } from "../utils/mediaCache";
-import { CachedAvatar } from "./CachedAvatar";
-import { PostMediaCarousel } from "./PostMediaCarousel";
-import { PostContent } from "./PostContent";
+import { ArrowClockwise20Regular, Feed48Regular, WifiOff48Regular } from "@fluentui/react-icons";
+
 import { CmsFeed, CmsStory } from "../types";
 import { getFeedCache, saveFeedCache } from "../utils/api";
 import { BASE_URL, FEED_URL } from "../utils/constants";
+import { t } from "../utils/i18n";
+import { gcMediaCache, prefetchMedia } from "../utils/mediaCache";
+
+import { CachedAvatar } from "./CachedAvatar";
+import { PostContent } from "./PostContent";
+import { PostMediaCarousel } from "./PostMediaCarousel";
+import { StoryViewer } from "./StoryViewer";
 
 const useStyles = makeStyles({
   container: {

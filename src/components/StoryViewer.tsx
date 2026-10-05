@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from "react";
+
 import {
+  Button,
   Dialog,
-  DialogSurface,
   DialogBody,
   DialogContent,
+  DialogSurface,
+  Text,
   makeStyles,
   tokens,
-  Button,
-  Text,
 } from "@fluentui/react-components";
 import { Dismiss24Regular } from "@fluentui/react-icons";
-import { BASE_URL } from "../utils/constants";
-import { t } from "../utils/i18n";
+
 import { CmsStory } from "../types";
 import { useCachedImage } from "../hooks/useCachedImage";
+import { BASE_URL } from "../utils/constants";
+import { t } from "../utils/i18n";
+
 import { CachedAvatar } from "./CachedAvatar";
 
 const useStyles = makeStyles({
