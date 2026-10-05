@@ -15,6 +15,8 @@
     "showLess": "Show less",
     "author": "Author",
     "mediaAlt": "Post media",
+    "previous": "Previous",
+    "next": "Next",
     "errorTitle": "Failed to load feed",
     "errorSubtitle": "Please check your internet connection.",
     "retryButton": "Try again",
