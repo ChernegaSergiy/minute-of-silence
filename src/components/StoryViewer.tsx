@@ -66,6 +66,14 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
   },
+  authorNameText: {
+    color: "white",
+    textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+  },
+  dateText: {
+    color: "rgba(255, 255, 255, 0.9)",
+    textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+  },
   progressContainer: {
     position: "absolute",
     top: tokens.spacingVerticalS,
@@ -270,10 +278,10 @@ export const StoryViewer = ({
                   }}
                 />
                 <div className={styles.headerText}>
-                  <Text weight="semibold" style={{ color: "white" }}>
+                  <Text weight="semibold" className={styles.authorNameText}>
                     {activeAuthor}
                   </Text>
-                  <Text size={200} style={{ color: "rgba(255,255,255,0.7)" }}>
+                  <Text size={200} className={styles.dateText}>
                     {displayDate}
                   </Text>
                 </div>
