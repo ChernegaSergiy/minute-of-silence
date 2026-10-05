@@ -11,6 +11,7 @@ import {
   Text,
 } from "@fluentui/react-components";
 import { Dismiss24Regular } from "@fluentui/react-icons";
+import { BASE_URL } from "../utils/constants";
 
 const useStyles = makeStyles({
   dialogSurface: {
@@ -212,7 +213,7 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
                   name={authorName} 
                   size={32} 
                   image={{ 
-                    src: `https://feed.khvylyna.pp.ua/avatars/${authorName}.png`,
+                    src: `${BASE_URL}avatars/${authorName}.png`,
                     onError: (e) => { e.currentTarget.style.display = 'none'; } 
                   }}
                 />
