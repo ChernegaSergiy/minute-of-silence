@@ -147,6 +147,7 @@ interface StoryViewerProps {
   authorName?: string;
   publishedAt?: string;
   stories?: CmsStory[];
+  onStoryViewed?: (id: string) => void;
 }
 
 export const StoryViewer = ({ 
@@ -154,7 +155,8 @@ export const StoryViewer = ({
   onClose, 
   authorName = t("feed.storyAuthorFallback"), 
   publishedAt = t("feed.today"),
-  stories = []
+  stories = [],
+  onStoryViewed
 }: StoryViewerProps) => {
   const styles = useStyles();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -202,6 +204,12 @@ export const StoryViewer = ({
       return () => cancelAnimationFrame(raf1);
     }
   }, [isOpen, currentIndex]);
+
+  useEffect(() => {
+    if (isOpen && currentStory && onStoryViewed) {
+      onStoryViewed(currentStory.id);
+    }
+  }, [isOpen, currentStory, onStoryViewed]);
 
   const goNext = React.useCallback(() => {
     if (currentIndex < totalStories - 1) {
