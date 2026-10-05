@@ -11,6 +11,8 @@
   },
   "feed": {
     "refresh": "Refresh",
+    "showMore": "Read more",
+    "showLess": "Show less",
     "errorTitle": "Failed to load feed",
     "errorSubtitle": "Please check your internet connection.",
     "retryButton": "Try again",
