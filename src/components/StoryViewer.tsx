@@ -12,6 +12,7 @@ import {
 } from "@fluentui/react-components";
 import { Dismiss24Regular } from "@fluentui/react-icons";
 import { BASE_URL } from "../utils/constants";
+import { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
   dialogSurface: {
@@ -235,8 +236,8 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
             </div>
 
             <div className={styles.navigation}>
-              <div className={styles.navArea} onClick={goPrev} title="Попередня" />
-              <div className={styles.navArea} onClick={goNext} title="Наступна" />
+              <div className={styles.navArea} onClick={goPrev} title={t("feed.previous")} />
+              <div className={styles.navArea} onClick={goNext} title={t("feed.next")} />
             </div>
 
             <div className={styles.mediaContainer}>
