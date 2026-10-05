@@ -13,11 +13,11 @@ import {
 import { Dismiss24Regular } from "@fluentui/react-icons";
 
 import { CmsStory } from "../types";
-import { useCachedImage } from "../hooks/useCachedImage";
 import { BASE_URL } from "../utils/constants";
 import { t } from "../utils/i18n";
 
 import { CachedAvatar } from "./CachedAvatar";
+import { CachedImage } from "./CachedImage";
 
 const useStyles = makeStyles({
   dialogSurface: {
@@ -165,7 +165,6 @@ export const StoryViewer = ({
   const styles = useStyles();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFilling, setIsFilling] = useState(false);
-  const [imageError, setImageError] = useState(false);
   
   const prevStoriesRef = React.useRef(stories);
   const prevAuthorRef = React.useRef(authorName);
@@ -197,14 +196,11 @@ export const StoryViewer = ({
   const currentSlide = slides.length > 0 ? slides[currentIndex] : null;
   const displayDate = currentSlide ? new Date(currentSlide.publishedAt).toLocaleDateString() : activePublishedAt;
   const rawMediaUrl = currentSlide ? currentSlide.mediaUrl : null;
-  const cachedMediaUrl = useCachedImage(rawMediaUrl);
-  const mediaUrl = cachedMediaUrl || rawMediaUrl;
 
   // Reset index when opening
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(0);
-      setImageError(false);
     }
   }, [isOpen]);
 
@@ -230,7 +226,6 @@ export const StoryViewer = ({
   const goNext = React.useCallback(() => {
     if (currentIndex < totalStories - 1) {
       setCurrentIndex(prev => prev + 1);
-      setImageError(false);
     } else {
       onClose(); // Close if it's the last story
     }
@@ -239,7 +234,6 @@ export const StoryViewer = ({
   const goPrev = React.useCallback(() => {
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
-      setImageError(false);
     }
   }, [currentIndex]);
 
@@ -322,18 +316,17 @@ export const StoryViewer = ({
             </div>
 
             <div className={styles.mediaContainer}>
-              {mediaUrl && !imageError ? (
-                <img 
-                  src={mediaUrl} 
-                  alt={t("feed.fullscreenMedia")}
-                  className={styles.mediaImage}
-                  onError={() => setImageError(true)}
-                />
-              ) : (
-                <Text size={600} style={{ color: "white" }}>
-                  [{t("feed.fullscreenMedia")} {currentIndex + 1}]
-                </Text>
-              )}
+              <CachedImage
+                key={currentIndex}
+                srcUrl={rawMediaUrl}
+                alt={t("feed.fullscreenMedia")}
+                className={styles.mediaImage}
+                fallback={
+                  <Text size={600} style={{ color: "white" }}>
+                    [{t("feed.fullscreenMedia")} {currentIndex + 1}]
+                  </Text>
+                }
+              />
             </div>
 
           </DialogContent>
