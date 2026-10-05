@@ -403,7 +403,7 @@ export const HomeTab = () => {
           <Text size={300} style={{ color: tokens.colorNeutralForeground3 }}>
             {t("feed.errorSubtitle")}
           </Text>
-          <Button onClick={fetchFeed} appearance="primary">
+          <Button onClick={() => fetchFeed(true)} appearance="primary">
             {t("feed.retryButton")}
           </Button>
         </Card>
