@@ -74,6 +74,14 @@ const useStyles = makeStyles({
     cursor: "pointer",
     minWidth: "72px",
   },
+  storyAvatarRingViewed: {
+    borderRadius: "50%",
+    padding: "2px",
+    background: tokens.colorNeutralStroke1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   storyAvatarRing: {
     borderRadius: "50%",
     padding: "2px",
@@ -136,7 +144,7 @@ const useStyles = makeStyles({
 });
 
 // Group stories by author
-const groupStoriesByAuthor = (stories: CmsStory[]) => {
+const groupStoriesByAuthor = (stories: CmsStory[], viewedIds: Set<string>) => {
   const grouped: Record<string, CmsStory[]> = {};
   
   stories.forEach(story => {
@@ -156,12 +164,17 @@ const groupStoriesByAuthor = (stories: CmsStory[]) => {
       return {
         author,
         stories: sortedStories,
+        hasUnviewed: sortedStories.some(s => !viewedIds.has(s.id)),
         // Timestamp of the newest story for sorting avatar rings
         latestStoryDate: new Date(sortedStories[sortedStories.length - 1].publishedAt).getTime()
       };
     })
-    // Newer stories go further left (index 0)
-    .sort((a, b) => b.latestStoryDate - a.latestStoryDate);
+    // Unviewed authors first, then by newest story date
+    .sort((a, b) => {
+      if (a.hasUnviewed && !b.hasUnviewed) return -1;
+      if (!a.hasUnviewed && b.hasUnviewed) return 1;
+      return b.latestStoryDate - a.latestStoryDate;
+    });
 };
 
 export const HomeTab = () => {
@@ -170,6 +183,14 @@ export const HomeTab = () => {
   const [feed, setFeed] = useState<CmsFeed | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [viewedIds, setViewedIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem("viewedStories");
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
 
   const fetchFeed = async (forceRefresh = false) => {
     setLoading(true);
@@ -250,7 +271,17 @@ export const HomeTab = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const groupedStories = feed ? groupStoriesByAuthor(feed.stories) : [];
+  const markStoryViewed = (id: string) => {
+    setViewedIds(prev => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      localStorage.setItem("viewedStories", JSON.stringify(Array.from(next)));
+      return next;
+    });
+  };
+
+  const groupedStories = feed ? groupStoriesByAuthor(feed.stories, viewedIds) : [];
 
   return (
     <div className={styles.container}>
@@ -317,7 +348,7 @@ export const HomeTab = () => {
               className={styles.storyItem}
               onClick={() => setSelectedStoryAuthor(group.author)}
             >
-              <div className={styles.storyAvatarRing}>
+              <div className={group.hasUnviewed ? styles.storyAvatarRing : styles.storyAvatarRingViewed}>
                 <Avatar 
                   name={group.author} 
                   size={56} 
@@ -378,6 +409,7 @@ export const HomeTab = () => {
         onClose={() => setSelectedStoryAuthor(null)}
         authorName={selectedStoryAuthor || undefined}
         stories={groupedStories.find(g => g.author === selectedStoryAuthor)?.stories || []}
+        onStoryViewed={markStoryViewed}
       />
     </div>
   );
