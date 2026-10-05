@@ -363,6 +363,7 @@ export const HomeTab = () => {
         isOpen={selectedStoryAuthor !== null} 
         onClose={() => setSelectedStoryAuthor(null)}
         authorName={selectedStoryAuthor || undefined}
+        stories={groupedStories.find(g => g.author === selectedStoryAuthor)?.stories || []}
       />
     </div>
   );
