@@ -138,16 +138,30 @@ const useStyles = makeStyles({
 // Group stories by author
 const groupStoriesByAuthor = (stories: CmsStory[]) => {
   const grouped: Record<string, CmsStory[]> = {};
+  
   stories.forEach(story => {
     if (!grouped[story.author]) {
       grouped[story.author] = [];
     }
     grouped[story.author].push(story);
   });
-  return Object.entries(grouped).map(([author, authorStories]) => ({
-    author,
-    stories: authorStories
-  }));
+
+  return Object.entries(grouped)
+    .map(([author, authorStories]) => {
+      // Сортуємо історії автора від найстарішої до найновішої (порядок перегляду)
+      const sortedStories = [...authorStories].sort((a, b) => 
+        new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
+      );
+      
+      return {
+        author,
+        stories: sortedStories,
+        // Зберігаємо час найсвіжішої історії для сортування кружечків
+        latestStoryDate: new Date(sortedStories[sortedStories.length - 1].publishedAt).getTime()
+      };
+    })
+    // Сортуємо самих авторів: чим новіша історія, тим лівіше (індекс 0)
+    .sort((a, b) => b.latestStoryDate - a.latestStoryDate);
 };
 
 export const HomeTab = () => {
