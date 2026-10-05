@@ -10,6 +10,7 @@
     "personal_dates": "PERSONAL DATES"
   },
   "feed": {
+    "refresh": "Refresh",
     "errorTitle": "Failed to load feed",
     "errorSubtitle": "Please check your internet connection.",
     "retryButton": "Try again",
