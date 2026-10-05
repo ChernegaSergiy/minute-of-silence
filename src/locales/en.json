@@ -201,6 +201,10 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.11.2": {
+      "defer_auto_update_during_ceremony": "Prevent the auto-update dialog from interrupting an active Minute of Silence ceremony.",
+      "linux_autostart_sync_fix": "Resolve an issue where the autostart state would fall out of sync on standard Linux distributions."
+    },
     "0.11.1": {
       "nanoid_security_fix": "Fix a high severity vulnerability in `nanoid` by upgrading to `3.3.18`."
     },
