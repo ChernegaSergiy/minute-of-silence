@@ -54,6 +54,7 @@ const useStyles = makeStyles({
     alignItems: "center",
     justifyContent: "space-between",
     padding: tokens.spacingVerticalM,
+    paddingTop: tokens.spacingVerticalXL,
     background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
     zIndex: 10,
   },
