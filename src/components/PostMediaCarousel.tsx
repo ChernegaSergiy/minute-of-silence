@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { makeStyles, tokens, CardPreview, mergeClasses } from "@fluentui/react-components";
 import { t } from "../utils/i18n";
+import { CachedImage } from "./CachedImage";
 
 const useStyles = makeStyles({
   carouselWrapper: {
@@ -78,9 +79,9 @@ export const PostMediaCarousel = ({ mediaUrls }: { mediaUrls: string[] }) => {
     <div className={styles.carouselWrapper}>
       <CardPreview className={styles.cardPreview} onScroll={handleScroll}>
         {mediaUrls.map((url, idx) => (
-          <img 
+          <CachedImage 
             key={idx}
-            src={url} 
+            srcUrl={url} 
             alt={`${t("feed.mediaAlt")} ${idx + 1}`} 
             className={styles.mediaImage}
             style={{ aspectRatio, objectFit: "cover" }}
