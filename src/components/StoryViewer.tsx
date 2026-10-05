@@ -208,7 +208,14 @@ export const StoryViewer = ({ isOpen, onClose, authorName = "Автор істо
 
             <div className={styles.header}>
               <div className={styles.headerLeft}>
-                <Avatar name={authorName} size={32} />
+                <Avatar 
+                  name={authorName} 
+                  size={32} 
+                  image={{ 
+                    src: `https://feed.khvylyna.pp.ua/avatars/${authorName}.png`,
+                    onError: (e) => { e.currentTarget.style.display = 'none'; } 
+                  }}
+                />
                 <div className={styles.headerText}>
                   <Text weight="semibold" style={{ color: "white" }}>
                     {authorName}

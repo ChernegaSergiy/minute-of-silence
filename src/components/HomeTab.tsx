@@ -310,6 +310,10 @@ export const HomeTab = () => {
                   name={group.author} 
                   size={56} 
                   className={styles.storyAvatar} 
+                  image={{ 
+                    src: `${BASE_URL}avatars/${group.author}.png`,
+                    onError: (e) => { e.currentTarget.style.display = 'none'; } 
+                  }}
                 />
               </div>
               <Text size={200}>{group.author}</Text>
@@ -325,7 +329,16 @@ export const HomeTab = () => {
           return (
             <Card key={post.id} className={styles.card}>
               <CardHeader
-                image={<Avatar name={post.author} badge={{ status: "available" }} />}
+                image={
+                  <Avatar 
+                    name={post.author} 
+                    badge={{ status: "available" }} 
+                    image={{ 
+                      src: `${BASE_URL}avatars/${post.author}.png`,
+                      onError: (e) => { e.currentTarget.style.display = 'none'; } 
+                    }}
+                  />
+                }
                 header={<Text weight="semibold">{post.title}</Text>}
                 description={<Text size={200}>{t("feed.author")}: {post.author} • {date}</Text>}
               />
