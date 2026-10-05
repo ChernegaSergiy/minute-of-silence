@@ -17,9 +17,7 @@ import { PostMediaCarousel } from "./PostMediaCarousel";
 import { PostContent } from "./PostContent";
 import { CmsFeed, CmsStory } from "../types";
 import { getFeedCache, saveFeedCache } from "../utils/api";
-
-const FEED_URL = "https://feed.khvylyna.pp.ua/feed.json";
-const BASE_URL = "https://feed.khvylyna.pp.ua/";
+import { BASE_URL, FEED_URL } from "../utils/constants";
 
 const useStyles = makeStyles({
   container: {
