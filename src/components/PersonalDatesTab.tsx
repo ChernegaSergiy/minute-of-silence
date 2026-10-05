@@ -1,27 +1,27 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+
 import {
   Button,
   Card,
-  Text,
+  Field,
   Input,
+  Text,
+  Tooltip,
   makeStyles,
   tokens,
-  Tooltip,
-  Field,
 } from "@fluentui/react-components";
+import { DatePicker, defaultDatePickerStrings, type CalendarStrings } from "@fluentui/react-datepicker-compat";
 import {
-  Delete20Regular,
-  Edit20Regular,
   Add20Regular,
   Checkmark20Regular,
+  Delete20Regular,
   Dismiss20Regular,
+  Edit20Regular,
 } from "@fluentui/react-icons";
-import { savePersonalDates } from "../utils/api";
+
 import type { PersonalDate } from "../types";
-import { t } from "../utils/i18n";
-import i18next from "../utils/i18n";
-import { DatePicker, defaultDatePickerStrings } from "@fluentui/react-datepicker-compat";
-import type { CalendarStrings } from "@fluentui/react-datepicker-compat";
+import { savePersonalDates } from "../utils/api";
+import i18next, { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
   card: {
