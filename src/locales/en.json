@@ -13,6 +13,7 @@
     "refresh": "Refresh",
     "showMore": "Read more",
     "showLess": "Show less",
+    "author": "Author",
     "errorTitle": "Failed to load feed",
     "errorSubtitle": "Please check your internet connection.",
     "retryButton": "Try again",
