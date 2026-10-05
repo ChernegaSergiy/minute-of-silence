@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-10-05
+
+### Fixed
+- Prevent the auto-update dialog from interrupting an active Minute of Silence ceremony.
+- Resolve an issue where the autostart state would fall out of sync on standard Linux distributions.
+
 ## [0.11.1] - 2026-08-14
 
 ### Fixed
