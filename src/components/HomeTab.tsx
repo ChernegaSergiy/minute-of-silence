@@ -219,8 +219,12 @@ export const HomeTab = () => {
         isShowingSkeleton = true;
       }
 
-      // 2. Fetch fresh data in the background
-      const response = await fetch(FEED_URL);
+      // 2. Fetch fresh data in the background.
+      // "no-cache" makes the webview send a Conditional GET (If-None-Match with
+      // the stored ETag) so Cloudflare replies 304 Not Modified with no body
+      // when the feed hasn't changed. "reload" (manual refresh) bypasses the
+      // cache entirely.
+      const response = await fetch(FEED_URL, { cache: forceRefresh ? "reload" : "no-cache" });
       
       // Prevent nanosecond flashing if we are showing the skeleton
       if (isShowingSkeleton) {
