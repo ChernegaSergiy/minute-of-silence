@@ -152,11 +152,25 @@ export const StoryViewer = ({
   const [isFilling, setIsFilling] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  const totalStories = stories.length > 0 ? stories.length : 1;
+  const prevStoriesRef = React.useRef(stories);
+  const prevAuthorRef = React.useRef(authorName);
+  const prevPublishedAtRef = React.useRef(publishedAt);
+
+  if (isOpen) {
+    prevStoriesRef.current = stories;
+    prevAuthorRef.current = authorName;
+    prevPublishedAtRef.current = publishedAt;
+  }
+
+  const activeStories = isOpen ? stories : prevStoriesRef.current;
+  const activeAuthor = isOpen ? authorName : prevAuthorRef.current;
+  const activePublishedAt = isOpen ? publishedAt : prevPublishedAtRef.current;
+
+  const totalStories = activeStories.length > 0 ? activeStories.length : 1;
   const STORY_DURATION_MS = 5000;
 
-  const currentStory = stories.length > 0 ? stories[currentIndex] : null;
-  const displayDate = currentStory ? new Date(currentStory.publishedAt).toLocaleDateString() : publishedAt;
+  const currentStory = activeStories.length > 0 ? activeStories[currentIndex] : null;
+  const displayDate = currentStory ? new Date(currentStory.publishedAt).toLocaleDateString() : activePublishedAt;
   const mediaUrl = currentStory && currentStory.media.length > 0 ? `${BASE_URL}${currentStory.media[0]}` : null;
 
   // Reset index when opening
@@ -248,16 +262,16 @@ export const StoryViewer = ({
             <div className={styles.header}>
               <div className={styles.headerLeft}>
                 <Avatar 
-                  name={authorName} 
+                  name={activeAuthor} 
                   size={32} 
                   image={{ 
-                    src: `${BASE_URL}avatars/${authorName}.png`,
+                    src: `${BASE_URL}avatars/${activeAuthor}.png`,
                     onError: (e) => { e.currentTarget.style.display = 'none'; } 
                   }}
                 />
                 <div className={styles.headerText}>
                   <Text weight="semibold" style={{ color: "white" }}>
-                    {authorName}
+                    {activeAuthor}
                   </Text>
                   <Text size={200} style={{ color: "rgba(255,255,255,0.7)" }}>
                     {displayDate}
