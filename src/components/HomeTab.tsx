@@ -5,7 +5,6 @@ import {
   Text,
   Card,
   CardHeader,
-  Avatar,
   Button,
   Skeleton,
   SkeletonItem
