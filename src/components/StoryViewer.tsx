@@ -7,13 +7,14 @@ import {
   makeStyles,
   tokens,
   Button,
-  Avatar,
   Text,
 } from "@fluentui/react-components";
 import { Dismiss24Regular } from "@fluentui/react-icons";
 import { BASE_URL } from "../utils/constants";
 import { t } from "../utils/i18n";
 import { CmsStory } from "../types";
+import { useCachedImage } from "../hooks/useCachedImage";
+import { CachedAvatar } from "./CachedAvatar";
 
 const useStyles = makeStyles({
   dialogSurface: {
@@ -192,7 +193,9 @@ export const StoryViewer = ({
 
   const currentSlide = slides.length > 0 ? slides[currentIndex] : null;
   const displayDate = currentSlide ? new Date(currentSlide.publishedAt).toLocaleDateString() : activePublishedAt;
-  const mediaUrl = currentSlide ? currentSlide.mediaUrl : null;
+  const rawMediaUrl = currentSlide ? currentSlide.mediaUrl : null;
+  const cachedMediaUrl = useCachedImage(rawMediaUrl);
+  const mediaUrl = cachedMediaUrl || rawMediaUrl;
 
   // Reset index when opening
   useEffect(() => {
@@ -288,13 +291,10 @@ export const StoryViewer = ({
 
             <div className={styles.header}>
               <div className={styles.headerLeft}>
-                <Avatar 
+                <CachedAvatar 
                   name={activeAuthor} 
                   size={32} 
-                  image={{ 
-                    src: `${BASE_URL}avatars/${activeAuthor}.png`,
-                    onError: (e) => { e.currentTarget.style.display = 'none'; } 
-                  }}
+                  imageUrl={`${BASE_URL}avatars/${activeAuthor}.png`}
                 />
                 <div className={styles.headerText}>
                   <Text weight="semibold" className={styles.authorNameText}>
