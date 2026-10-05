@@ -28,11 +28,22 @@ const useStyles = makeStyles({
     flexDirection: "column",
     overflow: "hidden",
   },
+  dialogBody: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    padding: 0,
+    margin: 0,
+    overflow: "hidden",
+  },
   dialogContent: {
     display: "flex",
     flexDirection: "column",
     height: "100%",
     position: "relative",
+    padding: 0,
+    margin: 0,
+    overflow: "hidden",
   },
   header: {
     position: "absolute",
@@ -92,6 +103,7 @@ const useStyles = makeStyles({
     position: "relative",
   },
   mediaImage: {
+    display: "block",
     width: "100%",
     height: "100%",
     objectFit: "cover",
@@ -216,7 +228,7 @@ export const StoryViewer = ({
   return (
     <Dialog open={isOpen} onOpenChange={(_, data) => !data.open && onClose()}>
       <DialogSurface className={styles.dialogSurface}>
-        <DialogBody style={{ height: "100%" }}>
+        <DialogBody className={styles.dialogBody}>
           <DialogContent className={styles.dialogContent}>
             
             <div className={styles.progressContainer}>
