@@ -13,6 +13,8 @@ import {
 import { Feed48Regular, WifiOff48Regular, ArrowClockwise20Regular } from "@fluentui/react-icons";
 import { t } from "../utils/i18n";
 import { StoryViewer } from "./StoryViewer";
+import { prefetchMedia, gcMediaCache } from "../utils/mediaCache";
+import { CachedAvatar } from "./CachedAvatar";
 import { PostMediaCarousel } from "./PostMediaCarousel";
 import { PostContent } from "./PostContent";
 import { CmsFeed, CmsStory } from "../types";
@@ -229,6 +231,24 @@ export const HomeTab = () => {
       if (response.ok) {
         const data: CmsFeed = await response.json();
         
+        // Extract all media URLs for prefetching and GC
+        const activeMediaUrls = new Set<string>();
+        data.posts.forEach(p => {
+          activeMediaUrls.add(`${BASE_URL}avatars/${p.author}.png`);
+          if (p.media) activeMediaUrls.add(`${BASE_URL}${p.media}`);
+        });
+        data.stories.forEach(s => {
+          activeMediaUrls.add(`${BASE_URL}avatars/${s.author}.png`);
+          s.media.forEach(m => activeMediaUrls.add(`${BASE_URL}${m}`));
+        });
+        
+        const urlsArray = Array.from(activeMediaUrls);
+        
+        // Fire and forget media prefetch and GC
+        prefetchMedia(urlsArray).catch(console.error);
+        gcMediaCache(urlsArray).catch(console.error);
+
+        
         // Garbage Collection for viewed stories
         const activeIds = new Set(data.stories.map(s => s.id));
         setViewedIds(prev => {
@@ -370,15 +390,7 @@ export const HomeTab = () => {
               onClick={() => setSelectedStoryAuthor(group.author)}
             >
               <div className={group.hasUnviewed ? styles.storyAvatarRing : styles.storyAvatarRingViewed}>
-                <Avatar 
-                  name={group.author} 
-                  size={56} 
-                  className={styles.storyAvatar} 
-                  image={{ 
-                    src: `${BASE_URL}avatars/${group.author}.png`,
-                    onError: (e) => { e.currentTarget.style.display = 'none'; } 
-                  }}
-                />
+                <CachedAvatar name={group.author} size={56} className={styles.storyAvatar} imageUrl={`${BASE_URL}avatars/${group.author}.png`} />
               </div>
               <Text size={200}>{group.author}</Text>
             </div>
@@ -394,14 +406,7 @@ export const HomeTab = () => {
             <Card key={post.id} className={styles.card}>
               <CardHeader
                 image={
-                  <Avatar 
-                    name={post.author} 
-                    badge={{ status: "available" }} 
-                    image={{ 
-                      src: `${BASE_URL}avatars/${post.author}.png`,
-                      onError: (e) => { e.currentTarget.style.display = 'none'; } 
-                    }}
-                  />
+                  <CachedAvatar name={post.author} badge={{ status: "available" }} imageUrl={`${BASE_URL}avatars/${post.author}.png`} />
                 }
                 header={<Text weight="semibold">{post.title}</Text>}
                 description={<Text size={200}>{t("feed.author")}: {post.author} • {date}</Text>}
