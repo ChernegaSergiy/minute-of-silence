@@ -1,19 +1,21 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import {
+  FluentProvider,
+  Subtitle1,
+  Title1,
   makeStyles,
+  mergeClasses,
   shorthands,
   tokens,
-  Title1,
-  Subtitle1,
-  FluentProvider,
   webDarkTheme,
-  mergeClasses,
 } from "@fluentui/react-components";
 import { invoke } from "@tauri-apps/api/core";
-import { t } from "../utils/i18n";
-import { saveSettings } from "../utils/api";
-import { isLeapYear, selectNearbyDate } from "../utils/nearbyDateSelection";
+
 import type { PersonalDate, Settings } from "../types";
+import { saveSettings } from "../utils/api";
+import { t } from "../utils/i18n";
+import { isLeapYear, selectNearbyDate } from "../utils/nearbyDateSelection";
 
 type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => void;
 
