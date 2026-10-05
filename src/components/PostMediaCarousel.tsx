@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { makeStyles, tokens, CardPreview, mergeClasses } from "@fluentui/react-components";
+import { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
   carouselWrapper: {
@@ -80,7 +81,7 @@ export const PostMediaCarousel = ({ mediaUrls }: { mediaUrls: string[] }) => {
           <img 
             key={idx}
             src={url} 
-            alt={`Post media ${idx + 1}`} 
+            alt={`${t("feed.mediaAlt")} ${idx + 1}`} 
             className={styles.mediaImage}
             style={{ aspectRatio, objectFit: "cover" }}
             onLoad={(e) => handleImageLoad(e, idx)}
