@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { makeStyles, tokens, CardPreview, mergeClasses } from "@fluentui/react-components";
+
+import { CardPreview, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
+
 import { t } from "../utils/i18n";
+
 import { CachedImage } from "./CachedImage";
 
 const useStyles = makeStyles({
