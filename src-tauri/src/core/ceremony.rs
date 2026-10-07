@@ -8,12 +8,10 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Listener, Manager, WebviewWindowBuilder};
 
-lazy_static::lazy_static! {
-    static ref PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
-    static ref WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
-    static ref PAUSED_PLAYERS: Mutex<Vec<String>> = Mutex::new(Vec::new());
-    static ref ACTIVE_TRIGGER_COUNT: AtomicU32 = AtomicU32::new(0);
-}
+static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
+static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
+static PAUSED_PLAYERS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+static ACTIVE_TRIGGER_COUNT: AtomicU32 = AtomicU32::new(0);
 
 /// Orchestrator for the ceremony.
 /// This class manages the sequence of events during the ceremony.
