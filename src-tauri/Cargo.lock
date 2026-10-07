@@ -2690,7 +2690,6 @@ dependencies = [
  "cpal 0.18.2",
  "dirs 7.0.0",
  "glib 0.21.5",
- "lazy_static",
  "libloading 0.8.9",
  "log",
  "png 0.18.1",
