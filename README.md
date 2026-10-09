@@ -76,7 +76,9 @@ Alternatively, you can download the `.msi` or `.exe` installer from the [Release
 
 ### Linux (Ubuntu / Debian)
 
-[![Get it from the Snap Store](https://snapcraft.io/en/dark/install.svg)](https://snapcraft.io/minute-of-silence)
+<a href="https://snapcraft.io/minute-of-silence">
+  <img alt="Get it from the Snap Store" src="https://snapcraft.io/static/images/badges/en/snap-store-black.svg" width="180">
+</a>
 
 ```bash
 # Debian package
