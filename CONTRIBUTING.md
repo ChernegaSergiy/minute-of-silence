@@ -45,9 +45,9 @@ npm run tauri dev
 ### Running tests
 
 ```bash
-# Rust unit + integration tests (skip network-dependent NTP test)
+# Rust unit + integration tests (no network needed)
 cd src-tauri
-cargo test -- --skip ntp
+cargo test --all
 
 # TypeScript type-check
 cd ..
