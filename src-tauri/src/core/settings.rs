@@ -22,7 +22,7 @@ pub struct Settings {
     /// Run ceremony only on weekdays (Mon-Fri).
     pub weekdays_only: bool,
 
-    /// Selected audio preset (1–8).
+    /// Selected audio preset (1–10).
     pub preset: AudioPreset,
 
     /// Master volume for the ceremony audio (0–100).

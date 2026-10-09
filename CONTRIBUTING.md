@@ -1,7 +1,6 @@
 # Contributing to Minute of Silence
 
-Thank you for considering a contribution. This document outlines the process
-and conventions used in this project.
+Thank you for considering a contribution. This document outlines the process and conventions used in this project.
 
 ---
 
@@ -21,7 +20,7 @@ and conventions used in this project.
 
 | Tool | Min version | Install |
 | --- | --- | --- |
-| Rust | 1.75 | https://rustup.rs |
+| Rust | 1.85 | https://rustup.rs |
 | Node.js | 20 LTS | https://nodejs.org |
 | Tauri CLI | 2.x | `npm install -g @tauri-apps/cli` |
 
@@ -46,9 +45,9 @@ npm run tauri dev
 ### Running tests
 
 ```bash
-# Rust unit + integration tests (skip network-dependent NTP test)
+# Rust unit + integration tests (no network needed)
 cd src-tauri
-cargo test -- --skip ntp
+cargo test --all
 
 # TypeScript type-check
 cd ..
@@ -99,9 +98,9 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 | `perf:` | Performance improvement |
 | `ci:` | CI/CD pipeline changes |
 
-Each commit should touch **one logical concern**. The rule in this repository
-is **≥ 3 files per commit** — group related changes together rather than
-committing single files.
+Each commit should touch **one logical concern** and nothing else. Do not mix unrelated changes in a single commit — for example, a bug fix together with a refactor, reformatting, a dependency bump, or an unrelated feature. If you can't describe the commit in one short subject line without "and", split it.
+
+The number of files is irrelevant: a commit may touch one file or many, as long as every change in it belongs to the same logical concern (for example, a new IPC command in Rust together with its `api.ts` wrapper and `types.ts` entry).
 
 ### Examples
 

@@ -30,14 +30,10 @@ graph TD
 ## Key design decisions
 
 ### Why Tauri instead of Electron?
-Tauri's Rust backend gives us direct access to Win32, Linux, and macOS system APIs
-without an extra IPC layer, and the resulting binary is ~5 MB vs ~150 MB for
-an equivalent Electron app.
+Tauri's Rust backend gives us direct access to Win32, Linux, and macOS system APIs without an extra IPC layer, and the resulting binary is ~5 MB vs ~150 MB for an equivalent Electron app.
 
 ### Shared state via `Arc<Mutex<Inner>>`
-The scheduler runs as a long-lived `tokio` task on the async runtime.  Tauri
-commands run on the Tauri thread pool.  A single `Arc<Mutex<Inner>>` wrapped
-in the `AppState` newtype is the simplest correct approach for this scale.
+The scheduler runs as a long-lived `tokio` task on the async runtime.  Tauri commands run on the Tauri thread pool.  A single `Arc<Mutex<Inner>>` wrapped in the `AppState` newtype is the simplest correct approach for this scale.
 
 ### Targeted media pausing instead of system-wide key emulation
 Earlier designs simulated media key events (such as `VK_MEDIA_PLAY_PAUSE`), but this was prone to toggling state on already-paused players or failing under certain window focus conditions. Now, the app uses native platform APIs to query active media sessions and pause/resume them selectively:
@@ -47,16 +43,13 @@ Earlier designs simulated media key events (such as `VK_MEDIA_PLAY_PAUSE`), but 
 Active players are tracked dynamically and restored precisely when the ceremony ends.
 
 ### Settings persistence
-Settings are serialised as pretty-printed JSON to the platform config
-directory:
+Settings are serialised as pretty-printed JSON to the platform config directory:
 - **Windows:** `%APPDATA%\minute-of-silence\settings.json`
 - **Linux:** `~/.config/minute-of-silence/settings.json`
 - **macOS:** `~/Library/Application Support/minute-of-silence/settings.json`
 
 ### NTP Synchronization Strategy
-The app supports both system clock and NTP-corrected time. 
-A manual synchronization feature is provided via a dedicated `sync_ntp_now` 
-IPC command that updates the shared state and triggers immediate correction.
+The app supports both system clock and NTP-corrected time. A manual synchronization feature is provided via a dedicated `sync_ntp_now` IPC command that updates the shared state and triggers immediate correction.
 
 ### Native Look & Feel
 To ensure the application feels like a native desktop tool:
