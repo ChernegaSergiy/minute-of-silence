@@ -20,7 +20,7 @@ npm run build                # tsc + vite build (frontend only)
 cd src-tauri
 cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all             # CI runs this; NTP test needs network (`-- --skip ntp` offline)
+cargo test --all             # CI runs this; no network needed (the ntp test only constructs the service)
 ```
 
 Before finishing any change, run what CI runs: `typecheck`, `lint`, `cargo fmt --check`, `cargo clippy`, `cargo test`. All must be clean (warnings are errors). CI covers Rust on Linux, Windows and macOS, so cfg-gated code must compile on all three.
