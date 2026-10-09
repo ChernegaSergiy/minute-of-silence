@@ -83,5 +83,4 @@ Backend→frontend events are plain strings (`ceremony-start`, `ceremony-end`, `
 
 - README's Project Structure is slightly stale (e.g. it omits `src/utils/nearbyDateSelection.ts`, and lists `CONTRIBUTING.md`/`index.html` descriptions loosely). Treat the actual tree as authoritative.
 - `flatpak/shared-modules` is a git submodule (`.gitmodules`); it is absent from a plain zip export, so Flatpak builds need `git submodule update --init`.
-- `SECURITY.md` lists 0.10.x as supported while the current release is 0.11.x.
 - Packaging metadata is inconsistent: `snapcraft.yaml` says `license: Proprietary` while the repo uses CSSM-ULv2.
