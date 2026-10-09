@@ -109,8 +109,9 @@ with `opt-level = "s"`, LTO, `panic = "abort"`).
 ## Git and PRs
 
 - Conventional Commits: `feat|fix|chore|docs|test|refactor|perf|ci(scope): Subject` (examples in CONTRIBUTING).
-- One logical concern per commit; the project asks for ≥ 3 files per commit, grouping related changes
-  (e.g. Rust + `api.ts` + `types.ts`, or code + locales + changelog).
+- One logical concern per commit. Never mix unrelated changes (e.g. a fix + a refactor, formatting, or a
+  dependency bump) in one commit; split them. File count doesn't matter — files that belong to the same
+  change (e.g. Rust command + `api.ts` + `types.ts`, or code + locales + changelog) go together.
 - CONTRIBUTING says to branch from and open PRs against `develop`; CI/release run on `main`.
   Check which branches exist before opening a PR.
 - Never push to `main`. Don't commit `.env*`, signing keys, `*.snap`, build output (`dist/`, `src-tauri/target/`).
