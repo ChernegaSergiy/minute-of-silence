@@ -1,7 +1,6 @@
 # Contributing to Minute of Silence
 
-Thank you for considering a contribution. This document outlines the process
-and conventions used in this project.
+Thank you for considering a contribution. This document outlines the process and conventions used in this project.
 
 ---
 
@@ -99,14 +98,9 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 | `perf:` | Performance improvement |
 | `ci:` | CI/CD pipeline changes |
 
-Each commit should touch **one logical concern** and nothing else. Do not mix
-unrelated changes in a single commit — for example, a bug fix together with a
-refactor, reformatting, a dependency bump, or an unrelated feature. If you can't
-describe the commit in one short subject line without "and", split it.
+Each commit should touch **one logical concern** and nothing else. Do not mix unrelated changes in a single commit — for example, a bug fix together with a refactor, reformatting, a dependency bump, or an unrelated feature. If you can't describe the commit in one short subject line without "and", split it.
 
-The number of files is irrelevant: a commit may touch one file or many, as long
-as every change in it belongs to the same logical concern (for example, a new
-IPC command in Rust together with its `api.ts` wrapper and `types.ts` entry).
+The number of files is irrelevant: a commit may touch one file or many, as long as every change in it belongs to the same logical concern (for example, a new IPC command in Rust together with its `api.ts` wrapper and `types.ts` entry).
 
 ### Examples
 
