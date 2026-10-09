@@ -2,7 +2,7 @@
  * Typed wrappers around Tauri `invoke` calls.
  *
  * All functions in this module correspond 1-to-1 with a `#[tauri::command]`
- * in `src-tauri/src/commands.rs`.
+ * in `src-tauri/src/app/commands.rs`.
  */
 
 import { invoke } from "@tauri-apps/api/core";
