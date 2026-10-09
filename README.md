@@ -263,7 +263,7 @@ minute-of-silence/
 |   \-- dependabot.yml                # Automated dependency updates
 +-- CHANGELOG.md
 +-- CONTRIBUTING.md
-\-- index.html                        # App shell with embedded CSS
+\-- index.html                        # Main HTML entry point and app shell
 ```
 
 ## Contributing
