@@ -81,7 +81,6 @@ Backend→frontend events are plain strings (`ceremony-start`, `ceremony-end`, `
 
 ## Known doc inconsistencies (don't "fix" silently)
 
-- Minimum Rust is 1.85 (`Cargo.toml`, README) but CONTRIBUTING says 1.75.
 - `settings.rs` comment says presets "1–8"; there are 10 presets (README, `types.ts`).
 - `api.ts` header points to `src-tauri/src/commands.rs`; the file is `src-tauri/src/app/commands.rs`.
 - README's Project Structure is slightly stale (e.g. it omits `src/utils/nearbyDateSelection.ts`, and lists `CONTRIBUTING.md`/`index.html` descriptions loosely). Treat the actual tree as authoritative.
