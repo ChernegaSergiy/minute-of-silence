@@ -14,8 +14,8 @@ Security updates are provided for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.10.x  | :white_check_mark: |
-| < 0.10  | :x:                |
+| 0.11.x  | :white_check_mark: |
+| < 0.11  | :x:                |
 
 ## Reporting a Vulnerability
 We take the security of this project very seriously. If you discover a security vulnerability, please **DO NOT** open a public issue.
