@@ -29,7 +29,7 @@ In a headless/cloud sandbox you usually cannot run `tauri dev` or build the full
 
 ## Layout
 
-- `src/` — React 19 + Fluent UI frontend. `App.tsx` is the root (event listeners, tabs); `components/` holds tabs and `Overlay.tsx`; `utils/api.ts` wraps every Tauri `invoke`; `types.ts` mirrors Rust types; `locales/{en,uk}.json` are UI strings.
+- `src/` — React 19 + Fluent UI frontend. `App.tsx` is the root (event listeners, tabs); `components/` holds tabs and `Overlay.tsx`; `utils/api.ts` wraps shared Tauri IPC calls (some components invoke commands directly); `types.ts` mirrors Rust types; `locales/{en,uk}.json` are UI strings.
 - `src-tauri/src/core/` — business logic: `scheduler.rs` (1 s loop, compensation + grace windows), `ceremony.rs` (start/finish flow), `audio.rs` (rodio, presets), `ntp_service.rs`, `settings.rs`.
 - `src-tauri/src/app/` — Tauri glue: `commands.rs` (IPC), `tray.rs`, `apng.rs`.
 - `src-tauri/src/platform/{windows,linux,macos}/` — OS code behind the `Platform` trait in `platform/mod.rs` (volume, mute, media pause/resume, autostart, theme). Selected via `cfg(target_os)`.
