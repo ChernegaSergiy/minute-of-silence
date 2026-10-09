@@ -139,6 +139,9 @@ To build and install the Flatpak package locally:
 sudo dnf install flatpak-builder 
 # or: sudo apt install flatpak-builder
 
+# Initialize required submodules
+git submodule update --init
+
 # Build and install locally
 flatpak-builder --user --install --force-clean --ccache build-dir flatpak/ua.pp.khvylyna.MinuteOfSilence.yml
 ```
