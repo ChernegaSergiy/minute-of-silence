@@ -241,6 +241,7 @@ minute-of-silence/
 |   |   |       +-- mod.rs
 |   |   |       +-- autostart.rs      # macOS autostart via tauri_plugin_autostart
 |   |   |       +-- media.rs          # macOS media player keys muting
+|   |   |       +-- now_playing.m     # ObjC helper for macOS now playing info
 |   |   |       +-- now_playing.rs    # macOS now playing info via MediaPlayer framework
 |   |   |       +-- theme.m           # ObjC helper for system theme detection
 |   |   |       +-- theme.rs          # macOS system dark theme detection
