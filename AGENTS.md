@@ -82,4 +82,4 @@ Backend→frontend events are plain strings (`ceremony-start`, `ceremony-end`, `
 ## Known doc inconsistencies (don't "fix" silently)
 
 - README's Project Structure is slightly stale (e.g. it omits `src/utils/nearbyDateSelection.ts`, and lists `CONTRIBUTING.md`/`index.html` descriptions loosely). Treat the actual tree as authoritative.
-- Packaging metadata is inconsistent: `snapcraft.yaml` says `license: Proprietary` while the repo uses CSSM-ULv2.
+- Packaging metadata appears inconsistent but is intentional: `snapcraft.yaml` says `license: Proprietary` because `CSSM-ULv2` is not a valid SPDX identifier recognized by Snapcraft. Do not attempt to change it to CSSM-ULv2.
