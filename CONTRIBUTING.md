@@ -20,7 +20,7 @@ Thank you for considering a contribution. This document outlines the process and
 
 | Tool | Min version | Install |
 | --- | --- | --- |
-| Rust | 1.75 | https://rustup.rs |
+| Rust | 1.85 | https://rustup.rs |
 | Node.js | 20 LTS | https://nodejs.org |
 | Tauri CLI | 2.x | `npm install -g @tauri-apps/cli` |
 
