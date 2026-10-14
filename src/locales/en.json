@@ -196,6 +196,7 @@
     "label": "Label",
     "list_title": "Saved dates",
     "empty": "No personal dates.",
+    "load_error": "Failed to load personal dates.",
     "edit_title": "Edit date"
   },
   "update": {
