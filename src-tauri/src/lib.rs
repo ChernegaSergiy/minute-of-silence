@@ -9,9 +9,7 @@ mod state;
 use tauri::{Listener, Manager};
 rust_i18n::i18n!("locales");
 
-pub use core::settings::{
-    AudioPreset, Settings, SettingsExt, UiTheme, CONFIG_SCHEMA_VERSION,
-};
+pub use core::settings::{AudioPreset, CONFIG_SCHEMA_VERSION, Settings, SettingsExt, UiTheme};
 pub use error::{AppError, Result};
 pub use state::AppState;
 

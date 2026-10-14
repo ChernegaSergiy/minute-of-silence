@@ -6,7 +6,7 @@
 use std::path::PathBuf;
 
 pub use khvylyna_config::{
-    AnnouncementVoice, AnthemVoice, AudioPreset, Settings, UiTheme, CONFIG_SCHEMA_VERSION,
+    AnnouncementVoice, AnthemVoice, AudioPreset, CONFIG_SCHEMA_VERSION, Settings, UiTheme,
 };
 
 use crate::error::{AppError, Result};

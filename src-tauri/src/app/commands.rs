@@ -23,8 +23,7 @@ pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
         let inner = state.lock();
         inner.settings.clone()
     };
-    khvylyna_config::export_to_json(&settings)
-        .map_err(|e| crate::AppError::Settings(e.to_string()))
+    khvylyna_config::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
 }
 
 /// Sync the persisted autostart setting with the actual platform state.
