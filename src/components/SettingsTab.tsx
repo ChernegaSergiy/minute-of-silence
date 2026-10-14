@@ -531,6 +531,27 @@ export default function SettingsTab({
               : t("controls.export.button")}
           </Button>
         </div>
+        <Divider />
+        <div className={styles.switchRow}>
+          <div className={styles.switchLabel}>
+            <Text weight="medium">{t("controls.import.label")}</Text>
+            <div className={styles.switchDesc}>{t("controls.import.description")}</div>
+          </div>
+          <Button
+            appearance="secondary"
+            icon={importState === "success" ? <ClipboardCheckmarkRegular /> : <ClipboardRegular />}
+            onClick={handleImportSettings}
+            disabled={importing}
+          >
+            {importState === "success"
+              ? t("controls.import.success")
+              : importState === "empty"
+              ? t("controls.import.empty")
+              : importState === "error"
+              ? t("controls.import.error")
+              : t("controls.import.button")}
+          </Button>
+        </div>
       </Card>
 
       <Card className={styles.statusCard}>
