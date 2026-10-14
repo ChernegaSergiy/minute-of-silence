@@ -433,7 +433,7 @@ mod tests {
     #[test]
     fn test_reject_empty_ntp_server() {
         let json = r#"{
-            "systemTimeOnly": false,
+            "systemTimeOnly": true,
             "ntpServer": "   "
         }"#;
         let err = import_from_json(json).unwrap_err();
