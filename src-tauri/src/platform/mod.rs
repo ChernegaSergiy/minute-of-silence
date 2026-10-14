@@ -22,19 +22,31 @@ pub use sys::theme::is_dark_mode;
 
 /// Sync the persisted autostart setting with the actual platform state.
 pub fn sync_autostart_from_system(state: tauri::State<'_, crate::AppState>) -> Result<()> {
-    let mut guard = state.lock();
-    let mut settings = guard.settings.clone();
-
     let system_enabled = system_autostart_enabled().unwrap_or_else(|| {
         use tauri_plugin_autostart::ManagerExt;
         state.app_handle.autolaunch().is_enabled().unwrap_or(false)
     });
 
-    if system_enabled != settings.autostart_enabled {
-        settings.autostart_enabled = system_enabled;
+    let (settings, changed) = {
+        let guard = state.lock();
+        let mut s = guard.settings.clone();
+        if s.autostart_enabled != system_enabled {
+            s.autostart_enabled = system_enabled;
+            (s, true)
+        } else {
+            (s, false)
+        }
+    };
+
+    if changed {
         settings.save_to_store(&state.app_handle)?;
-        guard.settings = settings;
+        {
+            let mut guard = state.lock();
+            guard.settings = settings.clone();
+        }
         log::info!("Autostart setting synced from system: {}", system_enabled);
+        use tauri::Emitter;
+        let _ = state.app_handle.emit("settings-updated", settings);
     }
 
     Ok(())
