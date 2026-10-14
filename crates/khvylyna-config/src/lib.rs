@@ -285,7 +285,7 @@ impl Settings {
             });
         }
 
-        if !self.system_time_only && self.ntp_server.trim().is_empty() {
+        if self.ntp_server.trim().is_empty() {
             return Err(ConfigError::InvalidField {
                 field: "ntpServer",
                 message: "NTP server hostname cannot be empty",
