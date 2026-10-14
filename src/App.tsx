@@ -184,6 +184,10 @@ export default function App() {
         await listen("status-updated", refresh),
         await listen<UpdateInfo>("update-available", (event) => {
           setUpdateInfo(event.payload);
+        }),
+        await listen<Settings>("settings-updated", (event) => {
+          setSettings(event.payload);
+          setCleanSettings(JSON.stringify(event.payload));
         })
       );
       setInterval(refresh, 60000);
@@ -322,7 +326,7 @@ export default function App() {
       >
         <div className={styles.loadingContainer}>
           <Button appearance="primary" onClick={() => window.location.reload()}>
-            {t("buttons.sync")}
+            {t("buttons.retry")}
           </Button>
         </div>
       </FluentProvider>
