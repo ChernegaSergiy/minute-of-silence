@@ -26,6 +26,36 @@ pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
     khvylyna_config::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
 }
 
+/// Import application settings from a JSON string, validate, update state, and persist to store.
+#[tauri::command]
+pub fn import_settings(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    json: String,
+) -> Result<crate::core::settings::Settings> {
+    let new_settings = khvylyna_config::import_from_json(&json)
+        .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
+
+    let old_settings = {
+        let mut inner = state.lock();
+        let old = inner.settings.clone();
+        inner.settings = new_settings.clone();
+        old
+    };
+
+    new_settings.save_to_store(&app)?;
+
+    if old_settings.autostart_enabled != new_settings.autostart_enabled {
+        crate::platform::apply_autostart_enabled(&app, new_settings.autostart_enabled);
+    }
+
+    log::info!(
+        "Settings successfully imported (version: {})",
+        new_settings.version
+    );
+    Ok(new_settings)
+}
+
 /// Sync the persisted autostart setting with the actual platform state.
 #[tauri::command]
 pub fn sync_autostart_from_system(state: State<'_, AppState>) -> Result<()> {
