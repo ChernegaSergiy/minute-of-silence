@@ -49,6 +49,12 @@ pub fn import_settings(
         crate::platform::apply_autostart_enabled(&app, new_settings.autostart_enabled);
     }
 
+    if old_settings.ntp_server != new_settings.ntp_server {
+        state
+            .ntp_service
+            .set_server(new_settings.ntp_server.clone());
+    }
+
     log::info!(
         "Settings successfully imported (version: {})",
         new_settings.version

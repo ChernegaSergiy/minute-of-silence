@@ -95,6 +95,18 @@ pub fn run() {
                             );
                         }
 
+                        // Apply NTP server configuration side-effects
+                        if old_settings.ntp_server != new_settings.ntp_server {
+                            log::info!(
+                                "NTP server changed: {} -> {}",
+                                old_settings.ntp_server,
+                                new_settings.ntp_server
+                            );
+                            state
+                                .ntp_service
+                                .set_server(new_settings.ntp_server.clone());
+                        }
+
                         // Apply NTP synchronization side-effects
                         if old_settings.system_time_only != new_settings.system_time_only
                             && !new_settings.system_time_only

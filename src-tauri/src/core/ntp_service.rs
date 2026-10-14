@@ -13,7 +13,7 @@ const DEFAULT_SYNC_INTERVAL: Duration = Duration::from_secs(3600);
 
 #[derive(Debug, Clone)]
 pub struct NtpService {
-    server: String,
+    server: Arc<Mutex<String>>,
     cached_offset: Arc<Mutex<Option<i64>>>,
     last_sync: Arc<Mutex<Option<DateTime<Local>>>>,
     sync_interval: Duration,
@@ -22,7 +22,7 @@ pub struct NtpService {
 impl NtpService {
     pub fn new(server: String) -> Self {
         Self {
-            server,
+            server: Arc::new(Mutex::new(server)),
             cached_offset: Arc::new(Mutex::new(None)),
             last_sync: Arc::new(Mutex::new(None)),
             sync_interval: DEFAULT_SYNC_INTERVAL,
@@ -67,12 +67,20 @@ impl NtpService {
         *self.last_sync.lock().unwrap() = None;
     }
 
+    pub fn set_server(&self, server: String) {
+        let mut current = self.server.lock().unwrap();
+        if *current != server {
+            *current = server;
+            self.clear_cache();
+        }
+    }
+
     pub fn server(&self) -> String {
-        self.server.clone()
+        self.server.lock().unwrap().clone()
     }
 
     async fn sync_once(&self) -> Result<i64> {
-        let server = self.server.clone();
+        let server = self.server();
         println!("NTP: Attempting to sync with server: {}", server);
         tokio::task::spawn_blocking(move || {
             let result = rsntp::SntpClient::new().synchronize(&server).map_err(|e| {
@@ -111,5 +119,17 @@ mod tests {
         let service = NtpService::new("pool.ntp.org".to_string());
         assert!(!service.is_synced());
         assert!(service.last_sync_time().is_none());
+    }
+
+    #[test]
+    fn ntp_service_set_server() {
+        let service = NtpService::new("pool.ntp.org".to_string());
+        assert_eq!(service.server(), "pool.ntp.org");
+        service.update_cached(100);
+        assert!(service.is_synced());
+
+        service.set_server("time.cloudflare.com".to_string());
+        assert_eq!(service.server(), "time.cloudflare.com");
+        assert!(!service.is_synced());
     }
 }
