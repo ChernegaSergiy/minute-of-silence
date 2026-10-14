@@ -232,6 +232,7 @@ pub fn run() {
             app::commands::get_log_contents,
             app::commands::check_for_updates,
             app::commands::install_update,
+            app::commands::export_settings,
             app::apng::decode_apng_frames,
         ])
         .run(tauri::generate_context!())
