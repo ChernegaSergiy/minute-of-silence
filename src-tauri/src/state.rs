@@ -71,6 +71,61 @@ impl AppState {
     pub fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
         self.inner.lock().expect("AppState mutex poisoned")
     }
+
+    /// Atomically update settings in runtime state and apply necessary side-effects.
+    ///
+    /// If settings have not changed, this is a no-op.
+    pub fn apply_settings_update(&self, new_settings: Settings) {
+        let (old_settings, changed) = {
+            let mut inner = self.lock();
+            let old = inner.settings.clone();
+            if old == new_settings {
+                (old, false)
+            } else {
+                inner.settings = new_settings.clone();
+                (old, true)
+            }
+        };
+
+        if !changed {
+            return;
+        }
+
+        if old_settings.autostart_enabled != new_settings.autostart_enabled {
+            log::info!(
+                "Autostart setting changed: {} -> {}",
+                old_settings.autostart_enabled,
+                new_settings.autostart_enabled
+            );
+            crate::platform::apply_autostart_enabled(
+                &self.app_handle,
+                new_settings.autostart_enabled,
+            );
+        }
+
+        let ntp_server_changed = old_settings.ntp_server != new_settings.ntp_server;
+        if ntp_server_changed {
+            log::info!(
+                "NTP server changed: {} -> {}",
+                old_settings.ntp_server,
+                new_settings.ntp_server
+            );
+            self.ntp_service.set_server(new_settings.ntp_server.clone());
+        }
+
+        if ((old_settings.system_time_only != new_settings.system_time_only) || ntp_server_changed)
+            && !new_settings.system_time_only
+        {
+            log::info!("NTP configuration changed, triggering immediate sync");
+            let ntp = self.ntp_service.clone();
+            let app_handle = self.app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = ntp.sync().await;
+                use tauri::Emitter;
+                let _ = app_handle.emit("ntp-synced", ());
+            });
+        }
+    }
 }
 
 // Serialisable snapshot for the frontend

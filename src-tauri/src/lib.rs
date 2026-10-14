@@ -75,53 +75,7 @@ pub fn run() {
                         let state = app_handle_clone.state::<AppState>();
                         let new_settings = Settings::load_from_store(&app_handle_clone);
 
-                        let old_settings = {
-                            let mut lock = state.lock();
-                            let old = lock.settings.clone();
-                            lock.settings = new_settings.clone();
-                            old
-                        };
-
-                        // Apply autostart setting side-effects
-                        if old_settings.autostart_enabled != new_settings.autostart_enabled {
-                            log::info!(
-                                "Autostart setting changed: {} -> {}",
-                                old_settings.autostart_enabled,
-                                new_settings.autostart_enabled
-                            );
-                            crate::platform::apply_autostart_enabled(
-                                &app_handle_clone,
-                                new_settings.autostart_enabled,
-                            );
-                        }
-
-                        // Apply NTP server configuration side-effects
-                        let ntp_server_changed = old_settings.ntp_server != new_settings.ntp_server;
-                        if ntp_server_changed {
-                            log::info!(
-                                "NTP server changed: {} -> {}",
-                                old_settings.ntp_server,
-                                new_settings.ntp_server
-                            );
-                            state
-                                .ntp_service
-                                .set_server(new_settings.ntp_server.clone());
-                        }
-
-                        // Apply NTP synchronization side-effects
-                        if ((old_settings.system_time_only != new_settings.system_time_only)
-                            || ntp_server_changed)
-                            && !new_settings.system_time_only
-                        {
-                            log::info!("NTP configuration changed, triggering immediate sync");
-                            let ntp = state.ntp_service.clone();
-                            let app_handle_clone2 = app_handle_clone.clone();
-                            tauri::async_runtime::spawn(async move {
-                                let _ = ntp.sync().await;
-                                use tauri::Emitter;
-                                let _ = app_handle_clone2.emit("ntp-synced", ());
-                            });
-                        }
+                        state.apply_settings_update(new_settings);
                     });
                 });
             }
