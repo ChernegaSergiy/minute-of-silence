@@ -65,6 +65,8 @@ export interface Settings {
   uiTheme?: "light" | "dark";
   /** ID of the last personal date shown via nearby-days algorithm. */
   lastShownNearbyDateId: string | null;
+  /** Date to skip the next ceremony (one-time skip). */
+  skipDate?: string | null;
 }
 
 // Mirror of Rust `StatusSnapshot` struct
@@ -102,6 +104,7 @@ export const DEFAULT_SETTINGS: Settings = {
   useSystemTheme: true,
   uiTheme: "light",
   lastShownNearbyDateId: null,
+  skipDate: null,
 };
 
 export interface PersonalDate {
