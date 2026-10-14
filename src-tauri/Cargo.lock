@@ -2496,6 +2496,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "khvylyna-config"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2690,6 +2699,7 @@ dependencies = [
  "cpal 0.18.2",
  "dirs 7.0.0",
  "glib 0.21.5",
+ "khvylyna-config",
  "libloading 0.8.9",
  "log",
  "png 0.18.1",
