@@ -16,6 +16,14 @@ updates:
       - "dependencies"
       - "rust"
 
+  - package-ecosystem: "cargo"
+    directory: "/crates/khvylyna-config"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "rust"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
