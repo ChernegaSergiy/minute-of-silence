@@ -16,6 +16,45 @@ use crate::{
 
 // Settings
 
+/// Retrieve current application settings from runtime state.
+#[tauri::command]
+pub fn get_settings(state: State<'_, AppState>) -> crate::core::settings::Settings {
+    let inner = state.lock();
+    inner.settings.clone()
+}
+
+/// Save application settings, validate, update runtime state, and persist to store.
+#[tauri::command]
+pub fn save_settings(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    settings: crate::core::settings::Settings,
+) -> Result<crate::core::settings::Settings> {
+    settings
+        .validate()
+        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+
+    settings.save_to_store(&app)?;
+    state.apply_settings_update(settings.clone());
+
+    log::info!("Settings successfully saved");
+    Ok(settings)
+}
+
+/// Reset application settings to default values, persist to store, and update runtime state.
+#[tauri::command]
+pub fn reset_settings(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<crate::core::settings::Settings> {
+    let defaults = crate::core::settings::Settings::default();
+    defaults.save_to_store(&app)?;
+    state.apply_settings_update(defaults.clone());
+
+    log::info!("Settings successfully reset to defaults");
+    Ok(defaults)
+}
+
 /// Export current application settings formatted as a JSON string with schema version.
 #[tauri::command]
 pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
