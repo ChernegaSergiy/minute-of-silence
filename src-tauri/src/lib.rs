@@ -203,6 +203,8 @@ pub fn run() {
             app::commands::get_settings,
             app::commands::save_settings,
             app::commands::reset_settings,
+            app::commands::get_personal_dates,
+            app::commands::save_personal_dates,
             app::apng::decode_apng_frames,
         ])
         .run(tauri::generate_context!())
