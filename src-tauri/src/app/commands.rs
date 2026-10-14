@@ -16,6 +16,17 @@ use crate::{
 
 // Settings
 
+/// Export current application settings formatted as a JSON string with schema version.
+#[tauri::command]
+pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
+    let settings = {
+        let inner = state.lock();
+        inner.settings.clone()
+    };
+    khvylyna_config::export_to_json(&settings)
+        .map_err(|e| crate::AppError::Settings(e.to_string()))
+}
+
 /// Sync the persisted autostart setting with the actual platform state.
 #[tauri::command]
 pub fn sync_autostart_from_system(state: State<'_, AppState>) -> Result<()> {
