@@ -9,7 +9,7 @@ mod state;
 use tauri::{Listener, Manager};
 rust_i18n::i18n!("locales");
 
-pub use core::settings::{AudioPreset, Settings};
+pub use core::settings::{AudioPreset, CONFIG_SCHEMA_VERSION, Settings, SettingsExt, UiTheme};
 pub use error::{AppError, Result};
 pub use state::AppState;
 
@@ -75,39 +75,7 @@ pub fn run() {
                         let state = app_handle_clone.state::<AppState>();
                         let new_settings = Settings::load_from_store(&app_handle_clone);
 
-                        let old_settings = {
-                            let mut lock = state.lock();
-                            let old = lock.settings.clone();
-                            lock.settings = new_settings.clone();
-                            old
-                        };
-
-                        // Apply autostart setting side-effects
-                        if old_settings.autostart_enabled != new_settings.autostart_enabled {
-                            log::info!(
-                                "Autostart setting changed: {} -> {}",
-                                old_settings.autostart_enabled,
-                                new_settings.autostart_enabled
-                            );
-                            crate::platform::apply_autostart_enabled(
-                                &app_handle_clone,
-                                new_settings.autostart_enabled,
-                            );
-                        }
-
-                        // Apply NTP synchronization side-effects
-                        if old_settings.system_time_only != new_settings.system_time_only
-                            && !new_settings.system_time_only
-                        {
-                            log::info!("System time only disabled, triggering immediate NTP sync");
-                            let ntp = state.ntp_service.clone();
-                            let app_handle_clone2 = app_handle_clone.clone();
-                            tauri::async_runtime::spawn(async move {
-                                let _ = ntp.sync().await;
-                                use tauri::Emitter;
-                                let _ = app_handle_clone2.emit("ntp-synced", ());
-                            });
-                        }
+                        state.apply_settings_update(new_settings);
                     });
                 });
             }
@@ -230,6 +198,8 @@ pub fn run() {
             app::commands::get_log_contents,
             app::commands::check_for_updates,
             app::commands::install_update,
+            app::commands::export_settings,
+            app::commands::import_settings,
             app::apng::decode_apng_frames,
         ])
         .run(tauri::generate_context!())

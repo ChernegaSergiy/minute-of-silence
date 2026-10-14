@@ -14,7 +14,7 @@ use macos as sys;
 #[cfg(target_os = "windows")]
 use windows as sys;
 
-use crate::error::Result;
+use crate::{core::settings::SettingsExt, error::Result};
 
 // Re-exports from system-specific modules
 pub use sys::autostart::{apply_autostart_enabled, system_autostart_enabled};

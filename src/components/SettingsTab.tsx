@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import {
   Button,
   Card,
@@ -10,9 +11,10 @@ import {
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import { ArrowSync20Regular } from "@fluentui/react-icons";
-import { skipNext, unskipNext } from "../utils/api";
+import { ArrowSync20Regular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
+import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import type { AnnouncementVoice, AnthemVoice, AudioPreset, Settings, StatusSnapshot } from "../types";
+import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
 import { t } from "../utils/i18n";
 
 const presets: AudioPreset[] = [
@@ -66,6 +68,7 @@ interface SettingsTabProps {
   onUpdateSetting: UpdateSetting;
   onVolumeChange: (value: number) => void;
   onSyncNtp: () => void;
+  onSettingsImported: (imported: Settings) => void;
 }
 
 const useStyles = makeStyles({
@@ -178,8 +181,52 @@ export default function SettingsTab({
   onUpdateSetting,
   onVolumeChange,
   onSyncNtp,
+  onSettingsImported,
 }: SettingsTabProps) {
   const styles = useStyles();
+  const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
+  const [importState, setImportState] = useState<"idle" | "success" | "error" | "empty">("idle");
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+
+  const handleExportSettings = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const json = await exportSettings();
+      await writeText(json);
+      setCopyExportState("copied");
+      window.setTimeout(() => setCopyExportState("idle"), 2000);
+    } catch {
+      setCopyExportState("error");
+      window.setTimeout(() => setCopyExportState("idle"), 2000);
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting]);
+
+  const handleImportSettings = useCallback(async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const text = await readText();
+      if (!text || !text.trim()) {
+        setImportState("empty");
+        window.setTimeout(() => setImportState("idle"), 2000);
+        return;
+      }
+      const updated = await importSettings(text.trim());
+      onSettingsImported(updated);
+      setImportState("success");
+      window.setTimeout(() => setImportState("idle"), 2000);
+    } catch (err) {
+      console.error("Failed to import settings:", err);
+      setImportState("error");
+      window.setTimeout(() => setImportState("idle"), 2000);
+    } finally {
+      setImporting(false);
+    }
+  }, [importing, onSettingsImported]);
 
   return (
     <>
@@ -458,6 +505,51 @@ export default function SettingsTab({
           checked={settings.autoUnmute}
           onChange={(v) => onUpdateSetting("autoUnmute", v)}
         />
+      </Card>
+
+      <Card className={styles.card}>
+        <Text size={100} weight="semibold" block>
+          {t("sections.data")}
+        </Text>
+        <div className={styles.switchRow}>
+          <div className={styles.switchLabel}>
+            <Text weight="medium">{t("controls.export.label")}</Text>
+            <div className={styles.switchDesc}>{t("controls.export.description")}</div>
+          </div>
+          <Button
+            appearance="secondary"
+            icon={copyExportState === "copied" ? <ClipboardCheckmarkRegular /> : <ClipboardRegular />}
+            onClick={handleExportSettings}
+            disabled={exporting}
+          >
+            {copyExportState === "copied"
+              ? t("controls.export.copied")
+              : copyExportState === "error"
+              ? t("controls.export.error")
+              : t("controls.export.button")}
+          </Button>
+        </div>
+        <Divider />
+        <div className={styles.switchRow}>
+          <div className={styles.switchLabel}>
+            <Text weight="medium">{t("controls.import.label")}</Text>
+            <div className={styles.switchDesc}>{t("controls.import.description")}</div>
+          </div>
+          <Button
+            appearance="secondary"
+            icon={importState === "success" ? <ClipboardCheckmarkRegular /> : <ClipboardRegular />}
+            onClick={handleImportSettings}
+            disabled={importing}
+          >
+            {importState === "success"
+              ? t("controls.import.success")
+              : importState === "empty"
+              ? t("controls.import.empty")
+              : importState === "error"
+              ? t("controls.import.error")
+              : t("controls.import.button")}
+          </Button>
+        </div>
       </Card>
 
       <Card className={styles.statusCard}>

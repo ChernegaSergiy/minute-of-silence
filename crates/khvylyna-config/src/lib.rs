@@ -1,0 +1,459 @@
+//! Shared configuration models, serialization, and validation for Minute of Silence.
+//!
+//! Designed to support both desktop (Tauri) and embedded environments (`no_std`).
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+use alloc::string::{String, ToString};
+use serde::{Deserialize, Serialize};
+
+/// Current configuration schema version.
+pub const CONFIG_SCHEMA_VERSION: u32 = 1;
+
+fn default_schema_version() -> u32 {
+    CONFIG_SCHEMA_VERSION
+}
+
+fn default_ntp_server() -> String {
+    "pool.ntp.org".to_string()
+}
+
+/// User-configurable application settings.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Settings {
+    /// Schema version for configuration export and migrations.
+    #[serde(default = "default_schema_version")]
+    pub version: u32,
+
+    /// Enable daily activation at 09:00.
+    pub ceremony_enabled: bool,
+
+    /// Enable app autostart when the system boots.
+    pub autostart_enabled: bool,
+
+    /// Run ceremony only on weekdays (Mon-Fri).
+    pub weekdays_only: bool,
+
+    /// Selected audio preset (1–10).
+    pub preset: AudioPreset,
+
+    /// Master volume for the ceremony audio (0–100).
+    pub volume: u8,
+
+    /// Pause other media players before the ceremony.
+    pub pause_other_players: bool,
+
+    /// Automatically resume paused players after the ceremony.
+    pub resume_after_ceremony: bool,
+
+    /// Show a visual overlay window when the ceremony starts.
+    pub show_visual_overlay: bool,
+
+    /// Show the flag animation window when the ceremony starts.
+    pub show_flag_animation: bool,
+
+    /// Show personal dates on nearby days with weighted proximity.
+    pub show_nearby_personal_dates: bool,
+
+    /// Use system time instead of NTP.
+    pub system_time_only: bool,
+
+    /// Prioritize app volume over system controls.
+    pub volume_priority: bool,
+
+    /// Automatically unmute system if muted during ceremony.
+    pub auto_unmute: bool,
+
+    /// NTP server hostname (used when system_time_only is false).
+    pub ntp_server: String,
+
+    /// If the system wakes from sleep after 09:00, activate if within this
+    /// many minutes of the scheduled time (0 = never activate late).
+    pub late_start_grace_minutes: u8,
+
+    /// Enable reminder notifications.
+    pub reminder_enabled: bool,
+
+    /// Show a system notification N minutes before the ceremony (0 = immediately).
+    /// Valid range: 0–10.
+    pub reminder_minutes_before: u8,
+
+    /// Selected announcement voice/version.
+    pub announcement_voice: AnnouncementVoice,
+
+    /// Selected anthem voice/performance.
+    pub anthem_voice: AnthemVoice,
+
+    /// Follow the OS theme when true; otherwise use `ui_theme`.
+    pub use_system_theme: bool,
+
+    /// Manual UI theme when `use_system_theme` is false.
+    pub ui_theme: UiTheme,
+
+    /// ID of the last personal date shown via nearby-days algorithm.
+    #[serde(default)]
+    pub last_shown_nearby_date_id: Option<String>,
+
+    /// Date to skip the next ceremony (one-time skip). Persisted to disk.
+    #[serde(default)]
+    pub skip_date: Option<chrono::NaiveDate>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UiTheme {
+    Light,
+    Dark,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnnouncementVoice {
+    BohdanHdal,
+    SoniaSotnyk,
+    DaniaKhomutovskyi,
+    RadioBg,
+    AirAlert,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnthemVoice {
+    Default,
+    MykhailoKhoma,
+    OleksandrPonomarov,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AudioPreset {
+    /// Voice announcement + metronome
+    VoiceMetronome,
+    /// Metronome only (no voice)
+    MetronomeOnly,
+    /// Voice announcement + 60 s silence + bell
+    VoiceSilenceBell,
+    /// Voice announcement + 60 s silence
+    VoiceSilence,
+    /// Voice announcement + metronome + national anthem
+    VoiceMetronomeAnthem,
+    /// Voice announcement + metronome + ending
+    VoiceMetronomeEnding,
+    /// Metronome + national anthem
+    MetronomeAnthem,
+    /// Bell + 60 s silence + bell
+    BellSilenceBell,
+    /// Bell + metronome + bell
+    BellMetronomeBell,
+    /// Silence only (no audio, just visual overlay)
+    Silence,
+}
+
+impl AudioPreset {
+    pub fn has_anthem(self) -> bool {
+        matches!(self, Self::VoiceMetronomeAnthem | Self::MetronomeAnthem)
+    }
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            version: CONFIG_SCHEMA_VERSION,
+            ceremony_enabled: true,
+            autostart_enabled: true,
+            weekdays_only: false,
+            preset: AudioPreset::VoiceMetronome,
+            volume: 80,
+            pause_other_players: true,
+            resume_after_ceremony: false,
+            show_visual_overlay: true,
+            show_flag_animation: false,
+            show_nearby_personal_dates: false,
+            system_time_only: false,
+            volume_priority: false,
+            auto_unmute: false,
+            ntp_server: default_ntp_server(),
+            late_start_grace_minutes: 1,
+            reminder_enabled: false,
+            reminder_minutes_before: 5,
+            announcement_voice: AnnouncementVoice::BohdanHdal,
+            anthem_voice: AnthemVoice::Default,
+            use_system_theme: true,
+            ui_theme: UiTheme::Light,
+            last_shown_nearby_date_id: None,
+            skip_date: None,
+        }
+    }
+}
+
+/// Configuration import and validation errors.
+#[derive(Debug)]
+pub enum ConfigError {
+    /// JSON serialization or deserialization error.
+    #[cfg(feature = "std")]
+    Json(serde_json::Error),
+    /// Schema version is newer than supported.
+    UnsupportedVersion { found: u32, max_supported: u32 },
+    /// Schema version is zero or invalid.
+    InvalidVersion(u32),
+    /// A configuration field value is outside its valid range.
+    InvalidField {
+        field: &'static str,
+        message: &'static str,
+    },
+}
+
+impl core::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            #[cfg(feature = "std")]
+            Self::Json(e) => write!(f, "JSON error: {e}"),
+            Self::UnsupportedVersion {
+                found,
+                max_supported,
+            } => {
+                write!(
+                    f,
+                    "Unsupported configuration schema version: {found} (maximum supported is {max_supported})"
+                )
+            }
+            Self::InvalidVersion(v) => write!(f, "Invalid schema version: {v} (must be >= 1)"),
+            Self::InvalidField { field, message } => {
+                write!(f, "Invalid field '{field}': {message}")
+            }
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for ConfigError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Json(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<serde_json::Error> for ConfigError {
+    fn from(err: serde_json::Error) -> Self {
+        Self::Json(err)
+    }
+}
+
+impl Settings {
+    /// Validates that the settings schema version is supported.
+    pub fn validate_version(&self) -> Result<(), ConfigError> {
+        if self.version == 0 {
+            return Err(ConfigError::InvalidVersion(0));
+        }
+        if self.version > CONFIG_SCHEMA_VERSION {
+            return Err(ConfigError::UnsupportedVersion {
+                found: self.version,
+                max_supported: CONFIG_SCHEMA_VERSION,
+            });
+        }
+        Ok(())
+    }
+
+    /// Validates that settings conform to the schema version and field bounds.
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        self.validate_version()?;
+
+        if self.volume > 100 {
+            return Err(ConfigError::InvalidField {
+                field: "volume",
+                message: "Volume must be between 0 and 100",
+            });
+        }
+
+        if self.late_start_grace_minutes > 5 {
+            return Err(ConfigError::InvalidField {
+                field: "lateStartGraceMinutes",
+                message: "Late start grace minutes must be between 0 and 5",
+            });
+        }
+
+        if self.reminder_minutes_before > 10 {
+            return Err(ConfigError::InvalidField {
+                field: "reminderMinutesBefore",
+                message: "Reminder minutes before must be between 0 and 10",
+            });
+        }
+
+        if self.ntp_server.trim().is_empty() {
+            return Err(ConfigError::InvalidField {
+                field: "ntpServer",
+                message: "NTP server hostname cannot be empty",
+            });
+        }
+
+        Ok(())
+    }
+}
+
+/// Serialize settings to formatted JSON string.
+#[cfg(feature = "std")]
+pub fn export_to_json(settings: &Settings) -> Result<String, serde_json::Error> {
+    serde_json::to_string_pretty(settings)
+}
+
+/// Deserialize settings from a JSON string and validate schema version and field bounds.
+#[cfg(feature = "std")]
+pub fn import_from_json(json_str: &str) -> Result<Settings, ConfigError> {
+    let settings: Settings = serde_json::from_str(json_str)?;
+    settings.validate()?;
+    Ok(settings)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_settings_version() {
+        let settings = Settings::default();
+        assert_eq!(settings.version, CONFIG_SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn test_audio_preset_anthem() {
+        assert!(AudioPreset::VoiceMetronomeAnthem.has_anthem());
+        assert!(AudioPreset::MetronomeAnthem.has_anthem());
+        assert!(!AudioPreset::VoiceMetronome.has_anthem());
+        assert!(!AudioPreset::Silence.has_anthem());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_json_roundtrip() {
+        let settings = Settings::default();
+        let json = export_to_json(&settings).expect("serialization failed");
+        assert!(json.contains("\"version\": 1"));
+        assert!(json.contains("\"ceremonyEnabled\": true"));
+
+        let deserialized = import_from_json(&json).expect("deserialization failed");
+        assert_eq!(settings, deserialized);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_backward_compatibility_missing_version() {
+        let json_without_version = r#"{
+            "ceremonyEnabled": false,
+            "volume": 50
+        }"#;
+
+        let parsed: Settings = import_from_json(json_without_version).expect("should parse");
+        assert_eq!(parsed.version, CONFIG_SCHEMA_VERSION);
+        assert!(!parsed.ceremony_enabled);
+        assert_eq!(parsed.volume, 50);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_unsupported_future_version() {
+        let json_future = r#"{
+            "version": 999,
+            "ceremonyEnabled": true
+        }"#;
+
+        let err = import_from_json(json_future).unwrap_err();
+        match err {
+            ConfigError::UnsupportedVersion {
+                found,
+                max_supported,
+            } => {
+                assert_eq!(found, 999);
+                assert_eq!(max_supported, CONFIG_SCHEMA_VERSION);
+            }
+            _ => panic!("Expected UnsupportedVersion, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_zero_version() {
+        let json_zero = r#"{
+            "version": 0,
+            "ceremonyEnabled": true
+        }"#;
+
+        let err = import_from_json(json_zero).unwrap_err();
+        match err {
+            ConfigError::InvalidVersion(v) => assert_eq!(v, 0),
+            _ => panic!("Expected InvalidVersion, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_volume_above_100() {
+        let json = r#"{
+            "volume": 101
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "volume"),
+            _ => panic!("Expected InvalidField for volume, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_grace_minutes_above_5() {
+        let json = r#"{
+            "lateStartGraceMinutes": 6
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "lateStartGraceMinutes"),
+            _ => panic!("Expected InvalidField for lateStartGraceMinutes, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_reminder_minutes_above_10() {
+        let json = r#"{
+            "reminderMinutesBefore": 11
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "reminderMinutesBefore"),
+            _ => panic!("Expected InvalidField for reminderMinutesBefore, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_empty_ntp_server() {
+        let json = r#"{
+            "systemTimeOnly": true,
+            "ntpServer": "   "
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "ntpServer"),
+            _ => panic!("Expected InvalidField for ntpServer, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_allow_valid_boundary_values() {
+        let json = r#"{
+            "volume": 100,
+            "lateStartGraceMinutes": 5,
+            "reminderMinutesBefore": 10
+        }"#;
+        let parsed = import_from_json(json).expect("boundary values should be accepted");
+        assert_eq!(parsed.volume, 100);
+        assert_eq!(parsed.late_start_grace_minutes, 5);
+        assert_eq!(parsed.reminder_minutes_before, 10);
+    }
+}

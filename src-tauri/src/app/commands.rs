@@ -9,12 +9,45 @@ use std::{
 use tauri::{AppHandle, Manager, State};
 
 use crate::{
-    Result,
+    Result, SettingsExt,
     app::next_skip_date,
     state::{AppState, StatusSnapshot},
 };
 
 // Settings
+
+/// Export current application settings formatted as a JSON string with schema version.
+#[tauri::command]
+pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
+    let settings = {
+        let inner = state.lock();
+        inner.settings.clone()
+    };
+    khvylyna_config::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
+}
+
+/// Import application settings from a JSON string, validate, update state, and persist to store.
+#[tauri::command]
+pub fn import_settings(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    json: String,
+) -> Result<crate::core::settings::Settings> {
+    let new_settings = khvylyna_config::import_from_json(&json)
+        .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
+
+    // Persist to store first so a storage failure does not corrupt runtime state.
+    new_settings.save_to_store(&app)?;
+
+    // Synchronously update runtime AppState and apply side-effects before returning.
+    state.apply_settings_update(new_settings.clone());
+
+    log::info!(
+        "Settings successfully imported (version: {})",
+        new_settings.version
+    );
+    Ok(new_settings)
+}
 
 /// Sync the persisted autostart setting with the actual platform state.
 #[tauri::command]

@@ -4,6 +4,7 @@
 //! supporting cached offsets and configurable sync intervals.
 
 use chrono::{DateTime, Local};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -13,27 +14,36 @@ const DEFAULT_SYNC_INTERVAL: Duration = Duration::from_secs(3600);
 
 #[derive(Debug, Clone)]
 pub struct NtpService {
-    server: String,
+    server: Arc<Mutex<String>>,
     cached_offset: Arc<Mutex<Option<i64>>>,
     last_sync: Arc<Mutex<Option<DateTime<Local>>>>,
+    generation: Arc<AtomicU64>,
     sync_interval: Duration,
 }
 
 impl NtpService {
     pub fn new(server: String) -> Self {
         Self {
-            server,
+            server: Arc::new(Mutex::new(server)),
             cached_offset: Arc::new(Mutex::new(None)),
             last_sync: Arc::new(Mutex::new(None)),
+            generation: Arc::new(AtomicU64::new(0)),
             sync_interval: DEFAULT_SYNC_INTERVAL,
         }
     }
 
     pub async fn sync(&self) -> Result<i64> {
+        let start_generation = self.generation.load(Ordering::SeqCst);
         let offset = self.sync_once().await?;
-        self.set_cached(offset);
-        self.set_last_sync(Local::now());
-        Ok(offset)
+        if self.generation.load(Ordering::SeqCst) == start_generation {
+            self.set_cached(offset);
+            self.set_last_sync(Local::now());
+            Ok(offset)
+        } else {
+            Err(AppError::Ntp(
+                "Server configuration changed during sync".to_string(),
+            ))
+        }
     }
 
     pub fn get_offset(&self) -> Option<i64> {
@@ -63,16 +73,25 @@ impl NtpService {
     }
 
     pub fn clear_cache(&self) {
+        self.generation.fetch_add(1, Ordering::SeqCst);
         *self.cached_offset.lock().unwrap() = None;
         *self.last_sync.lock().unwrap() = None;
     }
 
+    pub fn set_server(&self, server: String) {
+        let mut current = self.server.lock().unwrap();
+        if *current != server {
+            *current = server;
+            self.clear_cache();
+        }
+    }
+
     pub fn server(&self) -> String {
-        self.server.clone()
+        self.server.lock().unwrap().clone()
     }
 
     async fn sync_once(&self) -> Result<i64> {
-        let server = self.server.clone();
+        let server = self.server();
         println!("NTP: Attempting to sync with server: {}", server);
         tokio::task::spawn_blocking(move || {
             let result = rsntp::SntpClient::new().synchronize(&server).map_err(|e| {
@@ -111,5 +130,33 @@ mod tests {
         let service = NtpService::new("pool.ntp.org".to_string());
         assert!(!service.is_synced());
         assert!(service.last_sync_time().is_none());
+    }
+
+    #[test]
+    fn ntp_service_set_server() {
+        let service = NtpService::new("pool.ntp.org".to_string());
+        assert_eq!(service.server(), "pool.ntp.org");
+        service.update_cached(100);
+        assert!(service.is_synced());
+
+        service.set_server("time.cloudflare.com".to_string());
+        assert_eq!(service.server(), "time.cloudflare.com");
+        assert!(!service.is_synced());
+    }
+
+    #[test]
+    fn ntp_service_generation_tracking() {
+        let service = NtpService::new("pool.ntp.org".to_string());
+        assert_eq!(service.generation.load(Ordering::SeqCst), 0);
+
+        service.set_server("time.cloudflare.com".to_string());
+        assert_eq!(service.generation.load(Ordering::SeqCst), 1);
+
+        // Setting same server should not advance generation
+        service.set_server("time.cloudflare.com".to_string());
+        assert_eq!(service.generation.load(Ordering::SeqCst), 1);
+
+        service.clear_cache();
+        assert_eq!(service.generation.load(Ordering::SeqCst), 2);
     }
 }

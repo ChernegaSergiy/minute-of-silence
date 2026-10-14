@@ -1,5 +1,5 @@
 use crate::core::audio::AudioEngine;
-use crate::core::settings::AudioPreset;
+use crate::core::settings::{AudioPreset, SettingsExt};
 use crate::platform::Platform;
 use crate::state::AppState;
 use rust_i18n::t;

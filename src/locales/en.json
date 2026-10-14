@@ -12,7 +12,8 @@
     "general": "GENERAL",
     "reminder": "REMINDER",
     "audio_mode": "AUDIO",
-    "system": "SYSTEM"
+    "system": "SYSTEM",
+    "data": "DATA"
   },
   "status": {
     "last_ceremony": "Last ceremony",
@@ -142,6 +143,21 @@
     "show_nearby_personal_dates": {
       "label": "Show personal dates on nearby days",
       "description": "Display personal dates even when it's not the exact day, with higher probability for closer dates."
+    },
+    "export": {
+      "label": "Export settings",
+      "description": "Copy full settings in JSON format to clipboard for backup or transfer.",
+      "button": "Copy settings",
+      "copied": "Copied!",
+      "error": "Export failed"
+    },
+    "import": {
+      "label": "Import settings",
+      "description": "Apply settings in JSON format from the clipboard.",
+      "button": "Paste settings",
+      "success": "Imported!",
+      "empty": "Clipboard is empty",
+      "error": "Import failed"
     }
   },
   "buttons": {
