@@ -9,7 +9,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 
-use crate::{AppState, SettingsExt};
+use crate::AppState;
 
 /// Build and register the system-tray icon for `app`.
 pub fn build_tray(app: &App) -> tauri::Result<()> {
@@ -41,14 +41,13 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
             "skip_next" => {
                 let state = app.state::<AppState>();
                 let skip_date = next_skip_date(chrono::Local::now());
-                let mut updated = state.lock().settings.clone();
-                updated.skip_date = Some(skip_date);
-                if let Err(e) = updated.save_to_store(app) {
+                if let Err(e) = state.update_settings(|s| {
+                    s.skip_date = Some(skip_date);
+                }) {
                     log::warn!("Tray: failed to save skip_date: {e}");
                 } else {
-                    state.apply_settings_update(updated);
+                    log::info!("Tray: next ceremony skipped ({skip_date})");
                 }
-                log::info!("Tray: next ceremony skipped ({skip_date})");
 
                 // Notify the frontend that the status has changed
                 let _ = app.emit("status-updated", ());
