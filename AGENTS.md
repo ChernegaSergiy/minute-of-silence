@@ -16,7 +16,7 @@ npm run tauri dev            # full app with hot reload (needs system deps on Li
 npm run typecheck            # tsc --noEmit
 npm run lint                 # eslint, --max-warnings 0
 npm run build                # tsc + vite build (frontend only)
-npm run gen:types            # regenerate src/types.gen.ts from crates/khvylyna-config models
+npm run gen:types            # regenerate src/types.gen.ts from crates/khvylyna-core models
 npm run check:types          # verify src/types.gen.ts matches Rust models (runs in CI)
 
 cd src-tauri
@@ -31,8 +31,8 @@ In a headless/cloud sandbox you usually cannot run `tauri dev` or build the full
 
 ## Layout
 
-- `crates/khvylyna-config/` — core configuration models (`Settings`, `AudioPreset`, `AnnouncementVoice`, `AnthemVoice`, `UiTheme`), validation, JSON serialization, and TypeScript type generation via `ts-rs`.
-- `src/` — React 19 + Fluent UI frontend. `App.tsx` is the root (event listeners, tabs); `components/` holds tabs and `Overlay.tsx`; `utils/api.ts` wraps shared Tauri IPC calls (some components invoke commands directly); `types.gen.ts` holds generated types from `khvylyna-config`; `types.ts` re-exports them and defines frontend-only types/helpers; `locales/{en,uk}.json` are UI strings.
+- `crates/khvylyna-core/` — core models, contracts, and schema definitions (`Settings`, `AudioPreset`, `AnnouncementVoice`, `AnthemVoice`, `UiTheme`), validation, JSON serialization, and TypeScript type generation via `ts-rs`.
+- `src/` — React 19 + Fluent UI frontend. `App.tsx` is the root (event listeners, tabs); `components/` holds tabs and `Overlay.tsx`; `utils/api.ts` wraps shared Tauri IPC calls (some components invoke commands directly); `types.gen.ts` holds generated types from `khvylyna-core`; `types.ts` re-exports them and defines frontend-only types/helpers; `locales/{en,uk}.json` are UI strings.
 - `src-tauri/src/core/` — business logic: `scheduler.rs` (1 s loop, compensation + grace windows), `ceremony.rs` (start/finish flow), `audio.rs` (rodio, presets), `ntp_service.rs`, `settings.rs`.
 - `src-tauri/src/app/` — Tauri glue: `commands.rs` (IPC), `tray.rs`, `apng.rs`.
 - `src-tauri/src/platform/{windows,linux,macos}/` — OS code behind the `Platform` trait in `platform/mod.rs` (volume, mute, media pause/resume, autostart, theme). Selected via `cfg(target_os)`.
@@ -51,11 +51,11 @@ In a headless/cloud sandbox you usually cannot run `tauri dev` or build the full
 **IPC contract (three places must change together)**
 1. `#[tauri::command]` in `app/commands.rs`, registered in `generate_handler![]` in `lib.rs`.
 2. A typed wrapper in `src/utils/api.ts`.
-3. Types in `src/types.ts` (re-exporting from `src/types.gen.ts`). When models in `crates/khvylyna-config` change, run `npm run gen:types` to regenerate `src/types.gen.ts`. New plugin APIs may also need an entry in `src-tauri/capabilities/default.json`.
+3. Types in `src/types.ts` (re-exporting from `src/types.gen.ts`). When models in `crates/khvylyna-core` change, run `npm run gen:types` to regenerate `src/types.gen.ts`. New plugin APIs may also need an entry in `src-tauri/capabilities/default.json`.
 
 Backend→frontend events are plain strings (`ceremony-start`, `ceremony-end`, `ntp-synced`, `status-updated`, `update-available`, `anthem-start/end`, `resume-from-sleep`); grep both sides when renaming.
 
-**Settings** — defined in `crates/khvylyna-config/src/lib.rs` and persisted through `tauri-plugin-store` (`settings.json` store) and read from both Rust and the frontend. Adding a field: update `Settings` + defaults in `crates/khvylyna-config`, run `npm run gen:types` to update `src/types.gen.ts`, update `DEFAULT_SETTINGS` in `src/types.ts`, UI in `SettingsTab.tsx`, and keep `#[serde(default)]` so old files still load. Stored settings in `src/utils/api.ts` are merged with `DEFAULT_SETTINGS` on load so missing fields fall back safely.
+**Settings** — defined in `crates/khvylyna-core/src/lib.rs` and persisted through `tauri-plugin-store` (`settings.json` store) and read from both Rust and the frontend. Adding a field: update `Settings` + defaults in `crates/khvylyna-core`, run `npm run gen:types` to update `src/types.gen.ts`, update `DEFAULT_SETTINGS` in `src/types.ts`, UI in `SettingsTab.tsx`, and keep `#[serde(default)]` so old files still load. Stored settings in `src/utils/api.ts` are merged with `DEFAULT_SETTINGS` on load so missing fields fall back safely.
 
 **i18n** — every user-visible string needs both languages. Frontend: add the key to `en.json` *and* `uk.json` (they currently have identical key sets; keep it so). Backend: `en.toml` *and* `uk.toml`. Fallback language is Ukrainian. Windows store strings live in `Strings/{en-US,uk-UA}/resources.resw`.
 
