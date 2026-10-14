@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   FluentProvider,
@@ -102,8 +102,8 @@ export default function App() {
       : true
   );
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [initialSettings, setInitialSettings] = useState<Settings | null>(null);
   const [personalDates, setPersonalDates] = useState<PersonalDate[]>([]);
-  const [cleanSettings, setCleanSettings] = useState<string>("");
   const [status, setStatus] = useState<StatusSnapshot>(DEFAULT_STATUS);
   const [version, setVersion] = useState("...");
   const [showOverlay, setShowOverlay] = useState(false);
@@ -120,7 +120,13 @@ export default function App() {
   const initRef = useRef(false);
   const hasImportedRef = useRef(false);
 
-  const isDirty = hydrated && Boolean(settings) && JSON.stringify(settings) !== cleanSettings;
+  const isDirty = useMemo(() => {
+    if (!hydrated || !settings || !initialSettings) return false;
+    return (Object.keys(settings) as (keyof Settings)[]).some(
+      (key) => settings[key] !== initialSettings[key]
+    );
+  }, [hydrated, settings, initialSettings]);
+
   const effectiveDark = (settings?.useSystemTheme ?? true) ? prefersDark : settings?.uiTheme === "dark";
 
   useEffect(() => {
@@ -133,7 +139,7 @@ export default function App() {
         const [s, dates] = await Promise.all([getSettings(), getPersonalDates()]);
         if (!hasImportedRef.current) {
           setSettings(s);
-          setCleanSettings(JSON.stringify(s));
+          setInitialSettings(s);
           setVolumeValue(s.volume);
         }
         setPersonalDates(dates);
@@ -190,10 +196,11 @@ export default function App() {
               ? { ...current, autostartEnabled: event.payload.autostartEnabled }
               : event.payload
           );
-          setCleanSettings((current) => {
-            const clean = current ? (JSON.parse(current) as Settings) : event.payload;
-            return JSON.stringify({ ...clean, autostartEnabled: event.payload.autostartEnabled });
-          });
+          setInitialSettings((current) =>
+            current
+              ? { ...current, autostartEnabled: event.payload.autostartEnabled }
+              : event.payload
+          );
         })
       );
       setInterval(refresh, 60000);
@@ -282,7 +289,7 @@ export default function App() {
   const handleSave = useCallback(async () => {
     if (!settings) return;
     await saveSettings(settings);
-    setCleanSettings(JSON.stringify(settings));
+    setInitialSettings(settings);
   }, [settings]);
 
   const handleSettingsImported = useCallback((imported: Settings) => {
@@ -291,7 +298,7 @@ export default function App() {
     void getStatus()
       .then(setStatus)
       .catch((error) => console.error("Failed to refresh status after import:", error));
-    setCleanSettings(JSON.stringify(imported));
+    setInitialSettings(imported);
     setVolumeValue(imported.volume);
   }, []);
 
