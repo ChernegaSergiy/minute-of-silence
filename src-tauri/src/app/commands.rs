@@ -6,7 +6,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     Result, SettingsExt,
@@ -53,6 +53,18 @@ pub fn import_settings(
         state
             .ntp_service
             .set_server(new_settings.ntp_server.clone());
+    }
+
+    if (old_settings.system_time_only && !new_settings.system_time_only)
+        || (old_settings.ntp_server != new_settings.ntp_server && !new_settings.system_time_only)
+    {
+        log::info!("NTP configuration changed via import, triggering immediate sync");
+        let ntp = state.ntp_service.clone();
+        let app_handle = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let _ = ntp.sync().await;
+            let _ = app_handle.emit("ntp-synced", ());
+        });
     }
 
     log::info!(
