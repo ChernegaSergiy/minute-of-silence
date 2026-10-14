@@ -21,6 +21,8 @@ export type AudioPreset =
   | "silence";
 
 export interface Settings {
+  /** Schema version. */
+  version?: number;
   /** Enable daily activation at 09:00. */
   ceremonyEnabled: boolean;
   /** Enable app autostart when the system boots. */
@@ -77,6 +79,7 @@ export interface StatusSnapshot {
 // UI helpers
 
 export const DEFAULT_SETTINGS: Settings = {
+  version: 1,
   ceremonyEnabled: true,
   autostartEnabled: true,
   weekdaysOnly: false,
