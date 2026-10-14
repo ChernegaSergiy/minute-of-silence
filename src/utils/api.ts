@@ -8,7 +8,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LazyStore } from "@tauri-apps/plugin-store";
 import type { PersonalDate, Settings, StatusSnapshot } from "../types";
 
 // Settings
@@ -35,16 +34,12 @@ export async function importSettings(json: string): Promise<Settings> {
 
 // Personal Dates
 
-const store = new LazyStore("settings.json");
-
 export async function getPersonalDates(): Promise<PersonalDate[]> {
-  const dates = await store.get<PersonalDate[]>("personal_dates");
-  return dates ?? [];
+  return invoke<PersonalDate[]>("get_personal_dates");
 }
 
 export async function savePersonalDates(dates: PersonalDate[]): Promise<void> {
-  await store.set("personal_dates", dates);
-  await store.save();
+  return invoke("save_personal_dates", { dates });
 }
 
 // Status
