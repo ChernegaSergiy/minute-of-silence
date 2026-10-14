@@ -36,14 +36,15 @@ pub fn import_settings(
     let new_settings = khvylyna_config::import_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
 
+    // Persist to store first so a storage failure does not corrupt runtime state.
+    new_settings.save_to_store(&app)?;
+
     let old_settings = {
         let mut inner = state.lock();
         let old = inner.settings.clone();
         inner.settings = new_settings.clone();
         old
     };
-
-    new_settings.save_to_store(&app)?;
 
     if old_settings.autostart_enabled != new_settings.autostart_enabled {
         crate::platform::apply_autostart_enabled(&app, new_settings.autostart_enabled);
