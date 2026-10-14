@@ -190,13 +190,13 @@ impl Default for Settings {
 }
 
 /// Serialize settings to formatted JSON string.
-#[cfg(feature = "serde_json")]
+#[cfg(feature = "std")]
 pub fn export_to_json(settings: &Settings) -> Result<String, serde_json::Error> {
     serde_json::to_string_pretty(settings)
 }
 
 /// Deserialize settings from a JSON string.
-#[cfg(feature = "serde_json")]
+#[cfg(feature = "std")]
 pub fn import_from_json(json_str: &str) -> Result<Settings, serde_json::Error> {
     serde_json::from_str(json_str)
 }
@@ -219,7 +219,7 @@ mod tests {
         assert!(!AudioPreset::Silence.has_anthem());
     }
 
-    #[cfg(feature = "serde_json")]
+    #[cfg(feature = "std")]
     #[test]
     fn test_json_roundtrip() {
         let settings = Settings::default();
@@ -231,7 +231,7 @@ mod tests {
         assert_eq!(settings, deserialized);
     }
 
-    #[cfg(feature = "serde_json")]
+    #[cfg(feature = "std")]
     #[test]
     fn test_backward_compatibility_missing_version() {
         let json_without_version = r#"{
