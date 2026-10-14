@@ -199,6 +199,11 @@ pub enum ConfigError {
     UnsupportedVersion { found: u32, max_supported: u32 },
     /// Schema version is zero or invalid.
     InvalidVersion(u32),
+    /// A configuration field value is outside its valid range.
+    InvalidField {
+        field: &'static str,
+        message: &'static str,
+    },
 }
 
 impl core::fmt::Display for ConfigError {
@@ -216,6 +221,9 @@ impl core::fmt::Display for ConfigError {
                 )
             }
             Self::InvalidVersion(v) => write!(f, "Invalid schema version: {v} (must be >= 1)"),
+            Self::InvalidField { field, message } => {
+                write!(f, "Invalid field '{field}': {message}")
+            }
         }
     }
 }
@@ -251,6 +259,41 @@ impl Settings {
         }
         Ok(())
     }
+
+    /// Validates that settings conform to the schema version and field bounds.
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        self.validate_version()?;
+
+        if self.volume > 100 {
+            return Err(ConfigError::InvalidField {
+                field: "volume",
+                message: "Volume must be between 0 and 100",
+            });
+        }
+
+        if self.late_start_grace_minutes > 5 {
+            return Err(ConfigError::InvalidField {
+                field: "lateStartGraceMinutes",
+                message: "Late start grace minutes must be between 0 and 5",
+            });
+        }
+
+        if self.reminder_minutes_before > 10 {
+            return Err(ConfigError::InvalidField {
+                field: "reminderMinutesBefore",
+                message: "Reminder minutes before must be between 0 and 10",
+            });
+        }
+
+        if !self.system_time_only && self.ntp_server.trim().is_empty() {
+            return Err(ConfigError::InvalidField {
+                field: "ntpServer",
+                message: "NTP server hostname cannot be empty",
+            });
+        }
+
+        Ok(())
+    }
 }
 
 /// Serialize settings to formatted JSON string.
@@ -259,11 +302,11 @@ pub fn export_to_json(settings: &Settings) -> Result<String, serde_json::Error> 
     serde_json::to_string_pretty(settings)
 }
 
-/// Deserialize settings from a JSON string and validate schema version.
+/// Deserialize settings from a JSON string and validate schema version and field bounds.
 #[cfg(feature = "std")]
 pub fn import_from_json(json_str: &str) -> Result<Settings, ConfigError> {
     let settings: Settings = serde_json::from_str(json_str)?;
-    settings.validate_version()?;
+    settings.validate()?;
     Ok(settings)
 }
 
@@ -345,5 +388,72 @@ mod tests {
             ConfigError::InvalidVersion(v) => assert_eq!(v, 0),
             _ => panic!("Expected InvalidVersion, got {err:?}"),
         }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_volume_above_100() {
+        let json = r#"{
+            "volume": 101
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "volume"),
+            _ => panic!("Expected InvalidField for volume, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_grace_minutes_above_5() {
+        let json = r#"{
+            "lateStartGraceMinutes": 6
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "lateStartGraceMinutes"),
+            _ => panic!("Expected InvalidField for lateStartGraceMinutes, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_reminder_minutes_above_10() {
+        let json = r#"{
+            "reminderMinutesBefore": 11
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "reminderMinutesBefore"),
+            _ => panic!("Expected InvalidField for reminderMinutesBefore, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_empty_ntp_server() {
+        let json = r#"{
+            "systemTimeOnly": false,
+            "ntpServer": "   "
+        }"#;
+        let err = import_from_json(json).unwrap_err();
+        match err {
+            ConfigError::InvalidField { field, .. } => assert_eq!(field, "ntpServer"),
+            _ => panic!("Expected InvalidField for ntpServer, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_allow_valid_boundary_values() {
+        let json = r#"{
+            "volume": 100,
+            "lateStartGraceMinutes": 5,
+            "reminderMinutesBefore": 10
+        }"#;
+        let parsed = import_from_json(json).expect("boundary values should be accepted");
+        assert_eq!(parsed.volume, 100);
+        assert_eq!(parsed.late_start_grace_minutes, 5);
+        assert_eq!(parsed.reminder_minutes_before, 10);
     }
 }
