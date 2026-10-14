@@ -55,7 +55,7 @@ In a headless/cloud sandbox you usually cannot run `tauri dev` or build the full
 
 Backend→frontend events are plain strings (`ceremony-start`, `ceremony-end`, `ntp-synced`, `status-updated`, `update-available`, `anthem-start/end`, `resume-from-sleep`); grep both sides when renaming.
 
-**Settings** — defined in `crates/khvylyna-core/src/lib.rs` and persisted through `tauri-plugin-store` (`settings.json` store) and read from both Rust and the frontend. Adding a field: update `Settings` + defaults in `crates/khvylyna-core`, run `npm run gen:types` to update `src/types.gen.ts`, update `DEFAULT_SETTINGS` in `src/types.ts`, UI in `SettingsTab.tsx`, and keep `#[serde(default)]` so old files still load. Stored settings in `src/utils/api.ts` are merged with `DEFAULT_SETTINGS` on load so missing fields fall back safely.
+**Settings** — defined in `crates/khvylyna-core/src/lib.rs` and persisted through `tauri-plugin-store` (`settings.json` store) on the Rust backend, which acts as the single source of truth. The frontend reads and modifies settings exclusively via Tauri commands (`get_settings`, `save_settings`, `reset_settings`). Adding a field: update `Settings` + defaults in `crates/khvylyna-core`, run `npm run gen:types` to update `src/types.gen.ts`, UI in `SettingsTab.tsx`, and keep `#[serde(default)]` so old files still load. Rust automatically applies serde defaults upon loading so missing fields fall back safely.
 
 **i18n** — every user-visible string needs both languages. Frontend: add the key to `en.json` *and* `uk.json` (they currently have identical key sets; keep it so). Backend: `en.toml` *and* `uk.toml`. Fallback language is Ukrainian. Windows store strings live in `Strings/{en-US,uk-UA}/resources.resw`.
 
