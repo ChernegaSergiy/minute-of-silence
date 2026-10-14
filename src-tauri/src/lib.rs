@@ -96,7 +96,8 @@ pub fn run() {
                         }
 
                         // Apply NTP server configuration side-effects
-                        if old_settings.ntp_server != new_settings.ntp_server {
+                        let ntp_server_changed = old_settings.ntp_server != new_settings.ntp_server;
+                        if ntp_server_changed {
                             log::info!(
                                 "NTP server changed: {} -> {}",
                                 old_settings.ntp_server,
@@ -108,10 +109,11 @@ pub fn run() {
                         }
 
                         // Apply NTP synchronization side-effects
-                        if old_settings.system_time_only != new_settings.system_time_only
+                        if ((old_settings.system_time_only != new_settings.system_time_only)
+                            || ntp_server_changed)
                             && !new_settings.system_time_only
                         {
-                            log::info!("System time only disabled, triggering immediate NTP sync");
+                            log::info!("NTP configuration changed, triggering immediate sync");
                             let ntp = state.ntp_service.clone();
                             let app_handle_clone2 = app_handle_clone.clone();
                             tauri::async_runtime::spawn(async move {
