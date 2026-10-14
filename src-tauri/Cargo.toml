@@ -48,7 +48,7 @@ png = "0.18.1"
 base64 = "0.23"
 libloading = "0.8"
 tauri-plugin-clipboard-manager = "2.4"
-khvylyna-config = { path = "../crates/khvylyna-config" }
+khvylyna-core = { path = "../crates/khvylyna-core" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winreg = "0.56"
