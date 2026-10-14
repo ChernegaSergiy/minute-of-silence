@@ -199,6 +199,18 @@ impl Default for Settings {
     }
 }
 
+/// Serialisable runtime status snapshot for the frontend.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct StatusSnapshot {
+    pub ceremony_active: bool,
+    pub skip_tomorrow: bool,
+    pub last_activation: Option<String>,
+    pub last_ntp_sync: Option<String>,
+}
+
 /// Configuration import and validation errors.
 #[derive(Debug)]
 pub enum ConfigError {
@@ -482,5 +494,6 @@ mod tests {
 
         let cfg = ts_rs::Config::default().with_out_dir(src_dir);
         Settings::export_all(&cfg).expect("failed to export types");
+        StatusSnapshot::export_all(&cfg).expect("failed to export StatusSnapshot");
     }
 }
