@@ -78,4 +78,4 @@ jobs:
 
       - name: Verify generated TypeScript types
         if: runner.os == 'Linux'
-        run: cargo test --manifest-path crates/khvylyna-config/Cargo.toml --features ts && git diff --exit-code src/types.gen.ts
+        run: cargo test --manifest-path crates/khvylyna-core/Cargo.toml --features ts && git diff --exit-code src/types.gen.ts
