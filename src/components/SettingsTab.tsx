@@ -10,8 +10,10 @@ import {
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import { ArrowSync20Regular } from "@fluentui/react-icons";
-import { skipNext, unskipNext } from "../utils/api";
+import { ArrowSync20Regular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
+import { useCallback, useState } from "react";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { exportSettings, skipNext, unskipNext } from "../utils/api";
 import type { AnnouncementVoice, AnthemVoice, AudioPreset, Settings, StatusSnapshot } from "../types";
 import { t } from "../utils/i18n";
 
@@ -180,6 +182,24 @@ export default function SettingsTab({
   onSyncNtp,
 }: SettingsTabProps) {
   const styles = useStyles();
+  const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportSettings = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const json = await exportSettings();
+      await writeText(json);
+      setCopyExportState("copied");
+      window.setTimeout(() => setCopyExportState("idle"), 2000);
+    } catch {
+      setCopyExportState("error");
+      window.setTimeout(() => setCopyExportState("idle"), 2000);
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting]);
 
   return (
     <>
@@ -458,6 +478,30 @@ export default function SettingsTab({
           checked={settings.autoUnmute}
           onChange={(v) => onUpdateSetting("autoUnmute", v)}
         />
+      </Card>
+
+      <Card className={styles.card}>
+        <Text size={100} weight="semibold" block>
+          {t("sections.data")}
+        </Text>
+        <div className={styles.switchRow}>
+          <div className={styles.switchLabel}>
+            <Text weight="medium">{t("controls.export.label")}</Text>
+            <div className={styles.switchDesc}>{t("controls.export.description")}</div>
+          </div>
+          <Button
+            appearance="secondary"
+            icon={copyExportState === "copied" ? <ClipboardCheckmarkRegular /> : <ClipboardRegular />}
+            onClick={handleExportSettings}
+            disabled={exporting}
+          >
+            {copyExportState === "copied"
+              ? t("controls.export.copied")
+              : copyExportState === "error"
+              ? t("controls.export.error")
+              : t("controls.export.button")}
+          </Button>
+        </div>
       </Card>
 
       <Card className={styles.statusCard}>
