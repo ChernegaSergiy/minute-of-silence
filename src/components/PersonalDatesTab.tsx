@@ -8,6 +8,7 @@ import {
   tokens,
   Tooltip,
   Field,
+  Spinner,
 } from "@fluentui/react-components";
 import {
   Delete20Regular,
@@ -119,11 +120,18 @@ const useStyles = makeStyles({
 });
 
 interface PersonalDatesTabProps {
-  personalDates?: PersonalDate[];
+  personalDates: PersonalDate[] | null;
+  datesError?: boolean;
+  onRetryDates?: () => void;
   onPersonalDatesChange: (nextDates: PersonalDate[]) => void;
 }
 
-export default function PersonalDatesTab({ personalDates, onPersonalDatesChange }: PersonalDatesTabProps) {
+export default function PersonalDatesTab({
+  personalDates,
+  datesError,
+  onRetryDates,
+  onPersonalDatesChange,
+}: PersonalDatesTabProps) {
   const styles = useStyles();
   const locale = i18next.language || ((typeof navigator !== "undefined" && navigator.language) || "en-US");
 
@@ -214,6 +222,43 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
     await persist(dates.map((d) => (d.id === id ? { ...updated, id } : d)));
     setEditingId(null);
   };
+
+  if (datesError) {
+    return (
+      <Card className={styles.card}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: tokens.spacingVerticalM,
+            padding: tokens.spacingVerticalL,
+          }}
+        >
+          <Text>{t("personal_dates.load_error")}</Text>
+          <Button appearance="primary" onClick={onRetryDates}>
+            {t("buttons.retry")}
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (personalDates === null) {
+    return (
+      <Card className={styles.card}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: tokens.spacingVerticalXXL,
+          }}
+        >
+          <Spinner />
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <>
