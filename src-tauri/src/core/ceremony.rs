@@ -1,5 +1,5 @@
 use crate::core::audio::AudioEngine;
-use crate::core::settings::{AudioPreset, SettingsExt};
+use crate::core::settings::AudioPreset;
 use crate::platform::Platform;
 use crate::state::AppState;
 use rust_i18n::t;
@@ -235,21 +235,11 @@ impl CeremonyManager {
         // Clear skip_date after successful ceremony
         {
             let state = app.state::<AppState>();
-            let updated = {
-                let inner = state.lock();
-                if inner.settings.skip_date.is_some() {
-                    let mut s = inner.settings.clone();
+            if state.lock().settings.skip_date.is_some() {
+                if let Err(e) = state.update_settings(|s| {
                     s.skip_date = None;
-                    Some(s)
-                } else {
-                    None
-                }
-            };
-            if let Some(settings) = updated {
-                if let Err(e) = settings.save_to_store(&app) {
-                    log::warn!("Failed to clear skip_date: {}", e);
-                } else {
-                    state.apply_settings_update(settings);
+                }) {
+                    log::warn!("Failed to clear skip_date: {e}");
                 }
             }
         }
