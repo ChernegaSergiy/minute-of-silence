@@ -23,6 +23,7 @@ fn default_ntp_server() -> String {
 /// User-configurable application settings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
     /// Schema version for configuration export and migrations.
@@ -105,6 +106,7 @@ pub struct Settings {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "lowercase")]
 pub enum UiTheme {
     Light,
@@ -113,6 +115,7 @@ pub enum UiTheme {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "snake_case")]
 pub enum AnnouncementVoice {
     BohdanHdal,
@@ -124,6 +127,7 @@ pub enum AnnouncementVoice {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "snake_case")]
 pub enum AnthemVoice {
     Default,
@@ -133,6 +137,7 @@ pub enum AnthemVoice {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "snake_case")]
 pub enum AudioPreset {
     /// Voice announcement + metronome
@@ -460,5 +465,22 @@ mod tests {
         assert_eq!(parsed.volume, 100);
         assert_eq!(parsed.late_start_grace_minutes, 5);
         assert_eq!(parsed.reminder_minutes_before, 10);
+    }
+
+    #[cfg(all(test, feature = "ts"))]
+    #[test]
+    fn test_export_ts() {
+        use std::path::PathBuf;
+        use ts_rs::TS;
+
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let src_dir = manifest_dir
+            .parent()
+            .and_then(|p| p.parent())
+            .expect("repo root exists")
+            .join("src");
+
+        let cfg = ts_rs::Config::default().with_out_dir(src_dir);
+        Settings::export_all(&cfg).expect("failed to export types");
     }
 }
