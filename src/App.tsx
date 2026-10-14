@@ -112,6 +112,7 @@ export default function App() {
   const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
   const isIdle = useIdle(15000); // 15 seconds idle timeout
   const initRef = useRef(false);
+  const hasImportedRef = useRef(false);
 
   const isDirty = hydrated && JSON.stringify(settings) !== cleanSettings;
   const effectiveDark = (settings.useSystemTheme ?? true) ? prefersDark : settings.uiTheme === "dark";
@@ -130,11 +131,13 @@ export default function App() {
           getVersion(),
           invoke<UpdateInfo | null>("check_for_updates").catch(() => null),
         ]);
-        setSettings(s);
-        setCleanSettings(JSON.stringify(s));
+        if (!hasImportedRef.current) {
+          setSettings(s);
+          setCleanSettings(JSON.stringify(s));
+          setVolumeValue(s.volume);
+        }
         setPersonalDates(dates);
         setStatus(st);
-        setVolumeValue(s.volume);
         setVersion(v);
         await getCurrentWindow().setTitle(t("app.title"));
         if (update) {
@@ -257,6 +260,7 @@ export default function App() {
   }, [settings]);
 
   const handleSettingsImported = useCallback((imported: Settings) => {
+    hasImportedRef.current = true;
     setSettings(imported);
     void getStatus()
       .then(setStatus)
