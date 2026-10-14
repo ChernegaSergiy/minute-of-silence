@@ -1,11 +1,11 @@
 [package]
-name = "khvylyna-config"
+name = "khvylyna-core"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Serhii Cherneha"]
 license-file = "../../LICENSE"
-description = "Shared configuration and schema definitions for Minute of Silence"
+description = "Shared core types, contracts, and schema definitions for Minute of Silence"
 
 [dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
