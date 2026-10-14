@@ -16,8 +16,8 @@ import { DEFAULT_SETTINGS, type PersonalDate, type Settings, type StatusSnapshot
 const store = new LazyStore("settings.json");
 
 export async function getSettings(): Promise<Settings> {
-  const settings = await store.get<Settings>("settings");
-  return settings ?? { ...DEFAULT_SETTINGS };
+  const settings = await store.get<Partial<Settings>>("settings");
+  return { ...DEFAULT_SETTINGS, ...settings };
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
