@@ -189,16 +189,82 @@ impl Default for Settings {
     }
 }
 
+/// Configuration import and validation errors.
+#[derive(Debug)]
+pub enum ConfigError {
+    /// JSON serialization or deserialization error.
+    #[cfg(feature = "std")]
+    Json(serde_json::Error),
+    /// Schema version is newer than supported.
+    UnsupportedVersion { found: u32, max_supported: u32 },
+    /// Schema version is zero or invalid.
+    InvalidVersion(u32),
+}
+
+impl core::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            #[cfg(feature = "std")]
+            Self::Json(e) => write!(f, "JSON error: {e}"),
+            Self::UnsupportedVersion {
+                found,
+                max_supported,
+            } => {
+                write!(
+                    f,
+                    "Unsupported configuration schema version: {found} (maximum supported is {max_supported})"
+                )
+            }
+            Self::InvalidVersion(v) => write!(f, "Invalid schema version: {v} (must be >= 1)"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for ConfigError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Json(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<serde_json::Error> for ConfigError {
+    fn from(err: serde_json::Error) -> Self {
+        Self::Json(err)
+    }
+}
+
+impl Settings {
+    /// Validates that the settings schema version is supported.
+    pub fn validate_version(&self) -> Result<(), ConfigError> {
+        if self.version == 0 {
+            return Err(ConfigError::InvalidVersion(0));
+        }
+        if self.version > CONFIG_SCHEMA_VERSION {
+            return Err(ConfigError::UnsupportedVersion {
+                found: self.version,
+                max_supported: CONFIG_SCHEMA_VERSION,
+            });
+        }
+        Ok(())
+    }
+}
+
 /// Serialize settings to formatted JSON string.
 #[cfg(feature = "std")]
 pub fn export_to_json(settings: &Settings) -> Result<String, serde_json::Error> {
     serde_json::to_string_pretty(settings)
 }
 
-/// Deserialize settings from a JSON string.
+/// Deserialize settings from a JSON string and validate schema version.
 #[cfg(feature = "std")]
-pub fn import_from_json(json_str: &str) -> Result<Settings, serde_json::Error> {
-    serde_json::from_str(json_str)
+pub fn import_from_json(json_str: &str) -> Result<Settings, ConfigError> {
+    let settings: Settings = serde_json::from_str(json_str)?;
+    settings.validate_version()?;
+    Ok(settings)
 }
 
 #[cfg(test)]
@@ -243,5 +309,41 @@ mod tests {
         assert_eq!(parsed.version, CONFIG_SCHEMA_VERSION);
         assert!(!parsed.ceremony_enabled);
         assert_eq!(parsed.volume, 50);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_unsupported_future_version() {
+        let json_future = r#"{
+            "version": 999,
+            "ceremonyEnabled": true
+        }"#;
+
+        let err = import_from_json(json_future).unwrap_err();
+        match err {
+            ConfigError::UnsupportedVersion {
+                found,
+                max_supported,
+            } => {
+                assert_eq!(found, 999);
+                assert_eq!(max_supported, CONFIG_SCHEMA_VERSION);
+            }
+            _ => panic!("Expected UnsupportedVersion, got {err:?}"),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_reject_zero_version() {
+        let json_zero = r#"{
+            "version": 0,
+            "ceremonyEnabled": true
+        }"#;
+
+        let err = import_from_json(json_zero).unwrap_err();
+        match err {
+            ConfigError::InvalidVersion(v) => assert_eq!(v, 0),
+            _ => panic!("Expected InvalidVersion, got {err:?}"),
+        }
     }
 }
