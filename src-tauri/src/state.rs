@@ -10,6 +10,8 @@ use crate::core::audio::AudioEngine;
 use crate::core::ntp_service::NtpService;
 use crate::core::settings::{Settings, SettingsExt};
 
+use crate::error::Result;
+
 rust_i18n::i18n!("locales");
 
 use rust_i18n::t;
@@ -18,6 +20,7 @@ use rust_i18n::t;
 #[derive(Debug)]
 pub struct AppState {
     inner: Arc<Mutex<Inner>>,
+    settings_mutex: Mutex<()>,
     pub ntp_service: NtpService,
     pub audio: Arc<AudioEngine>,
     pub app_handle: AppHandle,
@@ -62,6 +65,7 @@ impl AppState {
                 pending_update: None,
                 pending_restart: false,
             })),
+            settings_mutex: Mutex::new(()),
             ntp_service: NtpService::new(settings.ntp_server.clone()),
             audio: Arc::new(AudioEngine::new(app_handle.clone())),
             app_handle,
@@ -70,6 +74,33 @@ impl AppState {
 
     pub fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
         self.inner.lock().expect("AppState mutex poisoned")
+    }
+
+    /// Atomically mutate settings with a serialized read-modify-persist-apply cycle.
+    ///
+    /// This serializes concurrent settings writes via a dedicated settings lock,
+    /// preventing stale snapshot overwrites, while ensuring the runtime state lock
+    /// is NOT held during disk I/O.
+    pub fn update_settings<F>(&self, modify: F) -> Result<Settings>
+    where
+        F: FnOnce(&mut Settings),
+    {
+        let _guard = self.settings_mutex.lock().expect("settings_mutex poisoned");
+        let old_settings = {
+            let inner = self.lock();
+            inner.settings.clone()
+        };
+        let mut settings = old_settings.clone();
+        modify(&mut settings);
+        if settings == old_settings {
+            return Ok(settings);
+        }
+        settings
+            .validate()
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        settings.save_to_store(&self.app_handle)?;
+        self.apply_settings_update(settings.clone());
+        Ok(settings)
     }
 
     /// Atomically update settings in runtime state and apply necessary side-effects.
