@@ -150,6 +150,12 @@
       "button": "Copy settings",
       "copied": "Copied!",
       "error": "Export failed"
+    },
+    "import": {
+      "button": "Import settings",
+      "success": "Imported.",
+      "error": "Import failed",
+      "empty": "Clipboard is empty"
     }
   },
   "buttons": {
