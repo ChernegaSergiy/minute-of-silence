@@ -14,7 +14,7 @@ use macos as sys;
 #[cfg(target_os = "windows")]
 use windows as sys;
 
-use crate::{core::settings::SettingsExt, error::Result};
+use crate::error::Result;
 
 // Re-exports from system-specific modules
 pub use sys::autostart::{apply_autostart_enabled, system_autostart_enabled};
@@ -27,23 +27,13 @@ pub fn sync_autostart_from_system(state: tauri::State<'_, crate::AppState>) -> R
         state.app_handle.autolaunch().is_enabled().unwrap_or(false)
     });
 
-    let candidate = {
-        let guard = state.lock();
-        if guard.settings.autostart_enabled != system_enabled {
-            let mut c = guard.settings.clone();
-            c.autostart_enabled = system_enabled;
-            Some(c)
-        } else {
-            None
-        }
-    };
-
-    if let Some(candidate) = candidate {
-        candidate.save_to_store(&state.app_handle)?;
-        state.apply_settings_update(candidate.clone());
+    if state.lock().settings.autostart_enabled != system_enabled {
+        let updated = state.update_settings(|s| {
+            s.autostart_enabled = system_enabled;
+        })?;
         log::info!("Autostart setting synced from system: {}", system_enabled);
         use tauri::Emitter;
-        let _ = state.app_handle.emit("settings-updated", candidate);
+        let _ = state.app_handle.emit("settings-updated", updated);
     }
 
     Ok(())
