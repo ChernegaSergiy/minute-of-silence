@@ -7,6 +7,11 @@ export type AnthemVoice = "default" | "mykhailo_khoma" | "oleksandr_ponomarov";
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
 
 /**
+ * A personal remembrance date.
+ */
+export type PersonalDate = { id?: string | null, month: number, day: number, year: number, label: string, };
+
+/**
  * User-configurable application settings.
  */
 export type Settings = { 
