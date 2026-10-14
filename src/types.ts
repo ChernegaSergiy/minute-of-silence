@@ -2,15 +2,6 @@ import type { Settings } from "./types.gen";
 
 export * from "./types.gen";
 
-// Mirror of Rust `StatusSnapshot` struct
-
-export interface StatusSnapshot {
-  ceremonyActive: boolean;
-  skipTomorrow: boolean;
-  lastActivation: string | null;
-  lastNtpSync: string | null;
-}
-
 // UI helpers
 
 export const DEFAULT_SETTINGS: Settings = {
