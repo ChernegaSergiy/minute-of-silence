@@ -12,9 +12,9 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { ArrowSync20Regular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import type { AnnouncementVoice, AnthemVoice, AudioPreset, Settings, StatusSnapshot } from "../types";
-import { exportSettings, skipNext, unskipNext } from "../utils/api";
+import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
 import { t } from "../utils/i18n";
 
 const presets: AudioPreset[] = [
@@ -183,7 +183,9 @@ export default function SettingsTab({
 }: SettingsTabProps) {
   const styles = useStyles();
   const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
+  const [importState, setImportState] = useState<"idle" | "success" | "error" | "empty">("idle");
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const handleExportSettings = useCallback(async () => {
     if (exporting) return;
@@ -200,6 +202,33 @@ export default function SettingsTab({
       setExporting(false);
     }
   }, [exporting]);
+
+  const handleImportSettings = useCallback(async () => {
+    if (importing) return;
+    setImporting(true);
+    try {
+      const text = await readText();
+      if (!text || !text.trim()) {
+        setImportState("empty");
+        window.setTimeout(() => setImportState("idle"), 2000);
+        return;
+      }
+      const updated = await importSettings(text.trim());
+      (Object.keys(updated) as Array<keyof Settings>).forEach((key) => {
+        onUpdateSetting(key, updated[key]);
+      });
+      if (typeof updated.volume === "number") {
+        onVolumeChange(updated.volume);
+      }
+      setImportState("success");
+      window.setTimeout(() => setImportState("idle"), 2000);
+    } catch {
+      setImportState("error");
+      window.setTimeout(() => setImportState("idle"), 2000);
+    } finally {
+      setImporting(false);
+    }
+  }, [importing, onUpdateSetting, onVolumeChange]);
 
   return (
     <>
