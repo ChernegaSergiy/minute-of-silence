@@ -258,6 +258,9 @@ export default function App() {
 
   const handleSettingsImported = useCallback((imported: Settings) => {
     setSettings(imported);
+    void getStatus()
+      .then(setStatus)
+      .catch((error) => console.error("Failed to refresh status after import:", error));
     setCleanSettings(JSON.stringify(imported));
     setVolumeValue(imported.volume);
   }, []);
