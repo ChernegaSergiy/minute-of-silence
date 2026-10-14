@@ -211,6 +211,45 @@ pub struct StatusSnapshot {
     pub last_ntp_sync: Option<String>,
 }
 
+/// A personal remembrance date.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct PersonalDate {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub month: u8,
+    pub day: u8,
+    pub year: i32,
+    pub label: String,
+}
+
+impl PersonalDate {
+    /// Validates month (1-12), day (1-31), and non-empty label.
+    pub fn validate(&self) -> core::result::Result<(), ConfigError> {
+        if self.month < 1 || self.month > 12 {
+            return Err(ConfigError::InvalidField {
+                field: "month",
+                message: "month must be between 1 and 12",
+            });
+        }
+        if self.day < 1 || self.day > 31 {
+            return Err(ConfigError::InvalidField {
+                field: "day",
+                message: "day must be between 1 and 31",
+            });
+        }
+        if self.label.trim().is_empty() {
+            return Err(ConfigError::InvalidField {
+                field: "label",
+                message: "label cannot be empty",
+            });
+        }
+        Ok(())
+    }
+}
+
 /// Configuration import and validation errors.
 #[derive(Debug)]
 pub enum ConfigError {
@@ -495,5 +534,36 @@ mod tests {
         let cfg = ts_rs::Config::default().with_out_dir(src_dir);
         Settings::export_all(&cfg).expect("failed to export types");
         StatusSnapshot::export_all(&cfg).expect("failed to export StatusSnapshot");
+        PersonalDate::export_all(&cfg).expect("failed to export PersonalDate");
+    }
+
+    #[test]
+    fn test_personal_date_validation() {
+        let valid = PersonalDate {
+            id: Some("test-1".into()),
+            month: 8,
+            day: 24,
+            year: 1991,
+            label: "Independence Day".into(),
+        };
+        assert!(valid.validate().is_ok());
+
+        let invalid_month = PersonalDate {
+            month: 13,
+            ..valid.clone()
+        };
+        assert!(invalid_month.validate().is_err());
+
+        let invalid_day = PersonalDate {
+            day: 0,
+            ..valid.clone()
+        };
+        assert!(invalid_day.validate().is_err());
+
+        let empty_label = PersonalDate {
+            label: "   ".into(),
+            ..valid
+        };
+        assert!(empty_label.validate().is_err());
     }
 }
