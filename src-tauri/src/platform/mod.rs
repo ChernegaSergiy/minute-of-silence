@@ -27,23 +27,23 @@ pub fn sync_autostart_from_system(state: tauri::State<'_, crate::AppState>) -> R
         state.app_handle.autolaunch().is_enabled().unwrap_or(false)
     });
 
-    let updated_settings = {
-        let mut guard = state.lock();
+    let candidate = {
+        let guard = state.lock();
         if guard.settings.autostart_enabled != system_enabled {
-            let mut candidate = guard.settings.clone();
-            candidate.autostart_enabled = system_enabled;
-            candidate.save_to_store(&state.app_handle)?;
-            guard.settings = candidate.clone();
-            Some(candidate)
+            let mut c = guard.settings.clone();
+            c.autostart_enabled = system_enabled;
+            Some(c)
         } else {
             None
         }
     };
 
-    if let Some(settings) = updated_settings {
+    if let Some(candidate) = candidate {
+        candidate.save_to_store(&state.app_handle)?;
+        state.apply_settings_update(candidate.clone());
         log::info!("Autostart setting synced from system: {}", system_enabled);
         use tauri::Emitter;
-        let _ = state.app_handle.emit("settings-updated", settings);
+        let _ = state.app_handle.emit("settings-updated", candidate);
     }
 
     Ok(())
