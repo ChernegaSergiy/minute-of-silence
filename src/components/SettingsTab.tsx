@@ -222,7 +222,8 @@ export default function SettingsTab({
       }
       setImportState("success");
       window.setTimeout(() => setImportState("idle"), 2000);
-    } catch {
+    } catch (err) {
+      console.error("Failed to import settings:", err);
       setImportState("error");
       window.setTimeout(() => setImportState("idle"), 2000);
     } finally {
