@@ -4,8 +4,10 @@ dist/
 .vite/
 
 # Rust / Tauri
-src-tauri/target/
+target/
+**/target/
 src-tauri/WixTools/
+crates/**/Cargo.lock
 
 # OS artefacts
 .DS_Store
