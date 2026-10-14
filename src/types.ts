@@ -1,18 +1,6 @@
-import type {
-  AnnouncementVoice,
-  AnthemVoice,
-  AudioPreset,
-  Settings,
-  UiTheme,
-} from "./types.gen";
+import type { Settings } from "./types.gen";
 
-export type {
-  AnnouncementVoice,
-  AnthemVoice,
-  AudioPreset,
-  Settings,
-  UiTheme,
-};
+export * from "./types.gen";
 
 // Mirror of Rust `StatusSnapshot` struct
 
