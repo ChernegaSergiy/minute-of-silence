@@ -9,7 +9,7 @@ use std::{
 use tauri::{AppHandle, Manager, State};
 
 use crate::{
-    Result, SettingsExt,
+    Result,
     app::next_skip_date,
     state::{AppState, StatusSnapshot},
 };
@@ -26,33 +26,37 @@ pub fn get_settings(state: State<'_, AppState>) -> crate::core::settings::Settin
 /// Save application settings, validate, update runtime state, and persist to store.
 #[tauri::command]
 pub fn save_settings(
-    app: AppHandle,
+    _app: AppHandle,
     state: State<'_, AppState>,
-    settings: crate::core::settings::Settings,
+    mut settings: crate::core::settings::Settings,
 ) -> Result<crate::core::settings::Settings> {
     settings
         .validate()
         .map_err(|e| crate::AppError::Settings(e.to_string()))?;
 
-    settings.save_to_store(&app)?;
-    state.apply_settings_update(settings.clone());
+    let saved = state.update_settings(|current| {
+        // Preserve skip_date managed independently by scheduler / tray / skip commands
+        settings.skip_date = current.skip_date;
+        *current = settings;
+    })?;
 
     log::info!("Settings successfully saved");
-    Ok(settings)
+    Ok(saved)
 }
 
 /// Reset application settings to default values, persist to store, and update runtime state.
 #[tauri::command]
 pub fn reset_settings(
-    app: AppHandle,
+    _app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<crate::core::settings::Settings> {
     let defaults = crate::core::settings::Settings::default();
-    defaults.save_to_store(&app)?;
-    state.apply_settings_update(defaults.clone());
+    let saved = state.update_settings(|s| {
+        *s = defaults;
+    })?;
 
     log::info!("Settings successfully reset to defaults");
-    Ok(defaults)
+    Ok(saved)
 }
 
 /// Export current application settings formatted as a JSON string with schema version.
@@ -68,24 +72,24 @@ pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
 /// Import application settings from a JSON string, validate, update state, and persist to store.
 #[tauri::command]
 pub fn import_settings(
-    app: AppHandle,
+    _app: AppHandle,
     state: State<'_, AppState>,
     json: String,
 ) -> Result<crate::core::settings::Settings> {
-    let new_settings = khvylyna_core::import_from_json(&json)
+    let mut new_settings = khvylyna_core::import_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
 
-    // Persist to store first so a storage failure does not corrupt runtime state.
-    new_settings.save_to_store(&app)?;
-
-    // Synchronously update runtime AppState and apply side-effects before returning.
-    state.apply_settings_update(new_settings.clone());
+    let saved = state.update_settings(|current| {
+        // Preserve skip_date managed independently by scheduler / tray / skip commands
+        new_settings.skip_date = current.skip_date;
+        *current = new_settings;
+    })?;
 
     log::info!(
         "Settings successfully imported (version: {})",
-        new_settings.version
+        saved.version
     );
-    Ok(new_settings)
+    Ok(saved)
 }
 
 /// Sync the persisted autostart setting with the actual platform state.
@@ -146,23 +150,21 @@ pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
 
 /// Skip the ceremony for the next calendar day.
 #[tauri::command]
-pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+pub fn skip_next(_app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     let skip_date = next_skip_date(chrono::Local::now());
-    let mut updated = state.lock().settings.clone();
-    updated.skip_date = Some(skip_date);
-    updated.save_to_store(&app)?;
-    state.apply_settings_update(updated);
+    state.update_settings(|s| {
+        s.skip_date = Some(skip_date);
+    })?;
     log::info!("Next ceremony skipped (date: {skip_date})");
     Ok(())
 }
 
 /// Remove the skip flag for the next calendar day.
 #[tauri::command]
-pub fn unskip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
-    let mut updated = state.lock().settings.clone();
-    updated.skip_date = None;
-    updated.save_to_store(&app)?;
-    state.apply_settings_update(updated);
+pub fn unskip_next(_app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+    state.update_settings(|s| {
+        s.skip_date = None;
+    })?;
     log::info!("Skip for next ceremony removed");
     Ok(())
 }
