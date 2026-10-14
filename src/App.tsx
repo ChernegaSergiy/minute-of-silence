@@ -102,8 +102,7 @@ export default function App() {
       : true
   );
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [personalDates, setPersonalDates] = useState<PersonalDate[] | null>(null);
-  const [personalDatesError, setPersonalDatesError] = useState(false);
+  const [personalDates, setPersonalDates] = useState<PersonalDate[]>([]);
   const [cleanSettings, setCleanSettings] = useState<string>("");
   const [status, setStatus] = useState<StatusSnapshot>(DEFAULT_STATUS);
   const [version, setVersion] = useState("...");
@@ -124,38 +123,27 @@ export default function App() {
   const isDirty = hydrated && Boolean(settings) && JSON.stringify(settings) !== cleanSettings;
   const effectiveDark = (settings?.useSystemTheme ?? true) ? prefersDark : settings?.uiTheme === "dark";
 
-  const loadPersonalDates = useCallback(async () => {
-    setPersonalDatesError(false);
-    try {
-      const dates = await getPersonalDates();
-      setPersonalDates(dates);
-    } catch (e) {
-      console.error("Failed to load personal dates:", e);
-      setPersonalDatesError(true);
-    }
-  }, []);
-
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
 
     (async () => {
-      // 1. Critical configuration: load settings independently first so UI can hydrate immediately
+      // 1. Critical configuration: load settings and personal dates from backend
       try {
-        const s = await getSettings();
+        const [s, dates] = await Promise.all([getSettings(), getPersonalDates()]);
         if (!hasImportedRef.current) {
           setSettings(s);
           setCleanSettings(JSON.stringify(s));
           setVolumeValue(s.volume);
         }
+        setPersonalDates(dates);
       } catch (error) {
-        console.error("Failed to load settings:", error);
+        console.error("Failed to load settings or personal dates:", error);
       } finally {
         setHydrated(true);
       }
 
-      // 2. Ancillary local data (does not block or fail settings hydration)
-      loadPersonalDates();
+      // 2. Ancillary local data (does not block or fail critical hydration)
       const [st, v] = await Promise.all([
         getStatus().catch(() => DEFAULT_STATUS),
         getVersion().catch(() => "..."),
@@ -175,7 +163,7 @@ export default function App() {
         // ignore background update check errors
       }
     })();
-  }, [loadPersonalDates]);
+  }, []);
 
   useEffect(() => {
     const refresh = async () => {
@@ -409,8 +397,6 @@ export default function App() {
                   ) : selectedNav === "personal_dates" ? (
                     <PersonalDatesTab
                       personalDates={personalDates}
-                      datesError={personalDatesError}
-                      onRetryDates={loadPersonalDates}
                       onPersonalDatesChange={setPersonalDates}
                     />
                   ) : (
@@ -462,7 +448,7 @@ export default function App() {
       <Overlay
         show={showOverlay}
         durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
-        personalDates={personalDates ?? []}
+        personalDates={personalDates}
         settings={settings}
         onUpdateSetting={updateSetting}
         isTest={isTestCeremony}
