@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "gen:types": "cargo test --manifest-path crates/khvylyna-config/Cargo.toml --features ts",
-    "check:types": "cargo test --manifest-path crates/khvylyna-config/Cargo.toml --features ts && git diff --exit-code src/types.gen.ts"
+    "gen:types": "cargo test --manifest-path crates/khvylyna-core/Cargo.toml --features ts",
+    "check:types": "cargo test --manifest-path crates/khvylyna-core/Cargo.toml --features ts && git diff --exit-code src/types.gen.ts"
   },
   "dependencies": {
     "@fluentui/react-calendar-compat": "^0.4.6",
