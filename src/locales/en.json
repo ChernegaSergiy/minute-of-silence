@@ -162,6 +162,7 @@
   },
   "buttons": {
     "sync": "SYNCHRONIZE",
+    "retry": "RETRY",
     "test": "TEST",
     "save": "SAVE",
     "save_dirty": "SAVE *",
