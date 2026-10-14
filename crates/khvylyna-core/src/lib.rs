@@ -234,7 +234,12 @@ impl PersonalDate {
                 message: "month must be between 1 and 12",
             });
         }
-        if self.day < 1 || self.day > 31 {
+        let max_day = match self.month {
+            2 => 29,
+            4 | 6 | 9 | 11 => 30,
+            _ => 31,
+        };
+        if self.day < 1 || self.day > max_day {
             return Err(ConfigError::InvalidField {
                 field: "day",
                 message: "day must be between 1 and 31",
