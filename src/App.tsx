@@ -256,6 +256,12 @@ export default function App() {
     setCleanSettings(JSON.stringify(settings));
   }, [settings]);
 
+  const handleSettingsImported = useCallback((imported: Settings) => {
+    setSettings(imported);
+    setCleanSettings(JSON.stringify(imported));
+    setVolumeValue(imported.volume);
+  }, []);
+
   const handleSyncNtp = useCallback(async () => {
     setSyncing(true);
     try {
@@ -325,6 +331,7 @@ export default function App() {
                       onUpdateSetting={updateSetting}
                       onVolumeChange={setVolumeValue}
                       onSyncNtp={handleSyncNtp}
+                      onSettingsImported={handleSettingsImported}
                     />
                   ) : selectedNav === "personal_dates" ? (
                     <PersonalDatesTab

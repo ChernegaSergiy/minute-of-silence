@@ -68,6 +68,7 @@ interface SettingsTabProps {
   onUpdateSetting: UpdateSetting;
   onVolumeChange: (value: number) => void;
   onSyncNtp: () => void;
+  onSettingsImported: (imported: Settings) => void;
 }
 
 const useStyles = makeStyles({
@@ -180,6 +181,7 @@ export default function SettingsTab({
   onUpdateSetting,
   onVolumeChange,
   onSyncNtp,
+  onSettingsImported,
 }: SettingsTabProps) {
   const styles = useStyles();
   const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
@@ -214,12 +216,7 @@ export default function SettingsTab({
         return;
       }
       const updated = await importSettings(text.trim());
-      (Object.keys(updated) as Array<keyof Settings>).forEach((key) => {
-        onUpdateSetting(key, updated[key]);
-      });
-      if (typeof updated.volume === "number") {
-        onVolumeChange(updated.volume);
-      }
+      onSettingsImported(updated);
       setImportState("success");
       window.setTimeout(() => setImportState("idle"), 2000);
     } catch (err) {
@@ -229,7 +226,7 @@ export default function SettingsTab({
     } finally {
       setImporting(false);
     }
-  }, [importing, onUpdateSetting, onVolumeChange]);
+  }, [importing, onSettingsImported]);
 
   return (
     <>
