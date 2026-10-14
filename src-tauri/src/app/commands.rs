@@ -9,7 +9,7 @@ use std::{
 use tauri::{AppHandle, Manager, State};
 
 use crate::{
-    Result,
+    Result, SettingsExt,
     app::next_skip_date,
     state::{AppState, StatusSnapshot},
 };

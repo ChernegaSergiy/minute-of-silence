@@ -8,7 +8,7 @@ use tauri::AppHandle;
 use crate::app::next_skip_date;
 use crate::core::audio::AudioEngine;
 use crate::core::ntp_service::NtpService;
-use crate::core::settings::Settings;
+use crate::core::settings::{Settings, SettingsExt};
 
 rust_i18n::i18n!("locales");
 
