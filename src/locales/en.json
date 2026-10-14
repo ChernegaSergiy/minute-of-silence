@@ -152,10 +152,12 @@
       "error": "Export failed"
     },
     "import": {
-      "button": "Import settings",
-      "success": "Imported.",
-      "error": "Import failed",
-      "empty": "Clipboard is empty"
+      "label": "Import settings",
+      "description": "Apply settings in JSON format from the clipboard.",
+      "button": "Paste settings",
+      "success": "Imported!",
+      "empty": "Clipboard is empty",
+      "error": "Import failed"
     }
   },
   "buttons": {
