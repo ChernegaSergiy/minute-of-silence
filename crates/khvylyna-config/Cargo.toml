@@ -18,6 +18,7 @@ std = [
     "serde/std",
     "chrono/std",
     "dep:serde_json",
+    "serde_json/std",
 ]
 alloc = [
     "serde/alloc",
