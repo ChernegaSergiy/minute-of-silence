@@ -41,10 +41,12 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
             "skip_next" => {
                 let state = app.state::<AppState>();
                 let skip_date = next_skip_date(chrono::Local::now());
-                {
-                    let mut inner = state.lock();
-                    inner.settings.skip_date = Some(skip_date);
-                    let _ = inner.settings.save_to_store(app);
+                let mut updated = state.lock().settings.clone();
+                updated.skip_date = Some(skip_date);
+                if let Err(e) = updated.save_to_store(app) {
+                    log::warn!("Tray: failed to save skip_date: {e}");
+                } else {
+                    state.apply_settings_update(updated);
                 }
                 log::info!("Tray: next ceremony skipped ({skip_date})");
 
