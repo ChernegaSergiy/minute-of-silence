@@ -128,31 +128,40 @@ export default function App() {
     initRef.current = true;
 
     (async () => {
+      // 1. Critical configuration: load settings independently first so UI can hydrate immediately
       try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const [s, dates, st, v, update] = await Promise.all([
-          getSettings(),
-          getPersonalDates(),
-          getStatus(),
-          getVersion(),
-          invoke<UpdateInfo | null>("check_for_updates").catch(() => null),
-        ]);
+        const s = await getSettings();
         if (!hasImportedRef.current) {
           setSettings(s);
           setCleanSettings(JSON.stringify(s));
           setVolumeValue(s.volume);
         }
-        setPersonalDates(dates);
-        setStatus(st);
-        setVersion(v);
-        await getCurrentWindow().setTitle(t("app.title"));
+      } catch (error) {
+        console.error("Failed to load settings:", error);
+      } finally {
+        setHydrated(true);
+      }
+
+      // 2. Ancillary local data (does not block or fail settings hydration)
+      const [dates, st, v] = await Promise.all([
+        getPersonalDates().catch(() => []),
+        getStatus().catch(() => DEFAULT_STATUS),
+        getVersion().catch(() => "..."),
+      ]);
+      setPersonalDates(dates);
+      setStatus(st);
+      setVersion(v);
+      getCurrentWindow().setTitle(t("app.title")).catch(() => {});
+
+      // 3. Background network update check
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const update = await invoke<UpdateInfo | null>("check_for_updates").catch(() => null);
         if (update) {
           setUpdateInfo(update);
         }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setHydrated(true);
+      } catch {
+        // ignore background update check errors
       }
     })();
   }, []);
@@ -292,7 +301,7 @@ export default function App() {
     return update;
   }, []);
 
-  if (!hydrated || !settings) {
+  if (!hydrated) {
     return (
       <FluentProvider
         theme={prefersDark ? webDarkTheme : webLightTheme}
@@ -300,6 +309,21 @@ export default function App() {
       >
         <div className={styles.loadingContainer}>
           <Spinner size="medium" />
+        </div>
+      </FluentProvider>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <FluentProvider
+        theme={prefersDark ? webDarkTheme : webLightTheme}
+        style={{ height: "100%" }}
+      >
+        <div className={styles.loadingContainer}>
+          <Button appearance="primary" onClick={() => window.location.reload()}>
+            {t("buttons.sync")}
+          </Button>
         </div>
       </FluentProvider>
     );
