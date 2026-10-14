@@ -148,9 +148,10 @@ pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
 #[tauri::command]
 pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     let skip_date = next_skip_date(chrono::Local::now());
-    let mut inner = state.lock();
-    inner.settings.skip_date = Some(skip_date);
-    inner.settings.save_to_store(&app)?;
+    let mut updated = state.lock().settings.clone();
+    updated.skip_date = Some(skip_date);
+    updated.save_to_store(&app)?;
+    state.apply_settings_update(updated);
     log::info!("Next ceremony skipped (date: {skip_date})");
     Ok(())
 }
@@ -158,9 +159,10 @@ pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
 /// Remove the skip flag for the next calendar day.
 #[tauri::command]
 pub fn unskip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
-    let mut inner = state.lock();
-    inner.settings.skip_date = None;
-    inner.settings.save_to_store(&app)?;
+    let mut updated = state.lock().settings.clone();
+    updated.skip_date = None;
+    updated.save_to_store(&app)?;
+    state.apply_settings_update(updated);
     log::info!("Skip for next ceremony removed");
     Ok(())
 }
