@@ -1,7 +1,7 @@
 //! Shared application state.
 
 use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
+pub use khvylyna_core::StatusSnapshot;
 use std::sync::{Arc, Mutex};
 use tauri::AppHandle;
 
@@ -126,17 +126,6 @@ impl AppState {
             });
         }
     }
-}
-
-// Serialisable snapshot for the frontend
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct StatusSnapshot {
-    pub ceremony_active: bool,
-    pub skip_tomorrow: bool,
-    pub last_activation: Option<String>,
-    pub last_ntp_sync: Option<String>,
 }
 
 impl AppState {
