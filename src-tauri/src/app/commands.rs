@@ -6,7 +6,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Manager, State};
 
 use crate::{
     Result, SettingsExt,
@@ -26,47 +26,18 @@ pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
     khvylyna_config::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
 }
 
-/// Import application settings from a JSON string, validate, update state, and persist to store.
+/// Import application settings from a JSON string, validate, and persist to store.
+///
+/// Side-effects (updating runtime state, applying autostart, NTP re-sync) are
+/// handled automatically by the store change listener.
 #[tauri::command]
-pub fn import_settings(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    json: String,
-) -> Result<crate::core::settings::Settings> {
+pub fn import_settings(app: AppHandle, json: String) -> Result<crate::core::settings::Settings> {
     let new_settings = khvylyna_config::import_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
 
-    // Persist to store first so a storage failure does not corrupt runtime state.
+    // Persisting to store triggers `store://change` in `lib.rs`, which updates
+    // runtime AppState and applies side-effects (autostart, NTP server/sync).
     new_settings.save_to_store(&app)?;
-
-    let old_settings = {
-        let mut inner = state.lock();
-        let old = inner.settings.clone();
-        inner.settings = new_settings.clone();
-        old
-    };
-
-    if old_settings.autostart_enabled != new_settings.autostart_enabled {
-        crate::platform::apply_autostart_enabled(&app, new_settings.autostart_enabled);
-    }
-
-    if old_settings.ntp_server != new_settings.ntp_server {
-        state
-            .ntp_service
-            .set_server(new_settings.ntp_server.clone());
-    }
-
-    if (old_settings.system_time_only && !new_settings.system_time_only)
-        || (old_settings.ntp_server != new_settings.ntp_server && !new_settings.system_time_only)
-    {
-        log::info!("NTP configuration changed via import, triggering immediate sync");
-        let ntp = state.ntp_service.clone();
-        let app_handle = app.clone();
-        tauri::async_runtime::spawn(async move {
-            let _ = ntp.sync().await;
-            let _ = app_handle.emit("ntp-synced", ());
-        });
-    }
 
     log::info!(
         "Settings successfully imported (version: {})",
