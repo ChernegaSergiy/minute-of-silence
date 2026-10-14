@@ -94,6 +94,46 @@ pub fn sync_autostart_from_system(state: State<'_, AppState>) -> Result<()> {
     crate::platform::sync_autostart_from_system(state)
 }
 
+// Personal Dates
+
+/// Retrieve saved personal remembrance dates from store.
+#[tauri::command]
+pub fn get_personal_dates(app: AppHandle) -> Result<Vec<crate::core::settings::PersonalDate>> {
+    use tauri_plugin_store::StoreExt;
+    let store = app
+        .store("settings.json")
+        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+    if let Some(val) = store.get("personal_dates") {
+        let dates: Vec<crate::core::settings::PersonalDate> =
+            serde_json::from_value(val).map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        Ok(dates)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+/// Save personal remembrance dates after validation.
+#[tauri::command]
+pub fn save_personal_dates(
+    app: AppHandle,
+    dates: Vec<crate::core::settings::PersonalDate>,
+) -> Result<()> {
+    for d in &dates {
+        d.validate()
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+    }
+    use tauri_plugin_store::StoreExt;
+    let store = app
+        .store("settings.json")
+        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+    let val = serde_json::to_value(&dates)?;
+    store.set("personal_dates".to_string(), val);
+    store
+        .save()
+        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+    Ok(())
+}
+
 // Status
 
 /// Return a lightweight runtime status snapshot.
