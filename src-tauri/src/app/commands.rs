@@ -23,7 +23,7 @@ pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
         let inner = state.lock();
         inner.settings.clone()
     };
-    khvylyna_config::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
+    khvylyna_core::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
 }
 
 /// Import application settings from a JSON string, validate, update state, and persist to store.
@@ -33,7 +33,7 @@ pub fn import_settings(
     state: State<'_, AppState>,
     json: String,
 ) -> Result<crate::core::settings::Settings> {
-    let new_settings = khvylyna_config::import_from_json(&json)
+    let new_settings = khvylyna_core::import_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
 
     // Persist to store first so a storage failure does not corrupt runtime state.
