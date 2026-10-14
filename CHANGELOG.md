@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-10-14
+
+### Changed
+- Updated application logo and platform icons (Windows MSIX, Snap, macOS, Linux) with high-density NAMU Tryzub vector assets.
+- Optimized ceremony module with plain Rust statics and removed direct `lazy_static` dependency.
+- Updated project dependencies (`tokio` 1.53.2, `rust-i18n` 4.2.4, `@tauri-apps/plugin-notification` 2.5.1, and linters) with a clean lockfile.
+
 ## [0.11.2] - 2026-10-05
 
 ### Fixed

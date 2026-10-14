@@ -1,3 +1,13 @@
+- version: "0.11.3"
+  date: "2026-10-14"
+  entries:
+    - category: changed
+      key: "namu_tryzub_logo"
+    - category: changed
+      key: "ceremony_plain_statics"
+    - category: changed
+      key: "deps_update_0_11_3"
+
 - version: "0.11.2"
   date: "2026-10-05"
   entries:
