@@ -16,9 +16,12 @@ use crate::{
 
 // Settings
 
-/// Retrieve current application settings from runtime state.
+/// Retrieve current application settings from runtime state, ensuring platform autostart is synchronized.
 #[tauri::command]
 pub fn get_settings(state: State<'_, AppState>) -> crate::core::settings::Settings {
+    if let Err(e) = crate::platform::sync_autostart_from_system(state.clone()) {
+        log::warn!("Failed to sync autostart from system in get_settings: {e}");
+    }
     let inner = state.lock();
     inner.settings.clone()
 }
