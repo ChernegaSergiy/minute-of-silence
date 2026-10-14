@@ -4,6 +4,7 @@
 //! supporting cached offsets and configurable sync intervals.
 
 use chrono::{DateTime, Local};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -16,6 +17,7 @@ pub struct NtpService {
     server: Arc<Mutex<String>>,
     cached_offset: Arc<Mutex<Option<i64>>>,
     last_sync: Arc<Mutex<Option<DateTime<Local>>>>,
+    generation: Arc<AtomicU64>,
     sync_interval: Duration,
 }
 
@@ -25,15 +27,23 @@ impl NtpService {
             server: Arc::new(Mutex::new(server)),
             cached_offset: Arc::new(Mutex::new(None)),
             last_sync: Arc::new(Mutex::new(None)),
+            generation: Arc::new(AtomicU64::new(0)),
             sync_interval: DEFAULT_SYNC_INTERVAL,
         }
     }
 
     pub async fn sync(&self) -> Result<i64> {
+        let start_generation = self.generation.load(Ordering::SeqCst);
         let offset = self.sync_once().await?;
-        self.set_cached(offset);
-        self.set_last_sync(Local::now());
-        Ok(offset)
+        if self.generation.load(Ordering::SeqCst) == start_generation {
+            self.set_cached(offset);
+            self.set_last_sync(Local::now());
+            Ok(offset)
+        } else {
+            Err(AppError::Ntp(
+                "Server configuration changed during sync".to_string(),
+            ))
+        }
     }
 
     pub fn get_offset(&self) -> Option<i64> {
@@ -63,6 +73,7 @@ impl NtpService {
     }
 
     pub fn clear_cache(&self) {
+        self.generation.fetch_add(1, Ordering::SeqCst);
         *self.cached_offset.lock().unwrap() = None;
         *self.last_sync.lock().unwrap() = None;
     }
@@ -131,5 +142,21 @@ mod tests {
         service.set_server("time.cloudflare.com".to_string());
         assert_eq!(service.server(), "time.cloudflare.com");
         assert!(!service.is_synced());
+    }
+
+    #[test]
+    fn ntp_service_generation_tracking() {
+        let service = NtpService::new("pool.ntp.org".to_string());
+        assert_eq!(service.generation.load(Ordering::SeqCst), 0);
+
+        service.set_server("time.cloudflare.com".to_string());
+        assert_eq!(service.generation.load(Ordering::SeqCst), 1);
+
+        // Setting same server should not advance generation
+        service.set_server("time.cloudflare.com".to_string());
+        assert_eq!(service.generation.load(Ordering::SeqCst), 1);
+
+        service.clear_cache();
+        assert_eq!(service.generation.load(Ordering::SeqCst), 2);
     }
 }
