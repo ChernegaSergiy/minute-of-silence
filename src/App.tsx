@@ -34,7 +34,7 @@ import {
   syncNtpNow,
   triggerCeremonyNow,
 } from "./utils/api";
-import { DEFAULT_SETTINGS, type PersonalDate, type Settings, type StatusSnapshot } from "./types";
+import type { PersonalDate, Settings, StatusSnapshot } from "./types";
 import { t } from "./utils/i18n";
 import AboutTab from "./components/AboutTab";
 import Overlay from "./components/Overlay";
@@ -85,6 +85,12 @@ const useStyles = makeStyles({
     justifyContent: "center",
     paddingTop: tokens.spacingVerticalL,
   },
+  loadingContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
+  },
 });
 
 export default function App() {
@@ -95,7 +101,7 @@ export default function App() {
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
       : true
   );
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [personalDates, setPersonalDates] = useState<PersonalDate[]>([]);
   const [cleanSettings, setCleanSettings] = useState<string>("");
   const [status, setStatus] = useState<StatusSnapshot>(DEFAULT_STATUS);
@@ -114,8 +120,8 @@ export default function App() {
   const initRef = useRef(false);
   const hasImportedRef = useRef(false);
 
-  const isDirty = hydrated && JSON.stringify(settings) !== cleanSettings;
-  const effectiveDark = (settings.useSystemTheme ?? true) ? prefersDark : settings.uiTheme === "dark";
+  const isDirty = hydrated && Boolean(settings) && JSON.stringify(settings) !== cleanSettings;
+  const effectiveDark = (settings?.useSystemTheme ?? true) ? prefersDark : settings?.uiTheme === "dark";
 
   useEffect(() => {
     if (initRef.current) return;
@@ -178,7 +184,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!settings.showVisualOverlay) {
+    if (!settings?.showVisualOverlay) {
       setShowOverlay(false);
       return;
     }
@@ -217,7 +223,7 @@ export default function App() {
       cancelled = true;
       unlisteners.forEach((u) => u());
     };
-  }, [settings.showVisualOverlay, status.ceremonyActive]);
+  }, [settings?.showVisualOverlay, status.ceremonyActive]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -251,10 +257,11 @@ export default function App() {
   }, [updateInfo, updateDismissed, showUpdateDialog, isIdle, status.ceremonyActive, showOverlay, isInstallingUpdate]);
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
 
   const handleSave = useCallback(async () => {
+    if (!settings) return;
     await saveSettings(settings);
     setCleanSettings(JSON.stringify(settings));
   }, [settings]);
@@ -284,6 +291,19 @@ export default function App() {
     const update = await invoke<UpdateInfo | null>("check_for_updates");
     return update;
   }, []);
+
+  if (!hydrated || !settings) {
+    return (
+      <FluentProvider
+        theme={prefersDark ? webDarkTheme : webLightTheme}
+        style={{ height: "100%" }}
+      >
+        <div className={styles.loadingContainer}>
+          <Spinner size="medium" />
+        </div>
+      </FluentProvider>
+    );
+  }
 
   return (
     <>
