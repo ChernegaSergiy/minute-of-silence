@@ -25,6 +25,10 @@ export async function saveSettings(settings: Settings): Promise<void> {
   await store.save();
 }
 
+export async function exportSettings(): Promise<string> {
+  return invoke<string>("export_settings");
+}
+
 // Personal Dates
 
 export async function getPersonalDates(): Promise<PersonalDate[]> {
