@@ -255,6 +255,18 @@ impl PersonalDate {
     }
 }
 
+/// Combined initial application state for atomic startup hydration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct AppInitialState {
+    pub settings: Settings,
+    pub personal_dates: Vec<PersonalDate>,
+    pub status: StatusSnapshot,
+    pub version: String,
+}
+
 /// Configuration import and validation errors.
 #[derive(Debug)]
 pub enum ConfigError {
@@ -540,6 +552,7 @@ mod tests {
         Settings::export_all(&cfg).expect("failed to export types");
         StatusSnapshot::export_all(&cfg).expect("failed to export StatusSnapshot");
         PersonalDate::export_all(&cfg).expect("failed to export PersonalDate");
+        AppInitialState::export_all(&cfg).expect("failed to export AppInitialState");
     }
 
     #[test]
