@@ -8,7 +8,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { PersonalDate, Settings, StatusSnapshot } from "../types";
+import type { AppInitialState, PersonalDate, Settings, StatusSnapshot } from "../types";
+
+// Initial State
+
+export async function getInitialState(): Promise<AppInitialState> {
+  return invoke<AppInitialState>("get_initial_state");
+}
 
 // Settings
 
