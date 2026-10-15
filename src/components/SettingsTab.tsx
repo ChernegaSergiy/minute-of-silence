@@ -13,7 +13,7 @@ import {
 } from "@fluentui/react-components";
 import { ArrowSync20Regular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
-import type { AnnouncementVoice, AnthemVoice, AudioPreset, ExportBundle, PersonalDate, Settings, StatusSnapshot } from "../types";
+import type { AnnouncementVoice, AnthemVoice, AudioPreset, PersonalDate, Settings, StatusSnapshot } from "../types";
 import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
 import { t } from "../utils/i18n";
 
