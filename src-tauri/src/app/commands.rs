@@ -79,6 +79,8 @@ pub fn reset_settings(
 }
 
 /// Export current application settings and personal dates as a JSON bundle.
+///
+/// Device-local state (skip date, last shown nearby date) is not exported.
 #[tauri::command]
 pub fn export_settings(app: AppHandle, state: State<'_, AppState>) -> Result<String> {
     let settings = {
@@ -110,8 +112,10 @@ pub fn import_settings(
     let mut imported_settings = imported.settings;
     let saved = state.update_settings_and_personal_dates(
         |current| {
-            // Preserve skip_date managed independently by scheduler / tray / skip commands
+            // Keep device-local state: skip_date is managed by scheduler / tray / skip
+            // commands and the last shown nearby date by the overlay.
             imported_settings.skip_date = current.skip_date;
+            imported_settings.last_shown_nearby_date_id = current.last_shown_nearby_date_id.clone();
             *current = imported_settings.clone();
         },
         imported.personal_dates.as_deref(),

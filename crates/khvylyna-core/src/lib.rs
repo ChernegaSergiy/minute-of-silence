@@ -404,10 +404,26 @@ pub struct ImportedBundle {
     pub personal_dates: Option<alloc::vec::Vec<PersonalDate>>,
 }
 
+/// Settings fields that hold device-local state and are never written to an export.
+#[cfg(feature = "std")]
+const EXPORT_EXCLUDED_SETTINGS_FIELDS: [&str; 2] = ["lastShownNearbyDateId", "skipDate"];
+
 /// Serialize an [`ExportBundle`] to a formatted JSON string.
+///
+/// Device-local settings (`lastShownNearbyDateId`, `skipDate`) are left out of the
+/// output, so an export only carries what makes sense on another device.
 #[cfg(feature = "std")]
 pub fn export_bundle_to_json(bundle: &ExportBundle) -> Result<String, serde_json::Error> {
-    serde_json::to_string_pretty(bundle)
+    let mut value = serde_json::to_value(bundle)?;
+    if let Some(settings) = value
+        .get_mut("settings")
+        .and_then(serde_json::Value::as_object_mut)
+    {
+        for field in EXPORT_EXCLUDED_SETTINGS_FIELDS {
+            settings.remove(field);
+        }
+    }
+    serde_json::to_string_pretty(&value)
 }
 
 /// Deserialize an [`ImportedBundle`] from a JSON string, validating settings and every personal date.
@@ -481,6 +497,28 @@ mod tests {
         let deserialized = import_bundle_from_json(&json).expect("deserialization failed");
         assert_eq!(bundle.settings, deserialized.settings);
         assert_eq!(Some(bundle.personal_dates), deserialized.personal_dates);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_export_excludes_device_local_settings() {
+        let bundle = ExportBundle {
+            settings: Settings {
+                last_shown_nearby_date_id: Some("abc123".into()),
+                skip_date: chrono::NaiveDate::from_ymd_opt(2026, 10, 15),
+                ..Settings::default()
+            },
+            personal_dates: alloc::vec::Vec::new(),
+        };
+        let json = export_bundle_to_json(&bundle).expect("serialization failed");
+        assert!(!json.contains("lastShownNearbyDateId"));
+        assert!(!json.contains("skipDate"));
+        assert!(json.contains("\"volume\""));
+
+        // The excluded fields fall back to their defaults on import.
+        let imported = import_bundle_from_json(&json).expect("import failed");
+        assert_eq!(imported.settings.last_shown_nearby_date_id, None);
+        assert_eq!(imported.settings.skip_date, None);
     }
 
     #[cfg(feature = "std")]
