@@ -78,37 +78,58 @@ pub fn reset_settings(
     Ok(saved)
 }
 
-/// Export current application settings formatted as a JSON string with schema version.
+/// Export current application settings and personal dates as a JSON bundle.
 #[tauri::command]
-pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
+pub fn export_settings(app: AppHandle, state: State<'_, AppState>) -> Result<String> {
     let settings = {
         let inner = state.lock();
         inner.settings.clone()
     };
-    khvylyna_core::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
+    let personal_dates = get_personal_dates(app)?;
+    let bundle = khvylyna_core::ExportBundle {
+        settings,
+        personal_dates,
+    };
+    khvylyna_core::export_bundle_to_json(&bundle)
+        .map_err(|e| crate::AppError::Settings(e.to_string()))
 }
 
-/// Import application settings from a JSON string, validate, update state, and persist to store.
+/// Import an export bundle from a JSON string, validate, persist personal dates, and update settings state.
 #[tauri::command]
 pub fn import_settings(
-    _app: AppHandle,
+    app: AppHandle,
     state: State<'_, AppState>,
     json: String,
-) -> Result<crate::core::settings::Settings> {
-    let mut new_settings = khvylyna_core::import_from_json(&json)
+) -> Result<khvylyna_core::ExportBundle> {
+    let mut bundle = khvylyna_core::import_bundle_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
+
+    // Persist personal dates to the store.
+    {
+        use tauri_plugin_store::StoreExt;
+        let store = app
+            .store("settings.json")
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        let val = serde_json::to_value(&bundle.personal_dates)?;
+        store.set("personal_dates".to_string(), val);
+        store
+            .save()
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+    }
 
     let saved = state.update_settings(|current| {
         // Preserve skip_date managed independently by scheduler / tray / skip commands
-        new_settings.skip_date = current.skip_date;
-        *current = new_settings;
+        bundle.settings.skip_date = current.skip_date;
+        *current = bundle.settings.clone();
     })?;
 
+    bundle.settings = saved;
     log::info!(
-        "Settings successfully imported (version: {})",
-        saved.version
+        "Settings imported (version: {}, personal_dates: {})",
+        bundle.settings.version,
+        bundle.personal_dates.len()
     );
-    Ok(saved)
+    Ok(bundle)
 }
 
 /// Sync the persisted autostart setting with the actual platform state.
