@@ -21,12 +21,10 @@ import {
   CalendarMonth20Regular,
 } from "@fluentui/react-icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { getVersion } from "@tauri-apps/api/app";
 import { listen } from "@tauri-apps/api/event";
 import {
   bringWindowToFront,
-  getSettings,
-  getPersonalDates,
+  getInitialState,
   getStatus,
   onCeremonyEnd,
   onCeremonyStart,
@@ -134,31 +132,25 @@ export default function App() {
     initRef.current = true;
 
     (async () => {
-      // 1. Critical configuration: load settings and personal dates from backend
+      // 1. Atomic startup hydration: fetch all initial state in a single IPC call
       try {
-        const [s, dates] = await Promise.all([getSettings(), getPersonalDates()]);
+        const init = await getInitialState();
         if (!hasImportedRef.current) {
-          setSettings(s);
-          setInitialSettings(s);
-          setVolumeValue(s.volume);
+          setSettings(init.settings);
+          setInitialSettings(init.settings);
+          setVolumeValue(init.settings.volume);
         }
-        setPersonalDates(dates);
+        setPersonalDates(init.personalDates);
+        setStatus(init.status);
+        setVersion(init.version);
+        getCurrentWindow().setTitle(t("app.title")).catch(() => {});
       } catch (error) {
-        console.error("Failed to load settings or personal dates:", error);
+        console.error("Failed to load initial application state:", error);
       } finally {
         setHydrated(true);
       }
 
-      // 2. Ancillary local data (does not block or fail critical hydration)
-      const [st, v] = await Promise.all([
-        getStatus().catch(() => DEFAULT_STATUS),
-        getVersion().catch(() => "..."),
-      ]);
-      setStatus(st);
-      setVersion(v);
-      getCurrentWindow().setTitle(t("app.title")).catch(() => {});
-
-      // 3. Background network update check
+      // 2. Non-blocking background network update check
       try {
         const { invoke } = await import("@tauri-apps/api/core");
         const update = await invoke<UpdateInfo | null>("check_for_updates").catch(() => null);
