@@ -374,18 +374,51 @@ impl Settings {
     }
 }
 
-/// Serialize settings to formatted JSON string.
-#[cfg(feature = "std")]
-pub fn export_to_json(settings: &Settings) -> Result<String, serde_json::Error> {
-    serde_json::to_string_pretty(settings)
+/// A portable export bundle that carries both application settings and personal dates.
+///
+/// Produced by [`export_bundle_to_json`] and consumed by [`import_bundle_from_json`].
+/// Old export files that contain only a [`Settings`] object are accepted as well
+/// (backward-compatible import).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct ExportBundle {
+    /// Application settings.
+    pub settings: Settings,
+    /// Personal remembrance dates.
+    pub personal_dates: alloc::vec::Vec<PersonalDate>,
 }
 
-/// Deserialize settings from a JSON string and validate schema version and field bounds.
+/// Serialize an [`ExportBundle`] to a formatted JSON string.
 #[cfg(feature = "std")]
-pub fn import_from_json(json_str: &str) -> Result<Settings, ConfigError> {
+pub fn export_bundle_to_json(bundle: &ExportBundle) -> Result<String, serde_json::Error> {
+    serde_json::to_string_pretty(bundle)
+}
+
+/// Deserialize an [`ExportBundle`] from a JSON string, validating settings and every personal date.
+///
+/// For backward compatibility, a JSON object that contains settings fields directly
+/// (the old [`Settings`]-only export format) is also accepted — in that case
+/// `personal_dates` is set to an empty `Vec`.
+#[cfg(feature = "std")]
+pub fn import_bundle_from_json(json_str: &str) -> Result<ExportBundle, ConfigError> {
+    // Try full bundle first.
+    if let Ok(bundle) = serde_json::from_str::<ExportBundle>(json_str) {
+        bundle.settings.validate()?;
+        for date in &bundle.personal_dates {
+            date.validate()?;
+        }
+        return Ok(bundle);
+    }
+
+    // Fall back to legacy Settings-only format.
     let settings: Settings = serde_json::from_str(json_str)?;
     settings.validate()?;
-    Ok(settings)
+    Ok(ExportBundle {
+        settings,
+        personal_dates: alloc::vec::Vec::new(),
+    })
 }
 
 #[cfg(test)]
@@ -409,38 +442,66 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_json_roundtrip() {
-        let settings = Settings::default();
-        let json = export_to_json(&settings).expect("serialization failed");
+        let bundle = ExportBundle {
+            settings: Settings::default(),
+            personal_dates: alloc::vec![PersonalDate {
+                id: Some("abc123".into()),
+                month: 5,
+                day: 9,
+                year: 1945,
+                label: "Victory Day".into(),
+            }],
+        };
+        let json = export_bundle_to_json(&bundle).expect("serialization failed");
+        assert!(json.contains("\"settings\""));
+        assert!(json.contains("\"personalDates\""));
         assert!(json.contains("\"version\": 1"));
-        assert!(json.contains("\"ceremonyEnabled\": true"));
 
-        let deserialized = import_from_json(&json).expect("deserialization failed");
-        assert_eq!(settings, deserialized);
+        let deserialized = import_bundle_from_json(&json).expect("deserialization failed");
+        assert_eq!(bundle, deserialized);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_bundle_backward_compat_settings_only() {
+        // Old export format: Settings object at top level, no personalDates wrapper.
+        let settings = Settings::default();
+        let legacy_json = serde_json::to_string_pretty(&settings).expect("serialize");
+        let bundle = import_bundle_from_json(&legacy_json).expect("legacy format should import");
+        assert_eq!(bundle.settings, settings);
+        assert!(bundle.personal_dates.is_empty());
     }
 
     #[cfg(feature = "std")]
     #[test]
     fn test_backward_compatibility_missing_version() {
+        // Bundle with a settings object that is missing the "version" field — should default to 1.
         let json_without_version = r#"{
-            "ceremonyEnabled": false,
-            "volume": 50
+            "settings": {
+                "ceremonyEnabled": false,
+                "volume": 50
+            },
+            "personalDates": []
         }"#;
 
-        let parsed: Settings = import_from_json(json_without_version).expect("should parse");
-        assert_eq!(parsed.version, CONFIG_SCHEMA_VERSION);
-        assert!(!parsed.ceremony_enabled);
-        assert_eq!(parsed.volume, 50);
+        let bundle = import_bundle_from_json(json_without_version).expect("should parse");
+        assert_eq!(bundle.settings.version, CONFIG_SCHEMA_VERSION);
+        assert!(!bundle.settings.ceremony_enabled);
+        assert_eq!(bundle.settings.volume, 50);
     }
 
     #[cfg(feature = "std")]
     #[test]
     fn test_reject_unsupported_future_version() {
         let json_future = r#"{
-            "version": 999,
-            "ceremonyEnabled": true
+            "settings": {
+                "version": 999,
+                "ceremonyEnabled": true
+            },
+            "personalDates": []
         }"#;
 
-        let err = import_from_json(json_future).unwrap_err();
+        let err = import_bundle_from_json(json_future).unwrap_err();
         match err {
             ConfigError::UnsupportedVersion {
                 found,
@@ -457,11 +518,14 @@ mod tests {
     #[test]
     fn test_reject_zero_version() {
         let json_zero = r#"{
-            "version": 0,
-            "ceremonyEnabled": true
+            "settings": {
+                "version": 0,
+                "ceremonyEnabled": true
+            },
+            "personalDates": []
         }"#;
 
-        let err = import_from_json(json_zero).unwrap_err();
+        let err = import_bundle_from_json(json_zero).unwrap_err();
         match err {
             ConfigError::InvalidVersion(v) => assert_eq!(v, 0),
             _ => panic!("Expected InvalidVersion, got {err:?}"),
@@ -472,9 +536,10 @@ mod tests {
     #[test]
     fn test_reject_volume_above_100() {
         let json = r#"{
-            "volume": 101
+            "settings": { "volume": 101 },
+            "personalDates": []
         }"#;
-        let err = import_from_json(json).unwrap_err();
+        let err = import_bundle_from_json(json).unwrap_err();
         match err {
             ConfigError::InvalidField { field, .. } => assert_eq!(field, "volume"),
             _ => panic!("Expected InvalidField for volume, got {err:?}"),
@@ -485,9 +550,10 @@ mod tests {
     #[test]
     fn test_reject_grace_minutes_above_5() {
         let json = r#"{
-            "lateStartGraceMinutes": 6
+            "settings": { "lateStartGraceMinutes": 6 },
+            "personalDates": []
         }"#;
-        let err = import_from_json(json).unwrap_err();
+        let err = import_bundle_from_json(json).unwrap_err();
         match err {
             ConfigError::InvalidField { field, .. } => assert_eq!(field, "lateStartGraceMinutes"),
             _ => panic!("Expected InvalidField for lateStartGraceMinutes, got {err:?}"),
@@ -498,9 +564,10 @@ mod tests {
     #[test]
     fn test_reject_reminder_minutes_above_10() {
         let json = r#"{
-            "reminderMinutesBefore": 11
+            "settings": { "reminderMinutesBefore": 11 },
+            "personalDates": []
         }"#;
-        let err = import_from_json(json).unwrap_err();
+        let err = import_bundle_from_json(json).unwrap_err();
         match err {
             ConfigError::InvalidField { field, .. } => assert_eq!(field, "reminderMinutesBefore"),
             _ => panic!("Expected InvalidField for reminderMinutesBefore, got {err:?}"),
@@ -511,10 +578,13 @@ mod tests {
     #[test]
     fn test_reject_empty_ntp_server() {
         let json = r#"{
-            "systemTimeOnly": true,
-            "ntpServer": "   "
+            "settings": {
+                "systemTimeOnly": true,
+                "ntpServer": "   "
+            },
+            "personalDates": []
         }"#;
-        let err = import_from_json(json).unwrap_err();
+        let err = import_bundle_from_json(json).unwrap_err();
         match err {
             ConfigError::InvalidField { field, .. } => assert_eq!(field, "ntpServer"),
             _ => panic!("Expected InvalidField for ntpServer, got {err:?}"),
@@ -525,14 +595,17 @@ mod tests {
     #[test]
     fn test_allow_valid_boundary_values() {
         let json = r#"{
-            "volume": 100,
-            "lateStartGraceMinutes": 5,
-            "reminderMinutesBefore": 10
+            "settings": {
+                "volume": 100,
+                "lateStartGraceMinutes": 5,
+                "reminderMinutesBefore": 10
+            },
+            "personalDates": []
         }"#;
-        let parsed = import_from_json(json).expect("boundary values should be accepted");
-        assert_eq!(parsed.volume, 100);
-        assert_eq!(parsed.late_start_grace_minutes, 5);
-        assert_eq!(parsed.reminder_minutes_before, 10);
+        let bundle = import_bundle_from_json(json).expect("boundary values should be accepted");
+        assert_eq!(bundle.settings.volume, 100);
+        assert_eq!(bundle.settings.late_start_grace_minutes, 5);
+        assert_eq!(bundle.settings.reminder_minutes_before, 10);
     }
 
     #[cfg(all(test, feature = "ts"))]
@@ -553,6 +626,7 @@ mod tests {
         StatusSnapshot::export_all(&cfg).expect("failed to export StatusSnapshot");
         PersonalDate::export_all(&cfg).expect("failed to export PersonalDate");
         AppInitialState::export_all(&cfg).expect("failed to export AppInitialState");
+        ExportBundle::export_all(&cfg).expect("failed to export ExportBundle");
     }
 
     #[test]
