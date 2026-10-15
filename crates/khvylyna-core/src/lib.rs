@@ -256,7 +256,7 @@ impl PersonalDate {
 }
 
 /// Combined initial application state for atomic startup hydration.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "camelCase")]
