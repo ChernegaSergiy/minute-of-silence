@@ -403,8 +403,12 @@ pub fn export_bundle_to_json(bundle: &ExportBundle) -> Result<String, serde_json
 /// `personal_dates` is set to an empty `Vec`.
 #[cfg(feature = "std")]
 pub fn import_bundle_from_json(json_str: &str) -> Result<ExportBundle, ConfigError> {
-    // Try full bundle first.
-    if let Ok(bundle) = serde_json::from_str::<ExportBundle>(json_str) {
+    let input: serde_json::Value = serde_json::from_str(json_str)?;
+
+    // A root-level `settings` or `personalDates` key marks the input as a bundle,
+    // so a malformed bundle is rejected instead of being read as legacy settings.
+    if input.get("settings").is_some() || input.get("personalDates").is_some() {
+        let bundle: ExportBundle = serde_json::from_value(input)?;
         bundle.settings.validate()?;
         for date in &bundle.personal_dates {
             date.validate()?;
@@ -412,8 +416,8 @@ pub fn import_bundle_from_json(json_str: &str) -> Result<ExportBundle, ConfigErr
         return Ok(bundle);
     }
 
-    // Fall back to legacy Settings-only format.
-    let settings: Settings = serde_json::from_str(json_str)?;
+    // Legacy Settings-only format.
+    let settings: Settings = serde_json::from_value(input)?;
     settings.validate()?;
     Ok(ExportBundle {
         settings,
@@ -470,6 +474,21 @@ mod tests {
         let bundle = import_bundle_from_json(&legacy_json).expect("legacy format should import");
         assert_eq!(bundle.settings, settings);
         assert!(bundle.personal_dates.is_empty());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_malformed_bundle_is_not_treated_as_legacy() {
+        // `personalDates` has the wrong type; it must not fall back to default settings.
+        let json = r#"{
+            "settings": { "volume": 50 },
+            "personalDates": "not-a-list"
+        }"#;
+        assert!(import_bundle_from_json(json).is_err());
+
+        // Missing `personalDates` in a bundle is rejected as well.
+        let json = r#"{ "settings": { "volume": 50 } }"#;
+        assert!(import_bundle_from_json(json).is_err());
     }
 
     #[cfg(feature = "std")]
