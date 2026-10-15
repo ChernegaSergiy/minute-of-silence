@@ -132,7 +132,9 @@ export default function App() {
     initRef.current = true;
 
     (async () => {
-      getCurrentWindow().setTitle(t("app.title")).catch(() => {});
+      getCurrentWindow()
+        .setTitle(t("app.title"))
+        .catch((error) => console.warn("Failed to set localized window title:", error));
 
       // 1. Atomic startup hydration: fetch all initial state in a single IPC call
       try {
