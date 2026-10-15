@@ -50,6 +50,20 @@ impl std::fmt::Debug for Inner {
     }
 }
 
+/// Put a store key back to its previous in-memory value after a failed `save`.
+fn restore_store_value(
+    store: &tauri_plugin_store::Store<tauri::Wry>,
+    key: &str,
+    previous: Option<serde_json::Value>,
+) {
+    match previous {
+        Some(val) => store.set(key.to_string(), val),
+        None => {
+            store.delete(key);
+        }
+    }
+}
+
 impl AppState {
     pub fn new(app_handle: AppHandle) -> Self {
         let settings = Settings::load_from_store(&app_handle);
@@ -144,22 +158,37 @@ impl AppState {
             store.set("personal_dates".to_string(), val);
         }
         if let Err(e) = store.save() {
-            for (key, previous) in [
-                ("settings", previous_settings),
-                ("personal_dates", previous_dates),
-            ] {
-                match previous {
-                    Some(val) => store.set(key.to_string(), val),
-                    None => {
-                        store.delete(key);
-                    }
-                }
-            }
+            restore_store_value(&store, "settings", previous_settings);
+            restore_store_value(&store, "personal_dates", previous_dates);
             return Err(crate::AppError::Settings(e.to_string()));
         }
 
         self.apply_settings_update(settings.clone());
         Ok(settings)
+    }
+
+    /// Persist personal dates under the same lock that serializes all settings writes.
+    ///
+    /// Without the lock a plain `set` + `save` could interleave with
+    /// [`Self::update_settings_and_personal_dates`] and overwrite its dates. On a failed
+    /// write the in-memory store value is restored.
+    pub fn save_personal_dates(&self, personal_dates: &[PersonalDate]) -> Result<()> {
+        use tauri_plugin_store::StoreExt;
+
+        let _guard = self.settings_mutex.lock().expect("settings_mutex poisoned");
+        let val = serde_json::to_value(personal_dates)?;
+        let store = self
+            .app_handle
+            .store("settings.json")
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        let previous = store.get("personal_dates");
+
+        store.set("personal_dates".to_string(), val);
+        if let Err(e) = store.save() {
+            restore_store_value(&store, "personal_dates", previous);
+            return Err(crate::AppError::Settings(e.to_string()));
+        }
+        Ok(())
     }
 
     /// Atomically update settings in runtime state and apply necessary side-effects.

@@ -163,23 +163,14 @@ pub fn get_personal_dates(app: AppHandle) -> Result<Vec<crate::core::settings::P
 /// Save personal remembrance dates after validation.
 #[tauri::command]
 pub fn save_personal_dates(
-    app: AppHandle,
+    state: State<'_, AppState>,
     dates: Vec<crate::core::settings::PersonalDate>,
 ) -> Result<()> {
     for d in &dates {
         d.validate()
             .map_err(|e| crate::AppError::Settings(e.to_string()))?;
     }
-    use tauri_plugin_store::StoreExt;
-    let store = app
-        .store("settings.json")
-        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
-    let val = serde_json::to_value(&dates)?;
-    store.set("personal_dates".to_string(), val);
-    store
-        .save()
-        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
-    Ok(())
+    state.save_personal_dates(&dates)
 }
 
 // Status
