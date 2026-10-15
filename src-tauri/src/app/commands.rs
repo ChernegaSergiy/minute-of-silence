@@ -94,7 +94,7 @@ pub fn export_settings(app: AppHandle, state: State<'_, AppState>) -> Result<Str
         .map_err(|e| crate::AppError::Settings(e.to_string()))
 }
 
-/// Import an export bundle from a JSON string, validate, persist personal dates, and update settings state.
+/// Import an export bundle from a JSON string, validate, and persist settings and personal dates together.
 ///
 /// A legacy settings-only file carries no personal dates, so the saved ones are kept.
 #[tauri::command]
@@ -106,29 +106,20 @@ pub fn import_settings(
     let imported = khvylyna_core::import_bundle_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
 
-    // Persist personal dates to the store only when the file contains them.
+    // Settings and personal dates (when the file contains them) are persisted together.
+    let mut imported_settings = imported.settings;
+    let saved = state.update_settings_and_personal_dates(
+        |current| {
+            // Preserve skip_date managed independently by scheduler / tray / skip commands
+            imported_settings.skip_date = current.skip_date;
+            *current = imported_settings.clone();
+        },
+        imported.personal_dates.as_deref(),
+    )?;
     let personal_dates = match imported.personal_dates {
-        Some(dates) => {
-            use tauri_plugin_store::StoreExt;
-            let store = app
-                .store("settings.json")
-                .map_err(|e| crate::AppError::Settings(e.to_string()))?;
-            let val = serde_json::to_value(&dates)?;
-            store.set("personal_dates".to_string(), val);
-            store
-                .save()
-                .map_err(|e| crate::AppError::Settings(e.to_string()))?;
-            dates
-        }
+        Some(dates) => dates,
         None => get_personal_dates(app)?,
     };
-
-    let mut imported_settings = imported.settings;
-    let saved = state.update_settings(|current| {
-        // Preserve skip_date managed independently by scheduler / tray / skip commands
-        imported_settings.skip_date = current.skip_date;
-        *current = imported_settings.clone();
-    })?;
 
     log::info!(
         "Settings imported (version: {}, personal_dates: {})",

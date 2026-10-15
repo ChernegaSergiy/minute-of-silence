@@ -8,7 +8,7 @@ use tauri::AppHandle;
 use crate::app::next_skip_date;
 use crate::core::audio::AudioEngine;
 use crate::core::ntp_service::NtpService;
-use crate::core::settings::{Settings, SettingsExt};
+use crate::core::settings::{PersonalDate, Settings, SettingsExt};
 
 use crate::error::Result;
 
@@ -99,6 +99,65 @@ impl AppState {
             .validate()
             .map_err(|e| crate::AppError::Settings(e.to_string()))?;
         settings.save_to_store(&self.app_handle)?;
+        self.apply_settings_update(settings.clone());
+        Ok(settings)
+    }
+
+    /// Atomically update settings and, optionally, personal dates with a single store write.
+    ///
+    /// Both values are staged in the store and flushed by one `save`, so a failed write
+    /// never leaves settings and dates from different sources. On failure the in-memory
+    /// store values are restored and the runtime state is left untouched.
+    pub fn update_settings_and_personal_dates<F>(
+        &self,
+        modify: F,
+        personal_dates: Option<&[PersonalDate]>,
+    ) -> Result<Settings>
+    where
+        F: FnOnce(&mut Settings),
+    {
+        use tauri_plugin_store::StoreExt;
+
+        let _guard = self.settings_mutex.lock().expect("settings_mutex poisoned");
+        let mut settings = {
+            let inner = self.lock();
+            inner.settings.clone()
+        };
+        modify(&mut settings);
+        settings
+            .validate()
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+
+        // Serialize everything first so nothing is staged if serialization fails.
+        let settings_val = serde_json::to_value(&settings)?;
+        let dates_val = personal_dates.map(serde_json::to_value).transpose()?;
+
+        let store = self
+            .app_handle
+            .store("settings.json")
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        let previous_settings = store.get("settings");
+        let previous_dates = store.get("personal_dates");
+
+        store.set("settings".to_string(), settings_val);
+        if let Some(val) = dates_val {
+            store.set("personal_dates".to_string(), val);
+        }
+        if let Err(e) = store.save() {
+            for (key, previous) in [
+                ("settings", previous_settings),
+                ("personal_dates", previous_dates),
+            ] {
+                match previous {
+                    Some(val) => store.set(key.to_string(), val),
+                    None => {
+                        store.delete(key);
+                    }
+                }
+            }
+            return Err(crate::AppError::Settings(e.to_string()));
+        }
+
         self.apply_settings_update(settings.clone());
         Ok(settings)
     }
