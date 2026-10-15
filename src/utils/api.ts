@@ -8,7 +8,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { AppInitialState, PersonalDate, Settings, StatusSnapshot } from "../types";
+import type { AppInitialState, ExportBundle, PersonalDate, Settings, StatusSnapshot } from "../types";
 
 // Initial State
 
@@ -34,8 +34,8 @@ export async function exportSettings(): Promise<string> {
   return invoke<string>("export_settings");
 }
 
-export async function importSettings(json: string): Promise<Settings> {
-  return invoke<Settings>("import_settings", { json });
+export async function importSettings(json: string): Promise<ExportBundle> {
+  return invoke<ExportBundle>("import_settings", { json });
 }
 
 // Personal Dates
