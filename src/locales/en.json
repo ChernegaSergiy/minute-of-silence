@@ -162,6 +162,7 @@
   },
   "buttons": {
     "sync": "SYNCHRONIZE",
+    "retry": "RETRY",
     "test": "TEST",
     "save": "SAVE",
     "save_dirty": "SAVE *",
@@ -195,6 +196,7 @@
     "label": "Label",
     "list_title": "Saved dates",
     "empty": "No personal dates.",
+    "load_error": "Failed to load personal dates.",
     "edit_title": "Edit date"
   },
   "update": {

@@ -4,7 +4,34 @@ export type AnnouncementVoice = "bohdan_hdal" | "sonia_sotnyk" | "dania_khomutov
 
 export type AnthemVoice = "default" | "mykhailo_khoma" | "oleksandr_ponomarov";
 
+/**
+ * Combined initial application state for atomic startup hydration.
+ */
+export type AppInitialState = { settings: Settings, personalDates: Array<PersonalDate>, status: StatusSnapshot, version: string, };
+
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
+
+/**
+ * A portable export bundle that carries both application settings and personal dates.
+ *
+ * Produced by [`export_bundle_to_json`] and consumed by [`import_bundle_from_json`].
+ * Old export files that contain only a [`Settings`] object are accepted as well
+ * (backward-compatible import).
+ */
+export type ExportBundle = { 
+/**
+ * Application settings.
+ */
+settings: Settings, 
+/**
+ * Personal remembrance dates.
+ */
+personalDates: Array<PersonalDate>, };
+
+/**
+ * A personal remembrance date.
+ */
+export type PersonalDate = { id?: string | null, month: number, day: number, year: number, label: string, };
 
 /**
  * User-configurable application settings.
@@ -108,5 +135,10 @@ lastShownNearbyDateId: string | null,
  * Date to skip the next ceremony (one-time skip). Persisted to disk.
  */
 skipDate: string | null, };
+
+/**
+ * Serialisable runtime status snapshot for the frontend.
+ */
+export type StatusSnapshot = { ceremonyActive: boolean, skipTomorrow: boolean, lastActivation: string | null, lastNtpSync: string | null, };
 
 export type UiTheme = "light" | "dark";

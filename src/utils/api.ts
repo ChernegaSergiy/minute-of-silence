@@ -8,44 +8,44 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { LazyStore } from "@tauri-apps/plugin-store";
-import { DEFAULT_SETTINGS, type PersonalDate, type Settings, type StatusSnapshot } from "../types";
+import type { AppInitialState, ExportBundle, PersonalDate, Settings, StatusSnapshot } from "../types";
+
+// Initial State
+
+export async function getInitialState(): Promise<AppInitialState> {
+  return invoke<AppInitialState>("get_initial_state");
+}
 
 // Settings
 
-const store = new LazyStore("settings.json");
-
 export async function getSettings(): Promise<Settings> {
-  const settings = await store.get<Partial<Settings>>("settings");
-  return { ...DEFAULT_SETTINGS, ...settings };
+  return invoke<Settings>("get_settings");
 }
 
-export async function saveSettings(settings: Settings): Promise<void> {
-  await store.set("settings", settings);
-  await store.save();
+export async function saveSettings(settings: Settings): Promise<Settings> {
+  return invoke<Settings>("save_settings", { settings });
+}
+
+export async function resetSettings(): Promise<Settings> {
+  return invoke<Settings>("reset_settings");
 }
 
 export async function exportSettings(): Promise<string> {
   return invoke<string>("export_settings");
 }
 
-export async function importSettings(json: string): Promise<Settings> {
-  const updated = await invoke<Settings>("import_settings", { json });
-  await store.set("settings", updated);
-  await store.save();
-  return updated;
+export async function importSettings(json: string): Promise<ExportBundle> {
+  return invoke<ExportBundle>("import_settings", { json });
 }
 
 // Personal Dates
 
 export async function getPersonalDates(): Promise<PersonalDate[]> {
-  const dates = await store.get<PersonalDate[]>("personal_dates");
-  return dates ?? [];
+  return invoke<PersonalDate[]>("get_personal_dates");
 }
 
 export async function savePersonalDates(dates: PersonalDate[]): Promise<void> {
-  await store.set("personal_dates", dates);
-  await store.save();
+  return invoke("save_personal_dates", { dates });
 }
 
 // Status

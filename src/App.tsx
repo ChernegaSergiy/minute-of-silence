@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   FluentProvider,
@@ -21,12 +21,10 @@ import {
   CalendarMonth20Regular,
 } from "@fluentui/react-icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { getVersion } from "@tauri-apps/api/app";
 import { listen } from "@tauri-apps/api/event";
 import {
   bringWindowToFront,
-  getSettings,
-  getPersonalDates,
+  getInitialState,
   getStatus,
   onCeremonyEnd,
   onCeremonyStart,
@@ -34,7 +32,7 @@ import {
   syncNtpNow,
   triggerCeremonyNow,
 } from "./utils/api";
-import { DEFAULT_SETTINGS, type PersonalDate, type Settings, type StatusSnapshot } from "./types";
+import type { PersonalDate, Settings, StatusSnapshot } from "./types";
 import { t } from "./utils/i18n";
 import AboutTab from "./components/AboutTab";
 import Overlay from "./components/Overlay";
@@ -85,6 +83,12 @@ const useStyles = makeStyles({
     justifyContent: "center",
     paddingTop: tokens.spacingVerticalL,
   },
+  loadingContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
+  },
 });
 
 export default function App() {
@@ -95,9 +99,9 @@ export default function App() {
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
       : true
   );
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [initialSettings, setInitialSettings] = useState<Settings | null>(null);
   const [personalDates, setPersonalDates] = useState<PersonalDate[]>([]);
-  const [cleanSettings, setCleanSettings] = useState<string>("");
   const [status, setStatus] = useState<StatusSnapshot>(DEFAULT_STATUS);
   const [version, setVersion] = useState("...");
   const [showOverlay, setShowOverlay] = useState(false);
@@ -114,39 +118,50 @@ export default function App() {
   const initRef = useRef(false);
   const hasImportedRef = useRef(false);
 
-  const isDirty = hydrated && JSON.stringify(settings) !== cleanSettings;
-  const effectiveDark = (settings.useSystemTheme ?? true) ? prefersDark : settings.uiTheme === "dark";
+  const isDirty = useMemo(() => {
+    if (!hydrated || !settings || !initialSettings) return false;
+    return (Object.keys(settings) as (keyof Settings)[]).some(
+      (key) => settings[key] !== initialSettings[key]
+    );
+  }, [hydrated, settings, initialSettings]);
+
+  const effectiveDark = (settings?.useSystemTheme ?? true) ? prefersDark : settings?.uiTheme === "dark";
 
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
 
     (async () => {
+      getCurrentWindow()
+        .setTitle(t("app.title"))
+        .catch((error) => console.warn("Failed to set localized window title:", error));
+
+      // 1. Atomic startup hydration: fetch all initial state in a single IPC call
+      try {
+        const init = await getInitialState();
+        if (!hasImportedRef.current) {
+          setSettings(init.settings);
+          setInitialSettings(init.settings);
+          setVolumeValue(init.settings.volume);
+        }
+        setPersonalDates(init.personalDates);
+        setStatus(init.status);
+        setVersion(init.version);
+      } catch (error) {
+        console.error("Failed to load initial application state:", error);
+      } finally {
+        setHydrated(true);
+      }
+
+      // 2. Non-blocking background network update check
       try {
         const { invoke } = await import("@tauri-apps/api/core");
-        const [s, dates, st, v, update] = await Promise.all([
-          getSettings(),
-          getPersonalDates(),
-          getStatus(),
-          getVersion(),
-          invoke<UpdateInfo | null>("check_for_updates").catch(() => null),
-        ]);
-        if (!hasImportedRef.current) {
-          setSettings(s);
-          setCleanSettings(JSON.stringify(s));
-          setVolumeValue(s.volume);
-        }
-        setPersonalDates(dates);
-        setStatus(st);
-        setVersion(v);
-        await getCurrentWindow().setTitle(t("app.title"));
+        const update = await invoke<UpdateInfo | null>("check_for_updates").catch(() => null);
         if (update) {
           setUpdateInfo(update);
         }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setHydrated(true);
+      } catch {
+        // ignore background update check errors
       }
     })();
   }, []);
@@ -169,6 +184,18 @@ export default function App() {
         await listen("status-updated", refresh),
         await listen<UpdateInfo>("update-available", (event) => {
           setUpdateInfo(event.payload);
+        }),
+        await listen<Settings>("settings-updated", (event) => {
+          setSettings((current) =>
+            current
+              ? { ...current, autostartEnabled: event.payload.autostartEnabled }
+              : event.payload
+          );
+          setInitialSettings((current) =>
+            current
+              ? { ...current, autostartEnabled: event.payload.autostartEnabled }
+              : event.payload
+          );
         })
       );
       setInterval(refresh, 60000);
@@ -178,7 +205,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!settings.showVisualOverlay) {
+    if (!settings?.showVisualOverlay) {
       setShowOverlay(false);
       return;
     }
@@ -217,7 +244,7 @@ export default function App() {
       cancelled = true;
       unlisteners.forEach((u) => u());
     };
-  }, [settings.showVisualOverlay, status.ceremonyActive]);
+  }, [settings?.showVisualOverlay, status.ceremonyActive]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -251,12 +278,13 @@ export default function App() {
   }, [updateInfo, updateDismissed, showUpdateDialog, isIdle, status.ceremonyActive, showOverlay, isInstallingUpdate]);
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
 
   const handleSave = useCallback(async () => {
+    if (!settings) return;
     await saveSettings(settings);
-    setCleanSettings(JSON.stringify(settings));
+    setInitialSettings(settings);
   }, [settings]);
 
   const handleSettingsImported = useCallback((imported: Settings) => {
@@ -265,7 +293,7 @@ export default function App() {
     void getStatus()
       .then(setStatus)
       .catch((error) => console.error("Failed to refresh status after import:", error));
-    setCleanSettings(JSON.stringify(imported));
+    setInitialSettings(imported);
     setVolumeValue(imported.volume);
   }, []);
 
@@ -284,6 +312,34 @@ export default function App() {
     const update = await invoke<UpdateInfo | null>("check_for_updates");
     return update;
   }, []);
+
+  if (!hydrated) {
+    return (
+      <FluentProvider
+        theme={prefersDark ? webDarkTheme : webLightTheme}
+        style={{ height: "100%" }}
+      >
+        <div className={styles.loadingContainer}>
+          <Spinner size="medium" />
+        </div>
+      </FluentProvider>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <FluentProvider
+        theme={prefersDark ? webDarkTheme : webLightTheme}
+        style={{ height: "100%" }}
+      >
+        <div className={styles.loadingContainer}>
+          <Button appearance="primary" onClick={() => window.location.reload()}>
+            {t("buttons.retry")}
+          </Button>
+        </div>
+      </FluentProvider>
+    );
+  }
 
   return (
     <>
@@ -339,6 +395,7 @@ export default function App() {
                       onVolumeChange={setVolumeValue}
                       onSyncNtp={handleSyncNtp}
                       onSettingsImported={handleSettingsImported}
+                      onPersonalDatesImported={setPersonalDates}
                     />
                   ) : selectedNav === "personal_dates" ? (
                     <PersonalDatesTab

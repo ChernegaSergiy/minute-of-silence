@@ -1,14 +1,16 @@
 //! Shared application state.
 
 use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
+pub use khvylyna_core::StatusSnapshot;
 use std::sync::{Arc, Mutex};
 use tauri::AppHandle;
 
 use crate::app::next_skip_date;
 use crate::core::audio::AudioEngine;
 use crate::core::ntp_service::NtpService;
-use crate::core::settings::{Settings, SettingsExt};
+use crate::core::settings::{PersonalDate, Settings, SettingsExt};
+
+use crate::error::Result;
 
 rust_i18n::i18n!("locales");
 
@@ -18,6 +20,7 @@ use rust_i18n::t;
 #[derive(Debug)]
 pub struct AppState {
     inner: Arc<Mutex<Inner>>,
+    settings_mutex: Mutex<()>,
     pub ntp_service: NtpService,
     pub audio: Arc<AudioEngine>,
     pub app_handle: AppHandle,
@@ -47,6 +50,20 @@ impl std::fmt::Debug for Inner {
     }
 }
 
+/// Put a store key back to its previous in-memory value after a failed `save`.
+fn restore_store_value(
+    store: &tauri_plugin_store::Store<tauri::Wry>,
+    key: &str,
+    previous: Option<serde_json::Value>,
+) {
+    match previous {
+        Some(val) => store.set(key.to_string(), val),
+        None => {
+            store.delete(key);
+        }
+    }
+}
+
 impl AppState {
     pub fn new(app_handle: AppHandle) -> Self {
         let settings = Settings::load_from_store(&app_handle);
@@ -62,6 +79,7 @@ impl AppState {
                 pending_update: None,
                 pending_restart: false,
             })),
+            settings_mutex: Mutex::new(()),
             ntp_service: NtpService::new(settings.ntp_server.clone()),
             audio: Arc::new(AudioEngine::new(app_handle.clone())),
             app_handle,
@@ -70,6 +88,107 @@ impl AppState {
 
     pub fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
         self.inner.lock().expect("AppState mutex poisoned")
+    }
+
+    /// Atomically mutate settings with a serialized read-modify-persist-apply cycle.
+    ///
+    /// This serializes concurrent settings writes via a dedicated settings lock,
+    /// preventing stale snapshot overwrites, while ensuring the runtime state lock
+    /// is NOT held during disk I/O.
+    pub fn update_settings<F>(&self, modify: F) -> Result<Settings>
+    where
+        F: FnOnce(&mut Settings),
+    {
+        let _guard = self.settings_mutex.lock().expect("settings_mutex poisoned");
+        let old_settings = {
+            let inner = self.lock();
+            inner.settings.clone()
+        };
+        let mut settings = old_settings.clone();
+        modify(&mut settings);
+        if settings == old_settings {
+            return Ok(settings);
+        }
+        settings
+            .validate()
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        settings.save_to_store(&self.app_handle)?;
+        self.apply_settings_update(settings.clone());
+        Ok(settings)
+    }
+
+    /// Atomically update settings and, optionally, personal dates with a single store write.
+    ///
+    /// Both values are staged in the store and flushed by one `save`, so a failed write
+    /// never leaves settings and dates from different sources. On failure the in-memory
+    /// store values are restored and the runtime state is left untouched.
+    pub fn update_settings_and_personal_dates<F>(
+        &self,
+        modify: F,
+        personal_dates: Option<&[PersonalDate]>,
+    ) -> Result<Settings>
+    where
+        F: FnOnce(&mut Settings),
+    {
+        use tauri_plugin_store::StoreExt;
+
+        let _guard = self.settings_mutex.lock().expect("settings_mutex poisoned");
+        let mut settings = {
+            let inner = self.lock();
+            inner.settings.clone()
+        };
+        modify(&mut settings);
+        settings
+            .validate()
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+
+        // Serialize everything first so nothing is staged if serialization fails.
+        let settings_val = serde_json::to_value(&settings)?;
+        let dates_val = personal_dates.map(serde_json::to_value).transpose()?;
+
+        let store = self
+            .app_handle
+            .store("settings.json")
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        let previous_settings = store.get("settings");
+        let previous_dates = store.get("personal_dates");
+
+        store.set("settings".to_string(), settings_val);
+        if let Some(val) = dates_val {
+            store.set("personal_dates".to_string(), val);
+        }
+        if let Err(e) = store.save() {
+            restore_store_value(&store, "settings", previous_settings);
+            restore_store_value(&store, "personal_dates", previous_dates);
+            return Err(crate::AppError::Settings(e.to_string()));
+        }
+
+        self.apply_settings_update(settings.clone());
+        Ok(settings)
+    }
+
+    /// Persist personal dates under the same lock that serializes all settings writes.
+    ///
+    /// Without the lock a plain `set` + `save` could interleave with
+    /// [`Self::update_settings_and_personal_dates`] and overwrite its dates. On a failed
+    /// write the in-memory store value is restored.
+    pub fn save_personal_dates(&self, personal_dates: &[PersonalDate]) -> Result<()> {
+        use tauri_plugin_store::StoreExt;
+
+        let _guard = self.settings_mutex.lock().expect("settings_mutex poisoned");
+        let val = serde_json::to_value(personal_dates)?;
+        let store = self
+            .app_handle
+            .store("settings.json")
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        let previous = store.get("personal_dates");
+
+        store.set("personal_dates".to_string(), val);
+        if let Err(e) = store.save() {
+            restore_store_value(&store, "personal_dates", previous);
+            return Err(crate::AppError::Settings(e.to_string()));
+        }
+        Ok(())
     }
 
     /// Atomically update settings in runtime state and apply necessary side-effects.
@@ -126,17 +245,6 @@ impl AppState {
             });
         }
     }
-}
-
-// Serialisable snapshot for the frontend
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct StatusSnapshot {
-    pub ceremony_active: bool,
-    pub skip_tomorrow: bool,
-    pub last_activation: Option<String>,
-    pub last_ntp_sync: Option<String>,
 }
 
 impl AppState {

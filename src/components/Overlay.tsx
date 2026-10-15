@@ -295,7 +295,9 @@ export default function Overlay({
     if (nearbyDate && show && settings && onUpdateSetting && !isTest && lastSavedNearbyIdRef.current !== newId) {
       lastSavedNearbyIdRef.current = newId;
       onUpdateSetting("lastShownNearbyDateId", newId);
-      saveSettings({ ...settings, lastShownNearbyDateId: newId }).catch(() => {});
+      saveSettings({ ...settings, lastShownNearbyDateId: newId }).catch((error) =>
+        console.warn("Failed to persist last shown nearby date ID:", error)
+      );
     }
   }, [nearbyDate, show, settings, onUpdateSetting, isTest]);
 

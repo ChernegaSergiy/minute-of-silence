@@ -9,50 +9,168 @@ use std::{
 use tauri::{AppHandle, Manager, State};
 
 use crate::{
-    Result, SettingsExt,
+    Result,
     app::next_skip_date,
     state::{AppState, StatusSnapshot},
 };
 
 // Settings
 
-/// Export current application settings formatted as a JSON string with schema version.
+/// Retrieve current application settings from runtime state.
 #[tauri::command]
-pub fn export_settings(state: State<'_, AppState>) -> Result<String> {
+pub fn get_settings(state: State<'_, AppState>) -> crate::core::settings::Settings {
+    let inner = state.lock();
+    inner.settings.clone()
+}
+
+/// Retrieve complete initial application state for atomic startup hydration.
+#[tauri::command]
+pub fn get_initial_state(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<khvylyna_core::AppInitialState> {
+    let settings = state.lock().settings.clone();
+    let personal_dates = get_personal_dates(app.clone())?;
+    let status = state.get_snapshot();
+    let version = app.package_info().version.to_string();
+
+    Ok(khvylyna_core::AppInitialState {
+        settings,
+        personal_dates,
+        status,
+        version,
+    })
+}
+
+/// Save application settings, validate, update runtime state, and persist to store.
+#[tauri::command]
+pub fn save_settings(
+    _app: AppHandle,
+    state: State<'_, AppState>,
+    mut settings: crate::core::settings::Settings,
+) -> Result<crate::core::settings::Settings> {
+    settings
+        .validate()
+        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+
+    let saved = state.update_settings(|current| {
+        // Preserve skip_date managed independently by scheduler / tray / skip commands
+        settings.skip_date = current.skip_date;
+        *current = settings;
+    })?;
+
+    log::info!("Settings successfully saved");
+    Ok(saved)
+}
+
+/// Reset application settings to default values, persist to store, and update runtime state.
+#[tauri::command]
+pub fn reset_settings(
+    _app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<crate::core::settings::Settings> {
+    let defaults = crate::core::settings::Settings::default();
+    let saved = state.update_settings(|s| {
+        *s = defaults;
+    })?;
+
+    log::info!("Settings successfully reset to defaults");
+    Ok(saved)
+}
+
+/// Export current application settings and personal dates as a JSON bundle.
+///
+/// Device-local state (skip date, last shown nearby date) is not exported.
+#[tauri::command]
+pub fn export_settings(app: AppHandle, state: State<'_, AppState>) -> Result<String> {
     let settings = {
         let inner = state.lock();
         inner.settings.clone()
     };
-    khvylyna_config::export_to_json(&settings).map_err(|e| crate::AppError::Settings(e.to_string()))
+    let personal_dates = get_personal_dates(app)?;
+    let bundle = khvylyna_core::ExportBundle {
+        settings,
+        personal_dates,
+    };
+    khvylyna_core::export_bundle_to_json(&bundle)
+        .map_err(|e| crate::AppError::Settings(e.to_string()))
 }
 
-/// Import application settings from a JSON string, validate, update state, and persist to store.
+/// Import an export bundle from a JSON string, validate, and persist settings and personal dates together.
+///
+/// A legacy settings-only file carries no personal dates, so the saved ones are kept.
 #[tauri::command]
 pub fn import_settings(
     app: AppHandle,
     state: State<'_, AppState>,
     json: String,
-) -> Result<crate::core::settings::Settings> {
-    let new_settings = khvylyna_config::import_from_json(&json)
+) -> Result<khvylyna_core::ExportBundle> {
+    let imported = khvylyna_core::import_bundle_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
 
-    // Persist to store first so a storage failure does not corrupt runtime state.
-    new_settings.save_to_store(&app)?;
-
-    // Synchronously update runtime AppState and apply side-effects before returning.
-    state.apply_settings_update(new_settings.clone());
+    // Settings and personal dates (when the file contains them) are persisted together.
+    let mut imported_settings = imported.settings;
+    let saved = state.update_settings_and_personal_dates(
+        |current| {
+            // Keep device-local state: skip_date is managed by scheduler / tray / skip
+            // commands and the last shown nearby date by the overlay.
+            imported_settings.skip_date = current.skip_date;
+            imported_settings.last_shown_nearby_date_id = current.last_shown_nearby_date_id.clone();
+            *current = imported_settings.clone();
+        },
+        imported.personal_dates.as_deref(),
+    )?;
+    let personal_dates = match imported.personal_dates {
+        Some(dates) => dates,
+        None => get_personal_dates(app)?,
+    };
 
     log::info!(
-        "Settings successfully imported (version: {})",
-        new_settings.version
+        "Settings imported (version: {}, personal_dates: {})",
+        saved.version,
+        personal_dates.len()
     );
-    Ok(new_settings)
+    Ok(khvylyna_core::ExportBundle {
+        settings: saved,
+        personal_dates,
+    })
 }
 
 /// Sync the persisted autostart setting with the actual platform state.
 #[tauri::command]
 pub fn sync_autostart_from_system(state: State<'_, AppState>) -> Result<()> {
     crate::platform::sync_autostart_from_system(state)
+}
+
+// Personal Dates
+
+/// Retrieve saved personal remembrance dates from store.
+#[tauri::command]
+pub fn get_personal_dates(app: AppHandle) -> Result<Vec<crate::core::settings::PersonalDate>> {
+    use tauri_plugin_store::StoreExt;
+    let store = app
+        .store("settings.json")
+        .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+    if let Some(val) = store.get("personal_dates") {
+        let dates: Vec<crate::core::settings::PersonalDate> =
+            serde_json::from_value(val).map_err(|e| crate::AppError::Settings(e.to_string()))?;
+        Ok(dates)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+/// Save personal remembrance dates after validation.
+#[tauri::command]
+pub fn save_personal_dates(
+    state: State<'_, AppState>,
+    dates: Vec<crate::core::settings::PersonalDate>,
+) -> Result<()> {
+    for d in &dates {
+        d.validate()
+            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+    }
+    state.save_personal_dates(&dates)
 }
 
 // Status
@@ -67,21 +185,21 @@ pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
 
 /// Skip the ceremony for the next calendar day.
 #[tauri::command]
-pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+pub fn skip_next(_app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     let skip_date = next_skip_date(chrono::Local::now());
-    let mut inner = state.lock();
-    inner.settings.skip_date = Some(skip_date);
-    inner.settings.save_to_store(&app)?;
+    state.update_settings(|s| {
+        s.skip_date = Some(skip_date);
+    })?;
     log::info!("Next ceremony skipped (date: {skip_date})");
     Ok(())
 }
 
 /// Remove the skip flag for the next calendar day.
 #[tauri::command]
-pub fn unskip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
-    let mut inner = state.lock();
-    inner.settings.skip_date = None;
-    inner.settings.save_to_store(&app)?;
+pub fn unskip_next(_app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+    state.update_settings(|s| {
+        s.skip_date = None;
+    })?;
     log::info!("Skip for next ceremony removed");
     Ok(())
 }

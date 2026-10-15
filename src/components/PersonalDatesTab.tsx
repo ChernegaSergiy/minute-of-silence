@@ -119,7 +119,7 @@ const useStyles = makeStyles({
 });
 
 interface PersonalDatesTabProps {
-  personalDates?: PersonalDate[];
+  personalDates: PersonalDate[];
   onPersonalDatesChange: (nextDates: PersonalDate[]) => void;
 }
 

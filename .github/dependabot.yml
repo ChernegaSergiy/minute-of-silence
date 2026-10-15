@@ -17,7 +17,7 @@ updates:
       - "rust"
 
   - package-ecosystem: "cargo"
-    directory: "/crates/khvylyna-config"
+    directory: "/crates/khvylyna-core"
     schedule:
       interval: "weekly"
     labels:
