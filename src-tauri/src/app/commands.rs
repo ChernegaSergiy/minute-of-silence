@@ -95,41 +95,50 @@ pub fn export_settings(app: AppHandle, state: State<'_, AppState>) -> Result<Str
 }
 
 /// Import an export bundle from a JSON string, validate, persist personal dates, and update settings state.
+///
+/// A legacy settings-only file carries no personal dates, so the saved ones are kept.
 #[tauri::command]
 pub fn import_settings(
     app: AppHandle,
     state: State<'_, AppState>,
     json: String,
 ) -> Result<khvylyna_core::ExportBundle> {
-    let mut bundle = khvylyna_core::import_bundle_from_json(&json)
+    let imported = khvylyna_core::import_bundle_from_json(&json)
         .map_err(|e| crate::AppError::Settings(format!("Invalid settings format: {e}")))?;
 
-    // Persist personal dates to the store.
-    {
-        use tauri_plugin_store::StoreExt;
-        let store = app
-            .store("settings.json")
-            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
-        let val = serde_json::to_value(&bundle.personal_dates)?;
-        store.set("personal_dates".to_string(), val);
-        store
-            .save()
-            .map_err(|e| crate::AppError::Settings(e.to_string()))?;
-    }
+    // Persist personal dates to the store only when the file contains them.
+    let personal_dates = match imported.personal_dates {
+        Some(dates) => {
+            use tauri_plugin_store::StoreExt;
+            let store = app
+                .store("settings.json")
+                .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+            let val = serde_json::to_value(&dates)?;
+            store.set("personal_dates".to_string(), val);
+            store
+                .save()
+                .map_err(|e| crate::AppError::Settings(e.to_string()))?;
+            dates
+        }
+        None => get_personal_dates(app)?,
+    };
 
+    let mut imported_settings = imported.settings;
     let saved = state.update_settings(|current| {
         // Preserve skip_date managed independently by scheduler / tray / skip commands
-        bundle.settings.skip_date = current.skip_date;
-        *current = bundle.settings.clone();
+        imported_settings.skip_date = current.skip_date;
+        *current = imported_settings.clone();
     })?;
 
-    bundle.settings = saved;
     log::info!(
         "Settings imported (version: {}, personal_dates: {})",
-        bundle.settings.version,
-        bundle.personal_dates.len()
+        saved.version,
+        personal_dates.len()
     );
-    Ok(bundle)
+    Ok(khvylyna_core::ExportBundle {
+        settings: saved,
+        personal_dates,
+    })
 }
 
 /// Sync the persisted autostart setting with the actual platform state.

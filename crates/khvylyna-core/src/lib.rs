@@ -390,19 +390,33 @@ pub struct ExportBundle {
     pub personal_dates: alloc::vec::Vec<PersonalDate>,
 }
 
+/// The result of importing a settings file.
+///
+/// Unlike [`ExportBundle`], `personal_dates` is `None` when the input was a legacy
+/// settings-only file, so callers can keep the dates they already have instead of
+/// overwriting them with an empty list.
+#[cfg(feature = "std")]
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImportedBundle {
+    /// Application settings.
+    pub settings: Settings,
+    /// Personal remembrance dates, or `None` if the input did not contain any.
+    pub personal_dates: Option<alloc::vec::Vec<PersonalDate>>,
+}
+
 /// Serialize an [`ExportBundle`] to a formatted JSON string.
 #[cfg(feature = "std")]
 pub fn export_bundle_to_json(bundle: &ExportBundle) -> Result<String, serde_json::Error> {
     serde_json::to_string_pretty(bundle)
 }
 
-/// Deserialize an [`ExportBundle`] from a JSON string, validating settings and every personal date.
+/// Deserialize an [`ImportedBundle`] from a JSON string, validating settings and every personal date.
 ///
 /// For backward compatibility, a JSON object that contains settings fields directly
 /// (the old [`Settings`]-only export format) is also accepted — in that case
-/// `personal_dates` is set to an empty `Vec`.
+/// `personal_dates` is `None`.
 #[cfg(feature = "std")]
-pub fn import_bundle_from_json(json_str: &str) -> Result<ExportBundle, ConfigError> {
+pub fn import_bundle_from_json(json_str: &str) -> Result<ImportedBundle, ConfigError> {
     let input: serde_json::Value = serde_json::from_str(json_str)?;
 
     // A root-level `settings` or `personalDates` key marks the input as a bundle,
@@ -413,15 +427,18 @@ pub fn import_bundle_from_json(json_str: &str) -> Result<ExportBundle, ConfigErr
         for date in &bundle.personal_dates {
             date.validate()?;
         }
-        return Ok(bundle);
+        return Ok(ImportedBundle {
+            settings: bundle.settings,
+            personal_dates: Some(bundle.personal_dates),
+        });
     }
 
     // Legacy Settings-only format.
     let settings: Settings = serde_json::from_value(input)?;
     settings.validate()?;
-    Ok(ExportBundle {
+    Ok(ImportedBundle {
         settings,
-        personal_dates: alloc::vec::Vec::new(),
+        personal_dates: None,
     })
 }
 
@@ -462,7 +479,8 @@ mod tests {
         assert!(json.contains("\"version\": 1"));
 
         let deserialized = import_bundle_from_json(&json).expect("deserialization failed");
-        assert_eq!(bundle, deserialized);
+        assert_eq!(bundle.settings, deserialized.settings);
+        assert_eq!(Some(bundle.personal_dates), deserialized.personal_dates);
     }
 
     #[cfg(feature = "std")]
@@ -473,7 +491,7 @@ mod tests {
         let legacy_json = serde_json::to_string_pretty(&settings).expect("serialize");
         let bundle = import_bundle_from_json(&legacy_json).expect("legacy format should import");
         assert_eq!(bundle.settings, settings);
-        assert!(bundle.personal_dates.is_empty());
+        assert_eq!(bundle.personal_dates, None);
     }
 
     #[cfg(feature = "std")]
