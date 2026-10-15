@@ -4,6 +4,11 @@ export type AnnouncementVoice = "bohdan_hdal" | "sonia_sotnyk" | "dania_khomutov
 
 export type AnthemVoice = "default" | "mykhailo_khoma" | "oleksandr_ponomarov";
 
+/**
+ * Combined initial application state for atomic startup hydration.
+ */
+export type AppInitialState = { settings: Settings, personalDates: Array<PersonalDate>, status: StatusSnapshot, version: string, };
+
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
 
 /**
