@@ -36,7 +36,7 @@ log = "0.4"
 thiserror = "2.0"
 anyhow = "1.0"
 dirs = "7.0"
-rodio = { version = "0.22", default-features = false, features = ["playback", "symphonia-ogg", "symphonia-vorbis"] }
+rodio = { version = "0.23", default-features = false, features = ["playback", "symphonia-ogg", "symphonia-vorbis"] }
 symphonia = { version = "0.6", default-features = false, features = ["ogg", "vorbis"] }
 rust-i18n = "4.0"
 sys-locale = "0.3"
