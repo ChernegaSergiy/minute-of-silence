@@ -23,6 +23,25 @@ pub fn get_settings(state: State<'_, AppState>) -> crate::core::settings::Settin
     inner.settings.clone()
 }
 
+/// Retrieve complete initial application state for atomic startup hydration.
+#[tauri::command]
+pub fn get_initial_state(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<khvylyna_core::AppInitialState> {
+    let settings = state.lock().settings.clone();
+    let personal_dates = get_personal_dates(app.clone())?;
+    let status = state.get_snapshot();
+    let version = app.package_info().version.to_string();
+
+    Ok(khvylyna_core::AppInitialState {
+        settings,
+        personal_dates,
+        status,
+        version,
+    })
+}
+
 /// Save application settings, validate, update runtime state, and persist to store.
 #[tauri::command]
 pub fn save_settings(
