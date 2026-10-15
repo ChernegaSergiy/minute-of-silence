@@ -132,6 +132,8 @@ export default function App() {
     initRef.current = true;
 
     (async () => {
+      getCurrentWindow().setTitle(t("app.title")).catch(() => {});
+
       // 1. Atomic startup hydration: fetch all initial state in a single IPC call
       try {
         const init = await getInitialState();
@@ -143,7 +145,6 @@ export default function App() {
         setPersonalDates(init.personalDates);
         setStatus(init.status);
         setVersion(init.version);
-        getCurrentWindow().setTitle(t("app.title")).catch(() => {});
       } catch (error) {
         console.error("Failed to load initial application state:", error);
       } finally {
