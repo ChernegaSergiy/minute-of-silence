@@ -13,7 +13,7 @@ import {
 } from "@fluentui/react-components";
 import { ArrowSync20Regular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
-import type { AnnouncementVoice, AnthemVoice, AudioPreset, Settings, StatusSnapshot } from "../types";
+import type { AnnouncementVoice, AnthemVoice, AudioPreset, ExportBundle, PersonalDate, Settings, StatusSnapshot } from "../types";
 import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
 import { t } from "../utils/i18n";
 
@@ -69,6 +69,7 @@ interface SettingsTabProps {
   onVolumeChange: (value: number) => void;
   onSyncNtp: () => void;
   onSettingsImported: (imported: Settings) => void;
+  onPersonalDatesImported: (dates: PersonalDate[]) => void;
 }
 
 const useStyles = makeStyles({
@@ -182,6 +183,7 @@ export default function SettingsTab({
   onVolumeChange,
   onSyncNtp,
   onSettingsImported,
+  onPersonalDatesImported,
 }: SettingsTabProps) {
   const styles = useStyles();
   const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
@@ -215,8 +217,9 @@ export default function SettingsTab({
         window.setTimeout(() => setImportState("idle"), 2000);
         return;
       }
-      const updated = await importSettings(text.trim());
-      onSettingsImported(updated);
+      const bundle = await importSettings(text.trim());
+      onSettingsImported(bundle.settings);
+      onPersonalDatesImported(bundle.personalDates);
       setImportState("success");
       window.setTimeout(() => setImportState("idle"), 2000);
     } catch (err) {
@@ -226,7 +229,7 @@ export default function SettingsTab({
     } finally {
       setImporting(false);
     }
-  }, [importing, onSettingsImported]);
+  }, [importing, onSettingsImported, onPersonalDatesImported]);
 
   return (
     <>
