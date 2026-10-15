@@ -395,6 +395,7 @@ export default function App() {
                       onVolumeChange={setVolumeValue}
                       onSyncNtp={handleSyncNtp}
                       onSettingsImported={handleSettingsImported}
+                      onPersonalDatesImported={setPersonalDates}
                     />
                   ) : selectedNav === "personal_dates" ? (
                     <PersonalDatesTab
