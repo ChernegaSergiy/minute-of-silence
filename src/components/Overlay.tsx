@@ -286,7 +286,8 @@ export default function Overlay({
     // it forces a fresh weighted draw each time the overlay reopens.
   }, [activeDates, personalDates, settings?.showNearbyPersonalDates, show]);
 
-  const displayDates = activeDates.length > 0 ? activeDates : (nearbyDate ? [nearbyDate] : []);
+  const isExactDate = activeDates.length > 0;
+  const displayDates = isExactDate ? activeDates : (nearbyDate ? [nearbyDate] : []);
   const hasActiveDates = displayDates.length > 0;
 
   // Save last shown nearby date ID (skip for test ceremonies)
