@@ -188,7 +188,8 @@
   "overlay": {
     "title": "ХВИЛИНА МОВЧАННЯ",
     "subtitle": "ПАМ'ЯТАЄМО КОЖНОГО",
-    "personal_subtitle": "СЬОГОДНІ ДЕНЬ ПАМ'ЯТІ"
+    "personal_subtitle": "СЬОГОДНІ ДЕНЬ ПАМ'ЯТІ",
+    "nearby_subtitle": "СВІТЛА ПАМ'ЯТЬ"
   },
   "personal_dates": {
     "title": "Особисті дати",
