@@ -356,7 +356,11 @@ export default function Overlay({
           
           <div className={styles.subtitleContainer}>
             <Subtitle1 className={styles.subtitle}>
-              {hasActiveDates ? t("overlay.personal_subtitle") : t("overlay.subtitle")}
+              {isExactDate
+                ? t("overlay.personal_subtitle")
+                : nearbyDate
+                ? t("overlay.nearby_subtitle")
+                : t("overlay.subtitle")}
             </Subtitle1>
             {hasActiveDates && currentCommemorationName && (
               <div
