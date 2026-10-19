@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated system tray icons to sharp vector UNR trident glyphs from the NAMU Tryzub font across light and dark themes.
+
 ## [0.11.3] - 2026-10-14
 
 ### Changed
