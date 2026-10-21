@@ -40,7 +40,7 @@ parts:
       - libssl-dev
       - libwebkit2gtk-4.1-dev
     build-snaps:
-      - node/20/stable
+      - node/22/stable
       - rustup
     stage-packages:
       - libasound2-plugins
