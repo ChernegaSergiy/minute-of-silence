@@ -1,3 +1,17 @@
+- version: "0.11.4"
+  date: "2026-10-29"
+  entries:
+    - category: added
+      key: "settings_and_dates_export_import"
+    - category: changed
+      key: "namu_tryzub_tray_icon"
+    - category: changed
+      key: "overlay_nearby_subtitle"
+    - category: changed
+      key: "settings_source_of_truth"
+    - category: changed
+      key: "deps_update_0_11_4"
+
 - version: "0.11.3"
   date: "2026-10-14"
   entries:

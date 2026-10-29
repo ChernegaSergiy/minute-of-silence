@@ -9,8 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.4] - 2026-10-29
+
+### Added
+- Added export and import of application settings and personal remembrance dates as a portable JSON bundle.
+
 ### Changed
 - Updated system tray icons to sharp vector UNR trident glyphs from the NAMU Tryzub font across light and dark themes.
+- Display a distinct subtitle in the ceremony overlay when commemorating nearby personal dates instead of exact-day anniversaries.
+- Consolidated settings persistence into a single backend source of truth and optimized startup hydration into an atomic IPC request.
+- Updated project dependencies (`tauri` 2.12.5, `tokio` 1.54.1, `rodio` 0.23.0, `react` 19.3.1, and linters) with a clean lockfile.
 
 ## [0.11.3] - 2026-10-14
 

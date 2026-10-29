@@ -220,6 +220,13 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.11.4": {
+      "settings_and_dates_export_import": "Added export and import of application settings and personal remembrance dates as a portable JSON bundle.",
+      "namu_tryzub_tray_icon": "Updated system tray icons to sharp vector UNR trident glyphs from the NAMU Tryzub font across light and dark themes.",
+      "overlay_nearby_subtitle": "Display a distinct subtitle in the ceremony overlay when commemorating nearby personal dates instead of exact-day anniversaries.",
+      "settings_source_of_truth": "Consolidated settings persistence into a single backend source of truth and optimized startup hydration into an atomic IPC request.",
+      "deps_update_0_11_4": "Updated project dependencies (`tauri` 2.12.5, `tokio` 1.54.1, `rodio` 0.23.0, `react` 19.3.1, and linters) with a clean lockfile."
+    },
     "0.11.3": {
       "namu_tryzub_logo": "Updated application logo and platform icons (Windows MSIX, Snap, macOS, Linux) with high-density NAMU Tryzub vector assets.",
       "ceremony_plain_statics": "Optimized ceremony module with plain Rust statics and removed direct `lazy_static` dependency.",
