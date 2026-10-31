@@ -432,17 +432,6 @@ export default function SettingsTab({
         />
         <Divider />
         <SwitchRow
-          id="skipToggle"
-          label={t("controls.skip_tomorrow.label")}
-          desc={t("controls.skip_tomorrow.description")}
-          checked={status.skipTomorrow}
-          onChange={(v) => {
-            if (v) skipNext();
-            else unskipNext();
-          }}
-        />
-        <Divider />
-        <SwitchRow
           id="showNearbyPersonalDatesToggle"
           label={t("controls.show_nearby_personal_dates.label")}
           desc={t("controls.show_nearby_personal_dates.description")}
