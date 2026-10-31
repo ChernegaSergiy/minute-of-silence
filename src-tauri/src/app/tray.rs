@@ -77,11 +77,10 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
                     next_skip_date(chrono::Local::now(), inner.settings.weekdays_only)
                 };
 
-                let was_skipped = state.lock().settings.skip_date == Some(target);
-                let new_skip = if was_skipped { None } else { Some(target) };
-
+                let mut was_skipped = false;
                 if let Err(e) = state.update_settings(|s| {
-                    s.skip_date = new_skip;
+                    was_skipped = s.skip_date == Some(target);
+                    s.skip_date = if was_skipped { None } else { Some(target) };
                 }) {
                     log::warn!("Tray: failed to update skip_date: {e}");
                 } else if was_skipped {
