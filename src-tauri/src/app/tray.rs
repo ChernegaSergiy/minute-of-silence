@@ -13,8 +13,20 @@ use crate::AppState;
 
 /// Build and register the system-tray icon for `app`.
 pub fn build_tray(app: &App) -> tauri::Result<()> {
+    let state = app.state::<AppState>();
+    let is_skipped = {
+        let inner = state.lock();
+        let target = next_skip_date(chrono::Local::now(), inner.settings.weekdays_only);
+        inner.settings.skip_date == Some(target)
+    };
+    let initial_label = if is_skipped {
+        t!("unskip_next")
+    } else {
+        t!("skip_next")
+    };
+
     let open_i = MenuItem::with_id(app, "open", t!("open"), true, None::<&str>)?;
-    let skip_i = MenuItem::with_id(app, "skip_next", t!("skip_next"), true, None::<&str>)?;
+    let skip_i = MenuItem::with_id(app, "skip_next", initial_label, true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit_i = MenuItem::with_id(app, "quit", t!("quit"), true, None::<&str>)?;
 
@@ -26,11 +38,13 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
         tauri::include_image!("icons/tray-icon-32-dark.png")
     };
 
+    let skip_item = skip_i.clone();
+
     TrayIconBuilder::with_id("main")
         .icon(icon)
         .menu(&menu)
         .tooltip(t!("tray_tooltip"))
-        .on_menu_event(|app, event| match event.id.as_ref() {
+        .on_menu_event(move |app, event| match event.id.as_ref() {
             "open" => {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.unminimize();
@@ -53,8 +67,10 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
                 }) {
                     log::warn!("Tray: failed to update skip_date: {e}");
                 } else if was_skipped {
+                    let _ = skip_item.set_text(t!("skip_next"));
                     log::info!("Tray: ceremony restored (skip removed)");
                 } else {
+                    let _ = skip_item.set_text(t!("unskip_next"));
                     log::info!("Tray: next ceremony skipped ({target})");
                 }
 
