@@ -1,7 +1,7 @@
 # Ukrainian translations
 open = "Відкрити"
-skip_next = "Пропустити завтра"
-unskip_next = "Відновити завтра"
+skip_next = "Пропустити церемонію"
+unskip_next = "Поновити церемонію"
 quit = "Вийти"
 tray_tooltip = "Хвилина мовчання"
 notification_title = "Хвилина мовчання"
