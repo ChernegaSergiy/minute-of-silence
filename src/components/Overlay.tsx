@@ -11,18 +11,15 @@ import {
 } from "@fluentui/react-components";
 import { invoke } from "@tauri-apps/api/core";
 import { t } from "../utils/i18n";
-import { saveSettings } from "../utils/api";
+import { setLastShownNearbyDate } from "../utils/api";
 import { isLeapYear, selectNearbyDate } from "../utils/nearbyDateSelection";
 import type { PersonalDate, Settings } from "../types";
-
-type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => void;
 
 interface OverlayProps {
   show: boolean;
   durationSeconds?: number;
   personalDates?: PersonalDate[];
   settings?: Settings;
-  onUpdateSetting?: UpdateSetting;
   isTest?: boolean;
 }
 
@@ -233,7 +230,6 @@ export default function Overlay({
   durationSeconds = 60,
   personalDates = [],
   settings,
-  onUpdateSetting,
   isTest = false,
 }: OverlayProps) {
   const styles = useStyles();
@@ -281,10 +277,14 @@ export default function Overlay({
     if (activeDates.length > 0) return null;
     if (!settings?.showNearbyPersonalDates) return null;
     if (personalDates.length === 0) return null;
-    return selectNearbyDate(personalDates, new Date(), settings.lastShownNearbyDateId ?? null);
+    return selectNearbyDate(
+      personalDates,
+      new Date(),
+      lastSavedNearbyIdRef.current ?? settings.lastShownNearbyDateId ?? null
+    );
     // `show` is intentionally in deps though unused in the body —
     // it forces a fresh weighted draw each time the overlay reopens.
-  }, [activeDates, personalDates, settings?.showNearbyPersonalDates, show]);
+  }, [activeDates, personalDates, settings?.showNearbyPersonalDates, settings?.lastShownNearbyDateId, show]);
 
   const isExactDate = activeDates.length > 0;
   const displayDates = isExactDate ? activeDates : (nearbyDate ? [nearbyDate] : []);
@@ -293,14 +293,13 @@ export default function Overlay({
   // Save last shown nearby date ID (skip for test ceremonies)
   useEffect(() => {
     const newId = nearbyDate?.id ?? null;
-    if (nearbyDate && show && settings && onUpdateSetting && !isTest && lastSavedNearbyIdRef.current !== newId) {
+    if (nearbyDate && show && !isTest && lastSavedNearbyIdRef.current !== newId) {
       lastSavedNearbyIdRef.current = newId;
-      onUpdateSetting("lastShownNearbyDateId", newId);
-      saveSettings({ ...settings, lastShownNearbyDateId: newId }).catch((error) =>
+      setLastShownNearbyDate(newId).catch((error) =>
         console.warn("Failed to persist last shown nearby date ID:", error)
       );
     }
-  }, [nearbyDate, show, settings, onUpdateSetting, isTest]);
+  }, [nearbyDate, show, isTest]);
 
   // Name carousel/slider state
   const [currentNameIndex, setCurrentNameIndex] = useState(0);

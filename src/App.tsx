@@ -453,7 +453,6 @@ export default function App() {
         durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
         personalDates={personalDates}
         settings={settings}
-        onUpdateSetting={updateSetting}
         isTest={isTestCeremony}
       />
     </>

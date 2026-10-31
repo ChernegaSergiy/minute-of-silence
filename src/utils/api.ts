@@ -30,6 +30,10 @@ export async function resetSettings(): Promise<Settings> {
   return invoke<Settings>("reset_settings");
 }
 
+export async function setLastShownNearbyDate(id: string | null): Promise<void> {
+  return invoke("set_last_shown_nearby_date", { id });
+}
+
 export async function exportSettings(): Promise<string> {
   return invoke<string>("export_settings");
 }

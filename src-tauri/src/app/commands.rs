@@ -54,8 +54,10 @@ pub fn save_settings(
         .map_err(|e| crate::AppError::Settings(e.to_string()))?;
 
     let saved = state.update_settings(|current| {
-        // Preserve skip_date managed independently by scheduler / tray / skip commands
+        // Preserve device-local state managed independently by scheduler / tray / skip
+        // commands and the ceremony overlay
         settings.skip_date = current.skip_date;
+        settings.last_shown_nearby_date_id = current.last_shown_nearby_date_id.clone();
         *current = settings;
     })?;
 
@@ -76,6 +78,20 @@ pub fn reset_settings(
 
     log::info!("Settings successfully reset to defaults");
     Ok(saved)
+}
+
+/// Persist the identifier of the last shown nearby remembrance date.
+#[tauri::command]
+pub fn set_last_shown_nearby_date(
+    _app: AppHandle,
+    state: State<'_, AppState>,
+    id: Option<String>,
+) -> Result<()> {
+    state.update_settings(|s| {
+        s.last_shown_nearby_date_id = id;
+    })?;
+    log::info!("Last shown nearby date ID updated");
+    Ok(())
 }
 
 /// Export current application settings and personal dates as a JSON bundle.
