@@ -9,9 +9,16 @@ import {
   Switch,
   Text,
   makeStyles,
+  mergeClasses,
   tokens,
 } from "@fluentui/react-components";
-import { ArrowSync20Regular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
+import {
+  ArrowSync20Regular,
+  CalendarCancel20Regular,
+  ClipboardCheckmarkRegular,
+  ClipboardRegular,
+  Clock20Regular,
+} from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import type { AnnouncementVoice, AnthemVoice, AudioPreset, PersonalDate, Settings, StatusSnapshot } from "../types";
 import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
@@ -73,6 +80,64 @@ interface SettingsTabProps {
 }
 
 const useStyles = makeStyles({
+  scheduleCard: {
+    marginBottom: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    transitionProperty: "background-color, border-color",
+    transitionDuration: "200ms",
+    transitionTimingFunction: "ease",
+  },
+  scheduleCardSkipped: {
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderLeft: `4px solid ${tokens.colorPaletteYellowBorder1}`,
+  },
+  scheduleRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: tokens.spacingHorizontalM,
+  },
+  scheduleLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalM,
+    minWidth: 0,
+    flex: 1,
+  },
+  scheduleIcon: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "36px",
+    height: "36px",
+    borderRadius: tokens.borderRadiusMedium,
+    backgroundColor: tokens.colorNeutralBackground3,
+    color: tokens.colorNeutralForeground2,
+    flexShrink: 0,
+  },
+  scheduleIconSkipped: {
+    backgroundColor: tokens.colorPaletteYellowBackground1,
+    color: tokens.colorPaletteYellowForeground1,
+  },
+  scheduleTexts: {
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalXXS,
+    minWidth: 0,
+  },
+  scheduleTitle: {
+    fontSize: tokens.fontSizeBase300,
+    lineHeight: tokens.lineHeightBase300,
+  },
+  scheduleDesc: {
+    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground3,
+    lineHeight: tokens.lineHeightBase100,
+  },
+  scheduleAction: {
+    flexShrink: 0,
+  },
   card: {
     marginBottom: tokens.spacingVerticalM,
   },
@@ -233,6 +298,49 @@ export default function SettingsTab({
 
   return (
     <>
+      <Card
+        className={mergeClasses(
+          styles.scheduleCard,
+          status.skipTomorrow && styles.scheduleCardSkipped
+        )}
+      >
+        <div className={styles.scheduleRow}>
+          <div className={styles.scheduleLeft}>
+            <div
+              className={mergeClasses(
+                styles.scheduleIcon,
+                status.skipTomorrow && styles.scheduleIconSkipped
+              )}
+            >
+              {status.skipTomorrow ? (
+                <CalendarCancel20Regular />
+              ) : (
+                <Clock20Regular />
+              )}
+            </div>
+            <div className={styles.scheduleTexts}>
+              <Text weight="semibold" className={styles.scheduleTitle}>
+                {status.skipTomorrow
+                  ? "Наступну церемонію пропущено"
+                  : "Наступна церемонія о 09:00"}
+              </Text>
+              <Text className={styles.scheduleDesc}>
+                {status.skipTomorrow
+                  ? "Церемонію о 09:00 буде пропущено одноразово"
+                  : "Заплановано за щоденним графіком"}
+              </Text>
+            </div>
+          </div>
+          <Button
+            className={styles.scheduleAction}
+            appearance={status.skipTomorrow ? "primary" : "secondary"}
+            onClick={status.skipTomorrow ? unskipNext : skipNext}
+          >
+            {status.skipTomorrow ? "Поновити" : "Пропустити"}
+          </Button>
+        </div>
+      </Card>
+
       <Card className={styles.card}>
         <Text size={100} weight="semibold" block>
           {t("sections.general")}
