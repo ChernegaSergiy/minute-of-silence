@@ -77,22 +77,30 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
                     next_skip_date(chrono::Local::now(), inner.settings.weekdays_only)
                 };
 
-                let mut was_skipped = false;
-                if let Err(e) = state.update_settings(|s| {
-                    was_skipped = s.skip_date == Some(target);
-                    s.skip_date = if was_skipped { None } else { Some(target) };
+                match state.update_settings(|s| {
+                    if s.skip_date == Some(target) {
+                        s.skip_date = None;
+                    } else {
+                        s.skip_date = Some(target);
+                    }
                 }) {
-                    log::warn!("Tray: failed to update skip_date: {e}");
-                } else if was_skipped {
-                    let _ = skip_item.set_text(t!("skip_next"));
-                    log::info!("Tray: ceremony restored (skip removed)");
-                } else {
-                    let _ = skip_item.set_text(t!("unskip_next"));
-                    log::info!("Tray: next ceremony skipped ({target})");
-                }
+                    Ok(saved) => {
+                        let is_now_skipped = saved.skip_date == Some(target);
+                        if is_now_skipped {
+                            let _ = skip_item.set_text(t!("unskip_next"));
+                            log::info!("Tray: next ceremony skipped ({target})");
+                        } else {
+                            let _ = skip_item.set_text(t!("skip_next"));
+                            log::info!("Tray: ceremony restored (skip removed)");
+                        }
 
-                // Notify the frontend that the status has changed
-                let _ = app.emit("status-updated", ());
+                        // Notify the frontend that the status has changed
+                        let _ = app.emit("status-updated", ());
+                    }
+                    Err(e) => {
+                        log::warn!("Tray: failed to update skip_date: {e}");
+                    }
+                }
             }
             "quit" => {
                 log::info!("Quit requested via tray");
