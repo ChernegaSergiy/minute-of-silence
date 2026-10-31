@@ -20,6 +20,7 @@ import {
   ClipboardCheckmarkRegular,
   ClipboardRegular,
   Clock20Regular,
+  ClockDismiss20Regular,
 } from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import type { AnnouncementVoice, AnthemVoice, AudioPreset, PersonalDate, Settings, StatusSnapshot } from "../types";
@@ -264,10 +265,12 @@ export default function SettingsTab({
             <div
               className={mergeClasses(
                 styles.scheduleIcon,
-                status.skipTomorrow && styles.scheduleIconSkipped
+                settings.ceremonyEnabled && status.skipTomorrow && styles.scheduleIconSkipped
               )}
             >
-              {status.skipTomorrow ? (
+              {!settings.ceremonyEnabled ? (
+                <ClockDismiss20Regular />
+              ) : status.skipTomorrow ? (
                 <CalendarCancel20Regular />
               ) : (
                 <Clock20Regular />
