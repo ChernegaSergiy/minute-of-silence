@@ -204,6 +204,7 @@ pub fn run() {
             app::commands::get_initial_state,
             app::commands::save_settings,
             app::commands::reset_settings,
+            app::commands::set_last_shown_nearby_date,
             app::commands::get_personal_dates,
             app::commands::save_personal_dates,
             app::apng::decode_apng_frames,
