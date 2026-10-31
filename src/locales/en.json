@@ -70,10 +70,6 @@
       "label": "System time",
       "description": "Use local clock instead of accurate NTP time."
     },
-    "skip_tomorrow": {
-      "label": "Skip tomorrow",
-      "description": "Cancels only the next scheduled ceremony (one-time)."
-    },
     "schedule_card": {
       "scheduled_title": "Next ceremony at 09:00",
       "scheduled_desc_daily": "Scheduled daily",
