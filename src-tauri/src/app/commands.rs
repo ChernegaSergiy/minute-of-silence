@@ -199,7 +199,7 @@ pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
 
 // Skip / unskip
 
-/// Skip the ceremony for the next calendar day.
+/// Skip the ceremony for the next eligible day (next weekday when weekdays-only is enabled).
 #[tauri::command]
 pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     let weekdays_only = state.lock().settings.weekdays_only;
@@ -212,7 +212,7 @@ pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     Ok(())
 }
 
-/// Remove the skip flag for the next calendar day.
+/// Remove the skip flag for the next ceremony.
 #[tauri::command]
 pub fn unskip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     state.update_settings(|s| {
