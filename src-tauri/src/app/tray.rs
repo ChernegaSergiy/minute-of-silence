@@ -40,7 +40,8 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
             }
             "skip_next" => {
                 let state = app.state::<AppState>();
-                let skip_date = next_skip_date(chrono::Local::now());
+                let weekdays_only = state.lock().settings.weekdays_only;
+                let skip_date = next_skip_date(chrono::Local::now(), weekdays_only);
                 if let Err(e) = state.update_settings(|s| {
                     s.skip_date = Some(skip_date);
                 }) {

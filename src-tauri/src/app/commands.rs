@@ -202,7 +202,8 @@ pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
 /// Skip the ceremony for the next calendar day.
 #[tauri::command]
 pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
-    let skip_date = next_skip_date(chrono::Local::now());
+    let weekdays_only = state.lock().settings.weekdays_only;
+    let skip_date = next_skip_date(chrono::Local::now(), weekdays_only);
     state.update_settings(|s| {
         s.skip_date = Some(skip_date);
     })?;
