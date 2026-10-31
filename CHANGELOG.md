@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Prominent ceremony schedule status card in settings with direct skip and resume controls.
 
+### Changed
+- Update system tray menu to toggle ceremony skip and restore actions with dynamic labels.
+
 ### Fixed
 - Prevent settings form from being marked as modified ("Save *") after displaying a nearby remembrance date during the ceremony.
 - Notify frontend with a status update event when skipping or unskipping the next ceremony.
