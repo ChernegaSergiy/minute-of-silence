@@ -320,24 +320,34 @@ export default function SettingsTab({
             </div>
             <div className={styles.scheduleTexts}>
               <Text weight="semibold" className={styles.scheduleTitle}>
-                {status.skipTomorrow
-                  ? "Наступну церемонію пропущено"
-                  : "Наступна церемонія о 09:00"}
+                {!settings.ceremonyEnabled
+                  ? t("controls.schedule_card.disabled_title")
+                  : status.skipTomorrow
+                  ? t("controls.schedule_card.skipped_title")
+                  : t("controls.schedule_card.scheduled_title")}
               </Text>
               <Text className={styles.scheduleDesc}>
-                {status.skipTomorrow
-                  ? "Церемонію о 09:00 буде пропущено одноразово"
-                  : "Заплановано за щоденним графіком"}
+                {!settings.ceremonyEnabled
+                  ? t("controls.schedule_card.disabled_desc")
+                  : status.skipTomorrow
+                  ? t("controls.schedule_card.skipped_desc")
+                  : settings.weekdaysOnly
+                  ? t("controls.schedule_card.scheduled_desc_weekdays")
+                  : t("controls.schedule_card.scheduled_desc_daily")}
               </Text>
             </div>
           </div>
-          <Button
-            className={styles.scheduleAction}
-            appearance={status.skipTomorrow ? "primary" : "secondary"}
-            onClick={status.skipTomorrow ? unskipNext : skipNext}
-          >
-            {status.skipTomorrow ? "Поновити" : "Пропустити"}
-          </Button>
+          {settings.ceremonyEnabled && (
+            <Button
+              className={styles.scheduleAction}
+              appearance={status.skipTomorrow ? "primary" : "secondary"}
+              onClick={status.skipTomorrow ? unskipNext : skipNext}
+            >
+              {status.skipTomorrow
+                ? t("controls.schedule_card.resume_button")
+                : t("controls.schedule_card.skip_button")}
+            </Button>
+          )}
         </div>
       </Card>
 
