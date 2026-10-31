@@ -1,7 +1,9 @@
 import { useCallback, useState } from "react";
 import {
   Button,
+  Caption1,
   Card,
+  CardHeader,
   Divider,
   Dropdown,
   Option,
@@ -82,61 +84,19 @@ interface SettingsTabProps {
 const useStyles = makeStyles({
   scheduleCard: {
     marginBottom: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke2}`,
-    transitionProperty: "background-color, border-color",
-    transitionDuration: "200ms",
-    transitionTimingFunction: "ease",
-  },
-  scheduleCardSkipped: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderLeft: `4px solid ${tokens.colorPaletteYellowBorder1}`,
-  },
-  scheduleRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: tokens.spacingHorizontalM,
-  },
-  scheduleLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: tokens.spacingHorizontalM,
-    minWidth: 0,
-    flex: 1,
   },
   scheduleIcon: {
+    color: tokens.colorNeutralForeground2,
+    fontSize: "24px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "36px",
-    height: "36px",
-    borderRadius: tokens.borderRadiusMedium,
-    backgroundColor: tokens.colorNeutralBackground3,
-    color: tokens.colorNeutralForeground2,
-    flexShrink: 0,
   },
   scheduleIconSkipped: {
-    backgroundColor: tokens.colorPaletteYellowBackground1,
     color: tokens.colorPaletteYellowForeground1,
   },
-  scheduleTexts: {
-    display: "flex",
-    flexDirection: "column",
-    gap: tokens.spacingVerticalXXS,
-    minWidth: 0,
-  },
-  scheduleTitle: {
-    fontSize: tokens.fontSizeBase300,
-    lineHeight: tokens.lineHeightBase300,
-  },
   scheduleDesc: {
-    fontSize: tokens.fontSizeBase100,
     color: tokens.colorNeutralForeground3,
-    lineHeight: tokens.lineHeightBase100,
-  },
-  scheduleAction: {
-    flexShrink: 0,
   },
   card: {
     marginBottom: tokens.spacingVerticalM,
@@ -298,14 +258,9 @@ export default function SettingsTab({
 
   return (
     <>
-      <Card
-        className={mergeClasses(
-          styles.scheduleCard,
-          status.skipTomorrow && styles.scheduleCardSkipped
-        )}
-      >
-        <div className={styles.scheduleRow}>
-          <div className={styles.scheduleLeft}>
+      <Card className={styles.scheduleCard}>
+        <CardHeader
+          image={
             <div
               className={mergeClasses(
                 styles.scheduleIcon,
@@ -318,37 +273,40 @@ export default function SettingsTab({
                 <Clock20Regular />
               )}
             </div>
-            <div className={styles.scheduleTexts}>
-              <Text weight="semibold" className={styles.scheduleTitle}>
-                {!settings.ceremonyEnabled
-                  ? t("controls.schedule_card.disabled_title")
-                  : status.skipTomorrow
-                  ? t("controls.schedule_card.skipped_title")
-                  : t("controls.schedule_card.scheduled_title")}
-              </Text>
-              <Text className={styles.scheduleDesc}>
-                {!settings.ceremonyEnabled
-                  ? t("controls.schedule_card.disabled_desc")
-                  : status.skipTomorrow
-                  ? t("controls.schedule_card.skipped_desc")
-                  : settings.weekdaysOnly
-                  ? t("controls.schedule_card.scheduled_desc_weekdays")
-                  : t("controls.schedule_card.scheduled_desc_daily")}
-              </Text>
-            </div>
-          </div>
-          {settings.ceremonyEnabled && (
-            <Button
-              className={styles.scheduleAction}
-              appearance={status.skipTomorrow ? "primary" : "secondary"}
-              onClick={status.skipTomorrow ? unskipNext : skipNext}
-            >
-              {status.skipTomorrow
-                ? t("controls.schedule_card.resume_button")
-                : t("controls.schedule_card.skip_button")}
-            </Button>
-          )}
-        </div>
+          }
+          header={
+            <Text weight="semibold">
+              {!settings.ceremonyEnabled
+                ? t("controls.schedule_card.disabled_title")
+                : status.skipTomorrow
+                ? t("controls.schedule_card.skipped_title")
+                : t("controls.schedule_card.scheduled_title")}
+            </Text>
+          }
+          description={
+            <Caption1 className={styles.scheduleDesc}>
+              {!settings.ceremonyEnabled
+                ? t("controls.schedule_card.disabled_desc")
+                : status.skipTomorrow
+                ? t("controls.schedule_card.skipped_desc")
+                : settings.weekdaysOnly
+                ? t("controls.schedule_card.scheduled_desc_weekdays")
+                : t("controls.schedule_card.scheduled_desc_daily")}
+            </Caption1>
+          }
+          action={
+            settings.ceremonyEnabled ? (
+              <Button
+                appearance={status.skipTomorrow ? "primary" : "secondary"}
+                onClick={status.skipTomorrow ? unskipNext : skipNext}
+              >
+                {status.skipTomorrow
+                  ? t("controls.schedule_card.resume_button")
+                  : t("controls.schedule_card.skip_button")}
+              </Button>
+            ) : undefined
+          }
+        />
       </Card>
 
       <Card className={styles.card}>
