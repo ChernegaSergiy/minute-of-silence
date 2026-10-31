@@ -54,8 +54,10 @@ pub fn save_settings(
         .map_err(|e| crate::AppError::Settings(e.to_string()))?;
 
     let saved = state.update_settings(|current| {
-        // Preserve skip_date managed independently by scheduler / tray / skip commands
+        // Preserve device-local state managed independently by scheduler / tray / skip
+        // commands and the ceremony overlay
         settings.skip_date = current.skip_date;
+        settings.last_shown_nearby_date_id = current.last_shown_nearby_date_id.clone();
         *current = settings;
     })?;
 
