@@ -40,14 +40,22 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
             }
             "skip_next" => {
                 let state = app.state::<AppState>();
-                let weekdays_only = state.lock().settings.weekdays_only;
-                let skip_date = next_skip_date(chrono::Local::now(), weekdays_only);
+                let target = {
+                    let inner = state.lock();
+                    next_skip_date(chrono::Local::now(), inner.settings.weekdays_only)
+                };
+
+                let was_skipped = state.lock().settings.skip_date == Some(target);
+                let new_skip = if was_skipped { None } else { Some(target) };
+
                 if let Err(e) = state.update_settings(|s| {
-                    s.skip_date = Some(skip_date);
+                    s.skip_date = new_skip;
                 }) {
-                    log::warn!("Tray: failed to save skip_date: {e}");
+                    log::warn!("Tray: failed to update skip_date: {e}");
+                } else if was_skipped {
+                    log::info!("Tray: ceremony restored (skip removed)");
                 } else {
-                    log::info!("Tray: next ceremony skipped ({skip_date})");
+                    log::info!("Tray: next ceremony skipped ({target})");
                 }
 
                 // Notify the frontend that the status has changed
