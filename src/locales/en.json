@@ -74,6 +74,17 @@
       "label": "Skip tomorrow",
       "description": "Cancels only the next scheduled ceremony (one-time)."
     },
+    "schedule_card": {
+      "scheduled_title": "Next ceremony at 09:00",
+      "scheduled_desc_daily": "Scheduled daily",
+      "scheduled_desc_weekdays": "Scheduled for the next weekday",
+      "skipped_title": "Next ceremony skipped",
+      "skipped_desc": "The 09:00 ceremony will be skipped once",
+      "disabled_title": "Ceremony disabled",
+      "disabled_desc": "Automatic 09:00 ceremony is disabled in settings",
+      "skip_button": "Skip",
+      "resume_button": "Resume"
+    },
     "reminder": {
       "label": "Reminder",
       "description": "System notification before the ceremony.",
