@@ -6,7 +6,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     Result,
@@ -201,22 +201,24 @@ pub fn get_status(state: State<'_, AppState>) -> StatusSnapshot {
 
 /// Skip the ceremony for the next calendar day.
 #[tauri::command]
-pub fn skip_next(_app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+pub fn skip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     let skip_date = next_skip_date(chrono::Local::now());
     state.update_settings(|s| {
         s.skip_date = Some(skip_date);
     })?;
     log::info!("Next ceremony skipped (date: {skip_date})");
+    let _ = app.emit("status-updated", ());
     Ok(())
 }
 
 /// Remove the skip flag for the next calendar day.
 #[tauri::command]
-pub fn unskip_next(_app: AppHandle, state: State<'_, AppState>) -> Result<()> {
+pub fn unskip_next(app: AppHandle, state: State<'_, AppState>) -> Result<()> {
     state.update_settings(|s| {
         s.skip_date = None;
     })?;
     log::info!("Skip for next ceremony removed");
+    let _ = app.emit("status-updated", ());
     Ok(())
 }
 
