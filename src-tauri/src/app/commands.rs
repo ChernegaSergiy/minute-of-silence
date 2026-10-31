@@ -80,6 +80,20 @@ pub fn reset_settings(
     Ok(saved)
 }
 
+/// Persist the identifier of the last shown nearby remembrance date.
+#[tauri::command]
+pub fn set_last_shown_nearby_date(
+    _app: AppHandle,
+    state: State<'_, AppState>,
+    id: Option<String>,
+) -> Result<()> {
+    state.update_settings(|s| {
+        s.last_shown_nearby_date_id = id;
+    })?;
+    log::info!("Last shown nearby date ID updated");
+    Ok(())
+}
+
 /// Export current application settings and personal dates as a JSON bundle.
 ///
 /// Device-local state (skip date, last shown nearby date) is not exported.
