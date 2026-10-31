@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Prevent settings form from being marked as modified ("Save *") after displaying a nearby remembrance date during the ceremony.
+- Notify frontend with a status update event when skipping or unskipping the next ceremony.
 
 ## [0.11.4] - 2026-10-29
 
