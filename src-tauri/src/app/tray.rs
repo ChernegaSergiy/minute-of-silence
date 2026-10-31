@@ -4,7 +4,7 @@ use crate::app::next_skip_date;
 use crate::platform::is_dark_mode;
 use rust_i18n::t;
 use tauri::{
-    App, Emitter, Manager,
+    App, Emitter, Listener, Manager,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
@@ -29,6 +29,24 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
     let skip_i = MenuItem::with_id(app, "skip_next", initial_label, true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit_i = MenuItem::with_id(app, "quit", t!("quit"), true, None::<&str>)?;
+
+    // Synchronize tray skip menu item text whenever status changes (e.g. from Settings UI)
+    let skip_item_sync = skip_i.clone();
+    let app_handle = app.handle().clone();
+    app.listen("status-updated", move |_| {
+        let state = app_handle.state::<AppState>();
+        let is_skipped = {
+            let inner = state.lock();
+            let target = next_skip_date(chrono::Local::now(), inner.settings.weekdays_only);
+            inner.settings.skip_date == Some(target)
+        };
+        let label = if is_skipped {
+            t!("unskip_next")
+        } else {
+            t!("skip_next")
+        };
+        let _ = skip_item_sync.set_text(label);
+    });
 
     let menu = Menu::with_items(app, &[&open_i, &skip_i, &sep, &quit_i])?;
 
