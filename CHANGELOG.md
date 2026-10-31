@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Prevent settings form from being marked as modified ("Save *") after displaying a nearby remembrance date during the ceremony.
+
 ## [0.11.4] - 2026-10-29
 
 ### Added
