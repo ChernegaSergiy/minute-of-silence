@@ -1,7 +1,9 @@
 import { useCallback, useState } from "react";
 import {
   Button,
+  Caption1,
   Card,
+  CardHeader,
   Divider,
   Dropdown,
   Option,
@@ -9,9 +11,17 @@ import {
   Switch,
   Text,
   makeStyles,
+  mergeClasses,
   tokens,
 } from "@fluentui/react-components";
-import { ArrowSync20Regular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
+import {
+  ArrowSync20Regular,
+  CalendarCancel20Regular,
+  ClipboardCheckmarkRegular,
+  ClipboardRegular,
+  Clock20Regular,
+  ClockDismiss20Regular,
+} from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import type { AnnouncementVoice, AnthemVoice, AudioPreset, PersonalDate, Settings, StatusSnapshot } from "../types";
 import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
@@ -73,6 +83,22 @@ interface SettingsTabProps {
 }
 
 const useStyles = makeStyles({
+  scheduleCard: {
+    marginBottom: tokens.spacingVerticalM,
+  },
+  scheduleIcon: {
+    color: tokens.colorNeutralForeground2,
+    fontSize: "24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scheduleIconSkipped: {
+    color: tokens.colorPaletteYellowForeground1,
+  },
+  scheduleDesc: {
+    color: tokens.colorNeutralForeground3,
+  },
   card: {
     marginBottom: tokens.spacingVerticalM,
   },
@@ -233,6 +259,59 @@ export default function SettingsTab({
 
   return (
     <>
+      <Card className={styles.scheduleCard}>
+        <CardHeader
+          image={
+            <div
+              className={mergeClasses(
+                styles.scheduleIcon,
+                settings.ceremonyEnabled && status.skipTomorrow && styles.scheduleIconSkipped
+              )}
+            >
+              {!settings.ceremonyEnabled ? (
+                <ClockDismiss20Regular />
+              ) : status.skipTomorrow ? (
+                <CalendarCancel20Regular />
+              ) : (
+                <Clock20Regular />
+              )}
+            </div>
+          }
+          header={
+            <Text weight="semibold">
+              {!settings.ceremonyEnabled
+                ? t("controls.schedule_card.disabled_title")
+                : status.skipTomorrow
+                ? t("controls.schedule_card.skipped_title")
+                : t("controls.schedule_card.scheduled_title")}
+            </Text>
+          }
+          description={
+            <Caption1 className={styles.scheduleDesc}>
+              {!settings.ceremonyEnabled
+                ? t("controls.schedule_card.disabled_desc")
+                : status.skipTomorrow
+                ? t("controls.schedule_card.skipped_desc")
+                : settings.weekdaysOnly
+                ? t("controls.schedule_card.scheduled_desc_weekdays")
+                : t("controls.schedule_card.scheduled_desc_daily")}
+            </Caption1>
+          }
+          action={
+            settings.ceremonyEnabled ? (
+              <Button
+                appearance={status.skipTomorrow ? "primary" : "secondary"}
+                onClick={status.skipTomorrow ? unskipNext : skipNext}
+              >
+                {status.skipTomorrow
+                  ? t("controls.schedule_card.resume_button")
+                  : t("controls.schedule_card.skip_button")}
+              </Button>
+            ) : undefined
+          }
+        />
+      </Card>
+
       <Card className={styles.card}>
         <Text size={100} weight="semibold" block>
           {t("sections.general")}
@@ -311,17 +390,6 @@ export default function SettingsTab({
           desc={t("controls.system_time.description")}
           checked={settings.systemTimeOnly}
           onChange={(v) => onUpdateSetting("systemTimeOnly", v)}
-        />
-        <Divider />
-        <SwitchRow
-          id="skipToggle"
-          label={t("controls.skip_tomorrow.label")}
-          desc={t("controls.skip_tomorrow.description")}
-          checked={status.skipTomorrow}
-          onChange={(v) => {
-            if (v) skipNext();
-            else unskipNext();
-          }}
         />
         <Divider />
         <SwitchRow

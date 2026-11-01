@@ -1,7 +1,7 @@
 # English translations
 open = "Open"
-skip_next = "Skip tomorrow"
-unskip_next = "Restore tomorrow"
+skip_next = "Skip ceremony"
+unskip_next = "Restore ceremony"
 quit = "Quit"
 tray_tooltip = "Minute of Silence"
 notification_title = "Minute of Silence"

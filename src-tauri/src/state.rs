@@ -250,7 +250,7 @@ impl AppState {
 impl AppState {
     pub fn get_snapshot(&self) -> StatusSnapshot {
         let inner = self.lock();
-        let skip_target = next_skip_date(Local::now());
+        let skip_target = next_skip_date(Local::now(), inner.settings.weekdays_only);
 
         let ntp_status = if inner.settings.system_time_only {
             Some(t!("ntp_disabled").to_string())

@@ -4,7 +4,7 @@ use crate::app::next_skip_date;
 use crate::platform::is_dark_mode;
 use rust_i18n::t;
 use tauri::{
-    App, Emitter, Manager,
+    App, Emitter, Listener, Manager,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
@@ -13,10 +13,40 @@ use crate::AppState;
 
 /// Build and register the system-tray icon for `app`.
 pub fn build_tray(app: &App) -> tauri::Result<()> {
+    let state = app.state::<AppState>();
+    let is_skipped = {
+        let inner = state.lock();
+        let target = next_skip_date(chrono::Local::now(), inner.settings.weekdays_only);
+        inner.settings.skip_date == Some(target)
+    };
+    let initial_label = if is_skipped {
+        t!("unskip_next")
+    } else {
+        t!("skip_next")
+    };
+
     let open_i = MenuItem::with_id(app, "open", t!("open"), true, None::<&str>)?;
-    let skip_i = MenuItem::with_id(app, "skip_next", t!("skip_next"), true, None::<&str>)?;
+    let skip_i = MenuItem::with_id(app, "skip_next", initial_label, true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit_i = MenuItem::with_id(app, "quit", t!("quit"), true, None::<&str>)?;
+
+    // Synchronize tray skip menu item text whenever status changes (e.g. from Settings UI)
+    let skip_item_sync = skip_i.clone();
+    let app_handle = app.handle().clone();
+    app.listen("status-updated", move |_| {
+        let state = app_handle.state::<AppState>();
+        let is_skipped = {
+            let inner = state.lock();
+            let target = next_skip_date(chrono::Local::now(), inner.settings.weekdays_only);
+            inner.settings.skip_date == Some(target)
+        };
+        let label = if is_skipped {
+            t!("unskip_next")
+        } else {
+            t!("skip_next")
+        };
+        let _ = skip_item_sync.set_text(label);
+    });
 
     let menu = Menu::with_items(app, &[&open_i, &skip_i, &sep, &quit_i])?;
 
@@ -26,11 +56,13 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
         tauri::include_image!("icons/tray-icon-32-dark.png")
     };
 
+    let skip_item = skip_i.clone();
+
     TrayIconBuilder::with_id("main")
         .icon(icon)
         .menu(&menu)
         .tooltip(t!("tray_tooltip"))
-        .on_menu_event(|app, event| match event.id.as_ref() {
+        .on_menu_event(move |app, event| match event.id.as_ref() {
             "open" => {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.unminimize();
@@ -40,17 +72,35 @@ pub fn build_tray(app: &App) -> tauri::Result<()> {
             }
             "skip_next" => {
                 let state = app.state::<AppState>();
-                let skip_date = next_skip_date(chrono::Local::now());
-                if let Err(e) = state.update_settings(|s| {
-                    s.skip_date = Some(skip_date);
-                }) {
-                    log::warn!("Tray: failed to save skip_date: {e}");
-                } else {
-                    log::info!("Tray: next ceremony skipped ({skip_date})");
-                }
+                let target = {
+                    let inner = state.lock();
+                    next_skip_date(chrono::Local::now(), inner.settings.weekdays_only)
+                };
 
-                // Notify the frontend that the status has changed
-                let _ = app.emit("status-updated", ());
+                match state.update_settings(|s| {
+                    if s.skip_date == Some(target) {
+                        s.skip_date = None;
+                    } else {
+                        s.skip_date = Some(target);
+                    }
+                }) {
+                    Ok(saved) => {
+                        let is_now_skipped = saved.skip_date == Some(target);
+                        if is_now_skipped {
+                            let _ = skip_item.set_text(t!("unskip_next"));
+                            log::info!("Tray: next ceremony skipped ({target})");
+                        } else {
+                            let _ = skip_item.set_text(t!("skip_next"));
+                            log::info!("Tray: ceremony restored (skip removed)");
+                        }
+
+                        // Notify the frontend that the status has changed
+                        let _ = app.emit("status-updated", ());
+                    }
+                    Err(e) => {
+                        log::warn!("Tray: failed to update skip_date: {e}");
+                    }
+                }
             }
             "quit" => {
                 log::info!("Quit requested via tray");
