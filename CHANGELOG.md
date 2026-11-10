@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.5] - 2026-11-10
+
 ### Added
 - Prominent ceremony schedule status card in settings with direct skip and resume controls.
 
