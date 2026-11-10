@@ -1,3 +1,17 @@
+- version: "0.11.5"
+  date: "2026-11-10"
+  entries:
+    - category: added
+      key: "schedule_status_card"
+    - category: changed
+      key: "tray_skip_toggle"
+    - category: changed
+      key: "deps_update_0_11_5"
+    - category: fixed
+      key: "nearby_date_dirty_settings_fix"
+    - category: fixed
+      key: "skip_status_update_event"
+
 - version: "0.11.4"
   date: "2026-10-29"
   entries:
