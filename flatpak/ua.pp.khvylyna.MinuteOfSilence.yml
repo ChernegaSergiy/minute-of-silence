@@ -44,7 +44,7 @@ modules:
       - /usr/lib/sdk/rust-stable/enable.sh
 
       # Build the application
-      - npm install
+      - npm install --include=optional
       - npm run tauri build -- --no-bundle
 
       # Install binary and resources
