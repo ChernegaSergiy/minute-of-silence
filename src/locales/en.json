@@ -227,6 +227,13 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.11.5": {
+      "schedule_status_card": "Prominent ceremony schedule status card in settings with direct skip and resume controls.",
+      "tray_skip_toggle": "Update system tray menu to toggle ceremony skip and restore actions with dynamic labels.",
+      "deps_update_0_11_5": "Updated project dependencies (`vite` 8.3.5, `@tauri-apps/api` 2.12.4, `tauri-plugin-shell` 2.6.0, `log` 0.4.35, and linters).",
+      "nearby_date_dirty_settings_fix": "Prevent settings form from being marked as modified (\"Save *\") after displaying a nearby remembrance date during the ceremony.",
+      "skip_status_update_event": "Notify frontend with a status update event when skipping or unskipping the next ceremony."
+    },
     "0.11.4": {
       "settings_and_dates_export_import": "Added export and import of application settings and personal remembrance dates as a portable JSON bundle.",
       "namu_tryzub_tray_icon": "Updated system tray icons to sharp vector UNR trident glyphs from the NAMU Tryzub font across light and dark themes.",
