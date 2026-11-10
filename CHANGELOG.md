@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Update system tray menu to toggle ceremony skip and restore actions with dynamic labels.
+- Updated project dependencies (`vite` 8.3.5, `@tauri-apps/api` 2.12.4, `tauri-plugin-shell` 2.6.0, `log` 0.4.35, and linters).
 
 ### Fixed
 - Prevent settings form from being marked as modified ("Save *") after displaying a nearby remembrance date during the ceremony.
