@@ -190,7 +190,7 @@ impl AudioEngine {
                 out.push(Step::File(self.get_announcement_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Pause(Duration::from_secs(60)));
-                out.push(Step::File("bell.ogg".to_string()));
+                out.push(Step::File(self.get_bell_filename(voice)));
             }
             VoiceSilence => {
                 out.push(Step::File(self.get_announcement_filename(voice)));
@@ -222,17 +222,17 @@ impl AudioEngine {
                 out.push(Step::Anthem(self.get_anthem_filename(anthem_voice)));
             }
             BellSilenceBell => {
-                out.push(Step::File("bell.ogg".to_string()));
+                out.push(Step::File(self.get_bell_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Pause(Duration::from_secs(60)));
-                out.push(Step::File("bell.ogg".to_string()));
+                out.push(Step::File(self.get_bell_filename(voice)));
             }
             BellMetronomeBell => {
-                out.push(Step::File("bell.ogg".to_string()));
+                out.push(Step::File(self.get_bell_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Pause(Duration::from_secs(1)));
                 out.push(Step::File("metronome.ogg".to_string()));
-                out.push(Step::File("bell.ogg".to_string()));
+                out.push(Step::File(self.get_bell_filename(voice)));
             }
             Silence => {
                 out.push(Step::Pause(Duration::from_secs(60)));
@@ -284,6 +284,14 @@ impl AudioEngine {
             AnthemVoice::Default => "anthem.ogg".to_string(),
             AnthemVoice::MykhailoKhoma => "anthem_khoma.ogg".to_string(),
             AnthemVoice::OleksandrPonomarov => "anthem_ponomarov.ogg".to_string(),
+        }
+    }
+
+    /// Returns the bell file used by the bell presets for the selected voice.
+    pub fn get_bell_filename(&self, voice: AnnouncementVoice) -> String {
+        match voice {
+            AnnouncementVoice::VinnytsiaCity => "bell_vinnytsia.ogg".to_string(),
+            _ => "bell.ogg".to_string(),
         }
     }
 
