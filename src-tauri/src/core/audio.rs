@@ -181,7 +181,7 @@ impl AudioEngine {
                 out.push(Step::File(self.get_announcement_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File("metronome.ogg".to_string()));
+                out.push(Step::File(self.get_metronome_filename(voice)));
             }
             MetronomeOnly => {
                 out.push(Step::File("metronome.ogg".to_string()));
@@ -201,7 +201,7 @@ impl AudioEngine {
                 out.push(Step::File(self.get_announcement_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File("metronome.ogg".to_string()));
+                out.push(Step::File(self.get_metronome_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Anthem(self.get_anthem_filename(anthem_voice)));
             }
@@ -209,7 +209,7 @@ impl AudioEngine {
                 out.push(Step::File(self.get_announcement_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File("metronome.ogg".to_string()));
+                out.push(Step::File(self.get_metronome_filename(voice)));
 
                 // Append the ending file only if one exists for the selected voice
                 if let Some(ending_file) = self.get_ending_filename(voice) {
@@ -231,7 +231,7 @@ impl AudioEngine {
                 out.push(Step::File(self.get_bell_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File("metronome.ogg".to_string()));
+                out.push(Step::File(self.get_metronome_filename(voice)));
                 out.push(Step::File(self.get_bell_filename(voice)));
             }
             Silence => {
@@ -292,6 +292,14 @@ impl AudioEngine {
         match voice {
             AnnouncementVoice::VinnytsiaCity => "bell_vinnytsia.ogg".to_string(),
             _ => "bell.ogg".to_string(),
+        }
+    }
+
+    /// Returns the metronome file used by presets for the selected voice.
+    pub fn get_metronome_filename(&self, voice: AnnouncementVoice) -> String {
+        match voice {
+            AnnouncementVoice::VinnytsiaCity => "metronome_vinnytsia.ogg".to_string(),
+            _ => "metronome.ogg".to_string(),
         }
     }
 
