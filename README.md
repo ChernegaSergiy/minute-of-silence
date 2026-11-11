@@ -32,7 +32,7 @@
 
 - **Automatic Daily Activation**: Activates at 09:00 with NTP time correction.
 - **Ten Audio Presets**: Voice announcement combined with silence, bell, metronome, national anthem, and/or ending, plus a silent "Silence" preset.
-- **Voice Selection**: Five announcer voices available (original, Vshanui organization voices, Radio BG, Air Alert app).
+- **Voice Selection**: Six announcer voices available (original, Vshanui organization voices, Radio BG, Air Alert app, Vinnytsia city system).
 - **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony (supports MPRIS on Linux).
 - **Visual Status**: A visual overlay with an animated candle and progress ring is displayed during the ceremony.
 - **Skip Next**: Suppresses a single upcoming activation via the tray menu or the main window.
