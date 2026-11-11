@@ -65,6 +65,7 @@
 | 3 | Dania Khomutovskyi | Voice from Vshanui with "Slava Ukrajini" ending |
 | 4 | Radio BG | Audio recording from Grinchenko University Radio (announcement and ending available) |
 | 5 | Air Alert | Voice from the Air Alert app (announcement only, no ending) |
+| 6 | Vinnytsia (city alert) | Recording from the Vinnytsia city announcement system (announcement only, no ending) |
 
 ## Installation
 
