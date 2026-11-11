@@ -310,7 +310,7 @@ impl AudioEngine {
             AnnouncementVoice::DaniaKhomutovskyi => Some("ending_khomutovskyi.ogg".to_string()),
             AnnouncementVoice::RadioBg => Some("ending_radio_bg.ogg".to_string()),
             AnnouncementVoice::AirAlert => None,
-            AnnouncementVoice::VinnytsiaCity => None,
+            AnnouncementVoice::VinnytsiaCity => Some("ending_vinnytsia.ogg".to_string()),
         }
     }
 
