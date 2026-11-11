@@ -275,6 +275,7 @@ impl AudioEngine {
             AnnouncementVoice::DaniaKhomutovskyi => "announcement_khomutovskyi.ogg".to_string(),
             AnnouncementVoice::RadioBg => "announcement_radio_bg.ogg".to_string(),
             AnnouncementVoice::AirAlert => "announcement_air_alert.ogg".to_string(),
+            AnnouncementVoice::VinnytsiaCity => "announcement_vinnytsia.ogg".to_string(),
         }
     }
 
@@ -293,6 +294,7 @@ impl AudioEngine {
             AnnouncementVoice::DaniaKhomutovskyi => Some("ending_khomutovskyi.ogg".to_string()),
             AnnouncementVoice::RadioBg => Some("ending_radio_bg.ogg".to_string()),
             AnnouncementVoice::AirAlert => None,
+            AnnouncementVoice::VinnytsiaCity => None,
         }
     }
 
