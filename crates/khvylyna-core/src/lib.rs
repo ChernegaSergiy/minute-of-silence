@@ -123,6 +123,7 @@ pub enum AnnouncementVoice {
     DaniaKhomutovskyi,
     RadioBg,
     AirAlert,
+    VinnytsiaCity,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
