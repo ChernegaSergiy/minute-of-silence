@@ -331,3 +331,215 @@ fn anthem_filename(voice: AnthemVoice) -> String {
         AnthemVoice::OleksandrPonomarov => "anthem_ponomarov.ogg".to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use AudioPreset::*;
+
+    const PRESETS: [AudioPreset; 10] = [
+        VoiceMetronome,
+        MetronomeOnly,
+        VoiceSilenceBell,
+        VoiceSilence,
+        VoiceMetronomeAnthem,
+        VoiceMetronomeEnding,
+        MetronomeAnthem,
+        BellSilenceBell,
+        BellMetronomeBell,
+        Silence,
+    ];
+
+    const VOICES: [AnnouncementVoice; 6] = [
+        AnnouncementVoice::BohdanHdal,
+        AnnouncementVoice::SoniaSotnyk,
+        AnnouncementVoice::DaniaKhomutovskyi,
+        AnnouncementVoice::RadioBg,
+        AnnouncementVoice::AirAlert,
+        AnnouncementVoice::VinnytsiaCity,
+    ];
+
+    fn file(name: &str) -> Step {
+        Step::File(name.to_string())
+    }
+
+    fn pause(secs: u64) -> Step {
+        Step::Pause(Duration::from_secs(secs))
+    }
+
+    fn anthem(name: &str) -> Step {
+        Step::Anthem(name.to_string())
+    }
+
+    fn steps(preset: AudioPreset, voice: AnnouncementVoice) -> Vec<Step> {
+        preset_steps(preset, voice, AnthemVoice::Default)
+    }
+
+    #[test]
+    fn default_voice_preset_sequences() {
+        let voice = AnnouncementVoice::BohdanHdal;
+        let expected = [
+            (
+                VoiceMetronome,
+                vec![
+                    file("announcement.ogg"),
+                    Step::Wait,
+                    pause(1),
+                    file("metronome.ogg"),
+                ],
+            ),
+            (MetronomeOnly, vec![file("metronome.ogg")]),
+            (
+                VoiceSilenceBell,
+                vec![
+                    file("announcement.ogg"),
+                    Step::Wait,
+                    pause(60),
+                    file("bell.ogg"),
+                ],
+            ),
+            (
+                VoiceSilence,
+                vec![file("announcement.ogg"), Step::Wait, pause(60)],
+            ),
+            (
+                VoiceMetronomeAnthem,
+                vec![
+                    file("announcement.ogg"),
+                    Step::Wait,
+                    pause(1),
+                    file("metronome.ogg"),
+                    Step::Wait,
+                    anthem("anthem.ogg"),
+                ],
+            ),
+            (
+                VoiceMetronomeEnding,
+                vec![
+                    file("announcement.ogg"),
+                    Step::Wait,
+                    pause(1),
+                    file("metronome.ogg"),
+                    file("ending.ogg"),
+                ],
+            ),
+            (
+                MetronomeAnthem,
+                vec![file("metronome.ogg"), Step::Wait, anthem("anthem.ogg")],
+            ),
+            (
+                BellSilenceBell,
+                vec![file("bell.ogg"), Step::Wait, pause(60), file("bell.ogg")],
+            ),
+            (
+                BellMetronomeBell,
+                vec![
+                    file("bell.ogg"),
+                    Step::Wait,
+                    pause(1),
+                    file("metronome.ogg"),
+                    file("bell.ogg"),
+                ],
+            ),
+            (Silence, vec![pause(60)]),
+        ];
+
+        assert_eq!(expected.len(), PRESETS.len());
+        for (preset, sequence) in expected {
+            assert_eq!(steps(preset, voice), sequence, "{preset:?}");
+        }
+    }
+
+    #[test]
+    fn vinnytsia_uses_its_own_bell_and_metronome() {
+        let voice = AnnouncementVoice::VinnytsiaCity;
+
+        assert_eq!(
+            steps(BellSilenceBell, voice),
+            vec![
+                file("bell_vinnytsia.ogg"),
+                Step::Wait,
+                pause(60),
+                file("bell_vinnytsia.ogg"),
+            ]
+        );
+        assert_eq!(
+            steps(BellMetronomeBell, voice),
+            vec![
+                file("bell_vinnytsia.ogg"),
+                Step::Wait,
+                pause(1),
+                file("metronome_vinnytsia.ogg"),
+                file("bell_vinnytsia.ogg"),
+            ]
+        );
+        assert_eq!(
+            steps(VoiceMetronomeEnding, voice),
+            vec![
+                file("announcement_vinnytsia.ogg"),
+                Step::Wait,
+                pause(1),
+                file("metronome_vinnytsia.ogg"),
+                file("bell_vinnytsia.ogg"),
+            ]
+        );
+    }
+
+    #[test]
+    fn voice_without_an_ending_skips_it() {
+        assert_eq!(
+            steps(VoiceMetronomeEnding, AnnouncementVoice::AirAlert),
+            vec![
+                file("announcement_air_alert.ogg"),
+                Step::Wait,
+                pause(1),
+                file("metronome.ogg"),
+            ]
+        );
+    }
+
+    #[test]
+    fn anthem_voice_selects_the_anthem_file() {
+        let voice = AnnouncementVoice::BohdanHdal;
+        for (anthem_voice, name) in [
+            (AnthemVoice::Default, "anthem.ogg"),
+            (AnthemVoice::MykhailoKhoma, "anthem_khoma.ogg"),
+            (AnthemVoice::OleksandrPonomarov, "anthem_ponomarov.ogg"),
+        ] {
+            let sequence = preset_steps(MetronomeAnthem, voice, anthem_voice);
+            assert_eq!(sequence.last(), Some(&anthem(name)));
+        }
+    }
+
+    #[test]
+    fn presets_never_mix_files_of_different_voices() {
+        for voice in VOICES {
+            let assets = VoiceAssets::for_voice(voice);
+            let allowed = [
+                Some(assets.announcement),
+                Some(assets.bell),
+                Some(assets.metronome),
+                assets.ending,
+            ];
+            for preset in PRESETS {
+                for step in steps(preset, voice) {
+                    if let Step::File(name) = step {
+                        assert!(
+                            allowed.contains(&Some(name.as_str())),
+                            "{preset:?} with {voice:?} plays {name}, which is not in the voice's manifest"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_preset_has_steps() {
+        for voice in VOICES {
+            for preset in PRESETS {
+                assert!(!steps(preset, voice).is_empty(), "{preset:?}/{voice:?}");
+            }
+        }
+    }
+}
