@@ -184,7 +184,7 @@ impl AudioEngine {
                 out.push(Step::File(self.get_metronome_filename(voice)));
             }
             MetronomeOnly => {
-                out.push(Step::File("metronome.ogg".to_string()));
+                out.push(Step::File(self.get_metronome_filename(voice)));
             }
             VoiceSilenceBell => {
                 out.push(Step::File(self.get_announcement_filename(voice)));
@@ -217,7 +217,7 @@ impl AudioEngine {
                 }
             }
             MetronomeAnthem => {
-                out.push(Step::File("metronome.ogg".to_string()));
+                out.push(Step::File(self.get_metronome_filename(voice)));
                 out.push(Step::Wait);
                 out.push(Step::Anthem(self.get_anthem_filename(anthem_voice)));
             }
