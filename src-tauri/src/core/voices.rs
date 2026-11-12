@@ -1,0 +1,122 @@
+//! Audio asset manifest for announcement voices.
+//!
+//! Every file a preset can play for a voice is listed here, so presets never
+//! have to know which recording belongs to which voice.
+
+use crate::core::settings::AnnouncementVoice;
+
+/// Audio files that belong to a single announcement voice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VoiceAssets {
+    /// Spoken announcement that opens the ceremony.
+    pub announcement: &'static str,
+    /// Bell used by the bell presets.
+    pub bell: &'static str,
+    /// Metronome played during the minute of silence.
+    pub metronome: &'static str,
+    /// Recording that closes the ceremony, if the voice has one.
+    pub ending: Option<&'static str>,
+}
+
+impl VoiceAssets {
+    /// Returns the audio files for the given voice.
+    pub const fn for_voice(voice: AnnouncementVoice) -> Self {
+        match voice {
+            AnnouncementVoice::BohdanHdal => Self {
+                announcement: "announcement.ogg",
+                bell: "bell.ogg",
+                metronome: "metronome.ogg",
+                ending: Some("ending.ogg"),
+            },
+            AnnouncementVoice::SoniaSotnyk => Self {
+                announcement: "announcement_sotnyk.ogg",
+                bell: "bell.ogg",
+                metronome: "metronome.ogg",
+                ending: Some("ending_sotnyk.ogg"),
+            },
+            AnnouncementVoice::DaniaKhomutovskyi => Self {
+                announcement: "announcement_khomutovskyi.ogg",
+                bell: "bell.ogg",
+                metronome: "metronome.ogg",
+                ending: Some("ending_khomutovskyi.ogg"),
+            },
+            AnnouncementVoice::RadioBg => Self {
+                announcement: "announcement_radio_bg.ogg",
+                bell: "bell.ogg",
+                metronome: "metronome.ogg",
+                ending: Some("ending_radio_bg.ogg"),
+            },
+            AnnouncementVoice::AirAlert => Self {
+                announcement: "announcement_air_alert.ogg",
+                bell: "bell.ogg",
+                metronome: "metronome.ogg",
+                ending: None,
+            },
+            // The Vinnytsia city system closes with the same bell it opens with.
+            AnnouncementVoice::VinnytsiaCity => Self {
+                announcement: "announcement_vinnytsia.ogg",
+                bell: "bell_vinnytsia.ogg",
+                metronome: "metronome_vinnytsia.ogg",
+                ending: Some("bell_vinnytsia.ogg"),
+            },
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    const VOICES: [AnnouncementVoice; 6] = [
+        AnnouncementVoice::BohdanHdal,
+        AnnouncementVoice::SoniaSotnyk,
+        AnnouncementVoice::DaniaKhomutovskyi,
+        AnnouncementVoice::RadioBg,
+        AnnouncementVoice::AirAlert,
+        AnnouncementVoice::VinnytsiaCity,
+    ];
+
+    #[test]
+    fn every_listed_file_exists() {
+        let audio_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("audio");
+        for voice in VOICES {
+            let assets = VoiceAssets::for_voice(voice);
+            let files = [
+                Some(assets.announcement),
+                Some(assets.bell),
+                Some(assets.metronome),
+                assets.ending,
+            ];
+            for file in files.into_iter().flatten() {
+                assert!(
+                    audio_dir.join(file).is_file(),
+                    "{voice:?}: missing audio file {file}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn vinnytsia_ending_is_the_bell() {
+        let assets = VoiceAssets::for_voice(AnnouncementVoice::VinnytsiaCity);
+        assert_eq!(assets.ending, Some(assets.bell));
+    }
+
+    #[test]
+    fn air_alert_has_no_ending() {
+        assert_eq!(
+            VoiceAssets::for_voice(AnnouncementVoice::AirAlert).ending,
+            None
+        );
+    }
+
+    #[test]
+    fn default_voice_files_match_the_original_names() {
+        let assets = VoiceAssets::for_voice(AnnouncementVoice::BohdanHdal);
+        assert_eq!(assets.announcement, "announcement.ogg");
+        assert_eq!(assets.bell, "bell.ogg");
+        assert_eq!(assets.metronome, "metronome.ogg");
+        assert_eq!(assets.ending, Some("ending.ogg"));
+    }
+}

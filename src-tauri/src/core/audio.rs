@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::core::settings::{AnnouncementVoice, AnthemVoice, AudioPreset};
+use crate::core::voices::VoiceAssets;
 use crate::error::{AppError, Result};
 
 /// Audio engine for ceremony playback.
@@ -269,14 +270,7 @@ impl AudioEngine {
     }
 
     pub fn get_announcement_filename(&self, voice: AnnouncementVoice) -> String {
-        match voice {
-            AnnouncementVoice::BohdanHdal => "announcement.ogg".to_string(),
-            AnnouncementVoice::SoniaSotnyk => "announcement_sotnyk.ogg".to_string(),
-            AnnouncementVoice::DaniaKhomutovskyi => "announcement_khomutovskyi.ogg".to_string(),
-            AnnouncementVoice::RadioBg => "announcement_radio_bg.ogg".to_string(),
-            AnnouncementVoice::AirAlert => "announcement_air_alert.ogg".to_string(),
-            AnnouncementVoice::VinnytsiaCity => "announcement_vinnytsia.ogg".to_string(),
-        }
+        VoiceAssets::for_voice(voice).announcement.to_string()
     }
 
     fn get_anthem_filename(&self, voice: AnthemVoice) -> String {
@@ -289,30 +283,16 @@ impl AudioEngine {
 
     /// Returns the bell file used by the bell presets for the selected voice.
     pub fn get_bell_filename(&self, voice: AnnouncementVoice) -> String {
-        match voice {
-            AnnouncementVoice::VinnytsiaCity => "bell_vinnytsia.ogg".to_string(),
-            _ => "bell.ogg".to_string(),
-        }
+        VoiceAssets::for_voice(voice).bell.to_string()
     }
 
     /// Returns the metronome file used by presets for the selected voice.
     pub fn get_metronome_filename(&self, voice: AnnouncementVoice) -> String {
-        match voice {
-            AnnouncementVoice::VinnytsiaCity => "metronome_vinnytsia.ogg".to_string(),
-            _ => "metronome.ogg".to_string(),
-        }
+        VoiceAssets::for_voice(voice).metronome.to_string()
     }
 
     fn get_ending_filename(&self, voice: AnnouncementVoice) -> Option<String> {
-        match voice {
-            AnnouncementVoice::BohdanHdal => Some("ending.ogg".to_string()),
-            AnnouncementVoice::SoniaSotnyk => Some("ending_sotnyk.ogg".to_string()),
-            AnnouncementVoice::DaniaKhomutovskyi => Some("ending_khomutovskyi.ogg".to_string()),
-            AnnouncementVoice::RadioBg => Some("ending_radio_bg.ogg".to_string()),
-            AnnouncementVoice::AirAlert => None,
-            // The Vinnytsia city system closes with the same bell it opens with.
-            AnnouncementVoice::VinnytsiaCity => Some(self.get_bell_filename(voice)),
-        }
+        VoiceAssets::for_voice(voice).ending.map(str::to_string)
     }
 
     /// Resolves the absolute path to an audio resource using Tauri's path resolver.
