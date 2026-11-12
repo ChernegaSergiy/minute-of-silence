@@ -22,6 +22,7 @@ pub struct AudioEngine {
 }
 
 /// A single step in a preset playback sequence.
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum Step {
     File(String),
     Pause(Duration),
@@ -123,7 +124,7 @@ impl AudioEngine {
         player.set_volume(volume_float);
 
         // Build the playback step sequence once and execute it.
-        let steps = self.preset_steps(preset, voice, anthem_voice);
+        let steps = preset_steps(preset, voice, anthem_voice);
 
         for step in steps {
             if self.is_stopped(start_counter) {
@@ -166,83 +167,6 @@ impl AudioEngine {
         Ok(())
     }
 
-    /// Return a list of ordered steps for the given preset.
-    fn preset_steps(
-        &self,
-        preset: AudioPreset,
-        voice: AnnouncementVoice,
-        anthem_voice: AnthemVoice,
-    ) -> Vec<Step> {
-        use AudioPreset::*;
-
-        let mut out = Vec::new();
-
-        match preset {
-            VoiceMetronome => {
-                out.push(Step::File(self.get_announcement_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File(self.get_metronome_filename(voice)));
-            }
-            MetronomeOnly => {
-                out.push(Step::File(self.get_metronome_filename(voice)));
-            }
-            VoiceSilenceBell => {
-                out.push(Step::File(self.get_announcement_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Pause(Duration::from_secs(60)));
-                out.push(Step::File(self.get_bell_filename(voice)));
-            }
-            VoiceSilence => {
-                out.push(Step::File(self.get_announcement_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Pause(Duration::from_secs(60)));
-            }
-            VoiceMetronomeAnthem => {
-                out.push(Step::File(self.get_announcement_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File(self.get_metronome_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Anthem(self.get_anthem_filename(anthem_voice)));
-            }
-            VoiceMetronomeEnding => {
-                out.push(Step::File(self.get_announcement_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File(self.get_metronome_filename(voice)));
-
-                // Append the ending file only if one exists for the selected voice
-                if let Some(ending_file) = self.get_ending_filename(voice) {
-                    out.push(Step::File(ending_file));
-                }
-            }
-            MetronomeAnthem => {
-                out.push(Step::File(self.get_metronome_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Anthem(self.get_anthem_filename(anthem_voice)));
-            }
-            BellSilenceBell => {
-                out.push(Step::File(self.get_bell_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Pause(Duration::from_secs(60)));
-                out.push(Step::File(self.get_bell_filename(voice)));
-            }
-            BellMetronomeBell => {
-                out.push(Step::File(self.get_bell_filename(voice)));
-                out.push(Step::Wait);
-                out.push(Step::Pause(Duration::from_secs(1)));
-                out.push(Step::File(self.get_metronome_filename(voice)));
-                out.push(Step::File(self.get_bell_filename(voice)));
-            }
-            Silence => {
-                out.push(Step::Pause(Duration::from_secs(60)));
-            }
-        }
-
-        out
-    }
-
     /// Estimate total duration of a preset by summing file durations and explicit pauses.
     pub fn estimate_preset_duration(
         &self,
@@ -251,7 +175,7 @@ impl AudioEngine {
         anthem_voice: AnthemVoice,
     ) -> Result<Duration> {
         let mut total = Duration::from_secs(0);
-        let steps = self.preset_steps(preset, voice, anthem_voice);
+        let steps = preset_steps(preset, voice, anthem_voice);
         for step in &steps {
             match step {
                 Step::File(f) | Step::Anthem(f) => {
@@ -273,26 +197,9 @@ impl AudioEngine {
         VoiceAssets::for_voice(voice).announcement.to_string()
     }
 
-    fn get_anthem_filename(&self, voice: AnthemVoice) -> String {
-        match voice {
-            AnthemVoice::Default => "anthem.ogg".to_string(),
-            AnthemVoice::MykhailoKhoma => "anthem_khoma.ogg".to_string(),
-            AnthemVoice::OleksandrPonomarov => "anthem_ponomarov.ogg".to_string(),
-        }
-    }
-
     /// Returns the bell file used by the bell presets for the selected voice.
     pub fn get_bell_filename(&self, voice: AnnouncementVoice) -> String {
         VoiceAssets::for_voice(voice).bell.to_string()
-    }
-
-    /// Returns the metronome file used by presets for the selected voice.
-    pub fn get_metronome_filename(&self, voice: AnnouncementVoice) -> String {
-        VoiceAssets::for_voice(voice).metronome.to_string()
-    }
-
-    fn get_ending_filename(&self, voice: AnnouncementVoice) -> Option<String> {
-        VoiceAssets::for_voice(voice).ending.map(str::to_string)
     }
 
     /// Resolves the absolute path to an audio resource using Tauri's path resolver.
@@ -336,5 +243,91 @@ impl AudioEngine {
             "Audio file not found: {}",
             filename
         )))
+    }
+}
+
+/// Return a list of ordered steps for the given preset.
+fn preset_steps(
+    preset: AudioPreset,
+    voice: AnnouncementVoice,
+    anthem_voice: AnthemVoice,
+) -> Vec<Step> {
+    use AudioPreset::*;
+
+    let assets = VoiceAssets::for_voice(voice);
+    let mut out = Vec::new();
+
+    match preset {
+        VoiceMetronome => {
+            out.push(Step::File(assets.announcement.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Pause(Duration::from_secs(1)));
+            out.push(Step::File(assets.metronome.to_string()));
+        }
+        MetronomeOnly => {
+            out.push(Step::File(assets.metronome.to_string()));
+        }
+        VoiceSilenceBell => {
+            out.push(Step::File(assets.announcement.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Pause(Duration::from_secs(60)));
+            out.push(Step::File(assets.bell.to_string()));
+        }
+        VoiceSilence => {
+            out.push(Step::File(assets.announcement.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Pause(Duration::from_secs(60)));
+        }
+        VoiceMetronomeAnthem => {
+            out.push(Step::File(assets.announcement.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Pause(Duration::from_secs(1)));
+            out.push(Step::File(assets.metronome.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Anthem(anthem_filename(anthem_voice)));
+        }
+        VoiceMetronomeEnding => {
+            out.push(Step::File(assets.announcement.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Pause(Duration::from_secs(1)));
+            out.push(Step::File(assets.metronome.to_string()));
+
+            // Append the ending file only if one exists for the selected voice
+            if let Some(ending_file) = assets.ending {
+                out.push(Step::File(ending_file.to_string()));
+            }
+        }
+        MetronomeAnthem => {
+            out.push(Step::File(assets.metronome.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Anthem(anthem_filename(anthem_voice)));
+        }
+        BellSilenceBell => {
+            out.push(Step::File(assets.bell.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Pause(Duration::from_secs(60)));
+            out.push(Step::File(assets.bell.to_string()));
+        }
+        BellMetronomeBell => {
+            out.push(Step::File(assets.bell.to_string()));
+            out.push(Step::Wait);
+            out.push(Step::Pause(Duration::from_secs(1)));
+            out.push(Step::File(assets.metronome.to_string()));
+            out.push(Step::File(assets.bell.to_string()));
+        }
+        Silence => {
+            out.push(Step::Pause(Duration::from_secs(60)));
+        }
+    }
+
+    out
+}
+
+/// Returns the national anthem recording for the selected anthem voice.
+fn anthem_filename(voice: AnthemVoice) -> String {
+    match voice {
+        AnthemVoice::Default => "anthem.ogg".to_string(),
+        AnthemVoice::MykhailoKhoma => "anthem_khoma.ogg".to_string(),
+        AnthemVoice::OleksandrPonomarov => "anthem_ponomarov.ogg".to_string(),
     }
 }
