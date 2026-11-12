@@ -50,6 +50,7 @@ const announcementVoices: AnnouncementVoice[] = [
   "dania_khomutovskyi",
   "radio_bg",
   "air_alert",
+  "vinnytsia_city",
 ];
 
 const announcementVoiceLabel = (voice: AnnouncementVoice) => t(`controls.voice.${voice}`);

@@ -17,29 +17,23 @@ pub struct CeremonyScheduler {
     app: AppHandle,
     audio: Arc<AudioEngine>,
     voice_durations: HashMap<AnnouncementVoice, Duration>,
-    bell_duration: Duration,
+    bell_durations: HashMap<AnnouncementVoice, Duration>,
 }
 
 impl CeremonyScheduler {
     pub fn new(app: AppHandle) -> Self {
         let audio = app.state::<AppState>().audio.clone();
-        let bell_duration = audio.get_duration("bell.ogg").unwrap_or(Duration::ZERO);
-
         let mut voice_durations = HashMap::new();
+        let mut bell_durations = HashMap::new();
         for voice in [
             AnnouncementVoice::BohdanHdal,
             AnnouncementVoice::SoniaSotnyk,
             AnnouncementVoice::DaniaKhomutovskyi,
             AnnouncementVoice::RadioBg,
             AnnouncementVoice::AirAlert,
+            AnnouncementVoice::VinnytsiaCity,
         ] {
-            let filename = match voice {
-                AnnouncementVoice::BohdanHdal => "announcement.ogg".to_string(),
-                AnnouncementVoice::SoniaSotnyk => "announcement_sotnyk.ogg".to_string(),
-                AnnouncementVoice::DaniaKhomutovskyi => "announcement_khomutovskyi.ogg".to_string(),
-                AnnouncementVoice::RadioBg => "announcement_radio_bg.ogg".to_string(),
-                AnnouncementVoice::AirAlert => "announcement_air_alert.ogg".to_string(),
-            };
+            let filename = audio.get_announcement_filename(voice);
             let duration = audio.get_duration(&filename).unwrap_or(Duration::ZERO);
             voice_durations.insert(voice, duration);
             log::info!(
@@ -48,13 +42,22 @@ impl CeremonyScheduler {
                 filename,
                 duration.as_secs_f32()
             );
+
+            let bell_file = audio.get_bell_filename(voice);
+            let bell_duration = audio.get_duration(&bell_file).unwrap_or(Duration::ZERO);
+            bell_durations.insert(voice, bell_duration);
+            log::info!(
+                "Voice {:?} bell ({}) duration: {:.2}s",
+                voice,
+                bell_file,
+                bell_duration.as_secs_f32()
+            );
         }
-        log::info!("Bell duration: {:.2}s", bell_duration.as_secs_f32());
         Self {
             app,
             audio,
             voice_durations,
-            bell_duration,
+            bell_durations,
         }
     }
 
@@ -166,10 +169,15 @@ impl CeremonyScheduler {
                             .voice_durations
                             .get(&voice)
                             .unwrap_or(&self.get_default_duration());
+                        let bell_duration = self
+                            .bell_durations
+                            .get(&voice)
+                            .copied()
+                            .unwrap_or(Duration::ZERO);
                         let compensation = Self::get_compensation_duration(
                             inner.settings.preset,
                             voice_duration,
-                            self.bell_duration,
+                            bell_duration,
                         );
                         // Check compensation window first: [09:00 - duration, 09:00)
                         let window_start = ceremony_time
