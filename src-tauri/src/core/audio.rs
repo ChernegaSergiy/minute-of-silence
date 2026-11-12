@@ -310,7 +310,8 @@ impl AudioEngine {
             AnnouncementVoice::DaniaKhomutovskyi => Some("ending_khomutovskyi.ogg".to_string()),
             AnnouncementVoice::RadioBg => Some("ending_radio_bg.ogg".to_string()),
             AnnouncementVoice::AirAlert => None,
-            AnnouncementVoice::VinnytsiaCity => Some("ending_vinnytsia.ogg".to_string()),
+            // The Vinnytsia city system closes with the same bell it opens with.
+            AnnouncementVoice::VinnytsiaCity => Some(self.get_bell_filename(voice)),
         }
     }
 
