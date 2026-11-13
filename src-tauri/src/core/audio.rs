@@ -9,7 +9,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::core::settings::{AnnouncementVoice, AnthemVoice, AudioPreset};
+use crate::core::settings::{AnnouncementVoice, AnthemVoice, AudioPreset, PresetBlock};
 use crate::core::voices::VoiceAssets;
 use crate::error::{AppError, Result};
 
@@ -252,71 +252,59 @@ fn preset_steps(
     voice: AnnouncementVoice,
     anthem_voice: AnthemVoice,
 ) -> Vec<Step> {
-    use AudioPreset::*;
+    blocks_to_steps(preset.blocks(), voice, anthem_voice)
+}
+
+/// Turns a list of preset blocks into playback steps.
+///
+/// Every file comes from the manifest of the one selected voice. A block the
+/// voice does not have (an ending, for example) is skipped, and the gaps
+/// between the remaining blocks are decided by what follows them.
+fn blocks_to_steps(
+    blocks: &[PresetBlock],
+    voice: AnnouncementVoice,
+    anthem_voice: AnthemVoice,
+) -> Vec<Step> {
+    use PresetBlock::*;
 
     let assets = VoiceAssets::for_voice(voice);
+    let blocks: Vec<PresetBlock> = blocks
+        .iter()
+        .copied()
+        .filter(|block| *block != Ending || assets.ending.is_some())
+        .collect();
+
     let mut out = Vec::new();
+    for (index, block) in blocks.iter().enumerate() {
+        let next = blocks.get(index + 1).copied();
+        match block {
+            Announcement | Bell | Metronome => {
+                let file = match block {
+                    Announcement => assets.announcement,
+                    Bell => assets.bell,
+                    _ => assets.metronome,
+                };
+                out.push(Step::File(file.to_string()));
 
-    match preset {
-        VoiceMetronome => {
-            out.push(Step::File(assets.announcement.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Pause(Duration::from_secs(1)));
-            out.push(Step::File(assets.metronome.to_string()));
-        }
-        MetronomeOnly => {
-            out.push(Step::File(assets.metronome.to_string()));
-        }
-        VoiceSilenceBell => {
-            out.push(Step::File(assets.announcement.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Pause(Duration::from_secs(60)));
-            out.push(Step::File(assets.bell.to_string()));
-        }
-        VoiceSilence => {
-            out.push(Step::File(assets.announcement.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Pause(Duration::from_secs(60)));
-        }
-        VoiceMetronomeAnthem => {
-            out.push(Step::File(assets.announcement.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Pause(Duration::from_secs(1)));
-            out.push(Step::File(assets.metronome.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Anthem(anthem_filename(anthem_voice)));
-        }
-        VoiceMetronomeEnding => {
-            out.push(Step::File(assets.announcement.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Pause(Duration::from_secs(1)));
-            out.push(Step::File(assets.metronome.to_string()));
-
-            // Append the ending file only if one exists for the selected voice
-            if let Some(ending_file) = assets.ending {
-                out.push(Step::File(ending_file.to_string()));
+                match next {
+                    // A short pause separates a voice or a bell from the metronome.
+                    Some(Metronome) if matches!(block, Announcement | Bell) => {
+                        out.push(Step::Wait);
+                        out.push(Step::Pause(Duration::from_secs(1)));
+                    }
+                    // Silence and the anthem start only after the file has finished.
+                    Some(Silence | Anthem) => out.push(Step::Wait),
+                    // Everything else is queued right behind the file.
+                    _ => {}
+                }
             }
-        }
-        MetronomeAnthem => {
-            out.push(Step::File(assets.metronome.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Anthem(anthem_filename(anthem_voice)));
-        }
-        BellSilenceBell => {
-            out.push(Step::File(assets.bell.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Pause(Duration::from_secs(60)));
-            out.push(Step::File(assets.bell.to_string()));
-        }
-        BellMetronomeBell => {
-            out.push(Step::File(assets.bell.to_string()));
-            out.push(Step::Wait);
-            out.push(Step::Pause(Duration::from_secs(1)));
-            out.push(Step::File(assets.metronome.to_string()));
-            out.push(Step::File(assets.bell.to_string()));
-        }
-        Silence => {
-            out.push(Step::Pause(Duration::from_secs(60)));
+            Silence => out.push(Step::Pause(Duration::from_secs(60))),
+            Ending => {
+                if let Some(ending) = assets.ending {
+                    out.push(Step::File(ending.to_string()));
+                }
+            }
+            Anthem => out.push(Step::Anthem(anthem_filename(anthem_voice))),
         }
     }
 
