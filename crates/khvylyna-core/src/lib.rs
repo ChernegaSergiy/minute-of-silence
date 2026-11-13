@@ -435,9 +435,19 @@ impl Settings {
     /// Settings written before schema version 2 only know the selected `preset`,
     /// so their blocks are taken from it. Settings that already have blocks keep
     /// them. Invalid versions are left as they are so validation still rejects them.
+    ///
+    /// The Vinnytsia voice has no spoken ending. What it used to play as one was
+    /// its closing bell, so an ending of that voice becomes a bell.
     pub fn migrate(&mut self) {
         if self.blocks.is_empty() {
             self.blocks = self.preset.blocks().to_vec();
+        }
+        if self.announcement_voice == AnnouncementVoice::VinnytsiaCity {
+            for block in &mut self.blocks {
+                if *block == PresetBlock::Ending {
+                    *block = PresetBlock::Bell;
+                }
+            }
         }
         if (1..CONFIG_SCHEMA_VERSION).contains(&self.version) {
             self.version = CONFIG_SCHEMA_VERSION;
@@ -1038,6 +1048,43 @@ mod tests {
             [PresetBlock::Bell, PresetBlock::Silence, PresetBlock::Bell]
         );
         assert!(settings.validate().is_ok());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_migrate_turns_the_vinnytsia_ending_into_a_bell() {
+        let legacy = r#"{ "version": 1, "preset": "voice_metronome_ending", "announcementVoice": "vinnytsia_city" }"#;
+        let mut settings: Settings = serde_json::from_str(legacy).expect("parse failed");
+
+        settings.migrate();
+
+        assert_eq!(
+            settings.blocks,
+            [
+                PresetBlock::Announcement,
+                PresetBlock::Metronome,
+                PresetBlock::Bell
+            ]
+        );
+        assert!(settings.validate().is_ok());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_migrate_keeps_the_ending_of_other_voices() {
+        let legacy = r#"{ "version": 1, "preset": "voice_metronome_ending", "announcementVoice": "sonia_sotnyk" }"#;
+        let mut settings: Settings = serde_json::from_str(legacy).expect("parse failed");
+
+        settings.migrate();
+
+        assert_eq!(
+            settings.blocks,
+            [
+                PresetBlock::Announcement,
+                PresetBlock::Metronome,
+                PresetBlock::Ending
+            ]
+        );
     }
 
     #[cfg(feature = "std")]
