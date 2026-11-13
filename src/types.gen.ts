@@ -34,6 +34,15 @@ personalDates: Array<PersonalDate>, };
 export type PersonalDate = { id?: string | null, month: number, day: number, year: number, label: string, };
 
 /**
+ * A building block of an audio preset.
+ *
+ * Every file a block plays comes from the single selected announcement voice,
+ * so a preset never mixes recordings of different voices. The anthem is the
+ * exception: it has its own voice setting.
+ */
+export type PresetBlock = "announcement" | "bell" | "metronome" | "silence" | "ending" | "anthem";
+
+/**
  * User-configurable application settings.
  */
 export type Settings = { 
@@ -55,8 +64,19 @@ autostartEnabled: boolean,
 weekdaysOnly: boolean, 
 /**
  * Selected audio preset (1–10).
+ *
+ * Superseded by [`Settings::blocks`]. It is only read to migrate settings
+ * saved before schema version 2.
  */
 preset: AudioPreset, 
+/**
+ * Blocks the ceremony audio is made of, in playback order.
+ *
+ * Every file comes from the single selected `announcement_voice`. Settings
+ * saved before schema version 2 have no blocks; [`Settings::migrate`] fills
+ * them in from `preset`.
+ */
+blocks: Array<PresetBlock>, 
 /**
  * Master volume for the ceremony audio (0–100).
  */
