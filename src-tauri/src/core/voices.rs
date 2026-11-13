@@ -60,12 +60,12 @@ impl VoiceAssets {
                 ending: None,
                 announcement_includes_bell: false,
             },
-            // The Vinnytsia city system closes with the same bell it opens with.
+            // The Vinnytsia city system has no spoken ending, only the closing bell.
             AnnouncementVoice::VinnytsiaCity => Self {
                 announcement: "announcement_vinnytsia.ogg",
                 bell: "bell_vinnytsia.ogg",
                 metronome: "metronome_vinnytsia.ogg",
-                ending: Some("bell_vinnytsia.ogg"),
+                ending: None,
                 announcement_includes_bell: true,
             },
         }
@@ -144,9 +144,11 @@ mod tests {
     }
 
     #[test]
-    fn vinnytsia_ending_is_the_bell() {
-        let assets = VoiceAssets::for_voice(AnnouncementVoice::VinnytsiaCity);
-        assert_eq!(assets.ending, Some(assets.bell));
+    fn vinnytsia_has_no_ending() {
+        assert_eq!(
+            VoiceAssets::for_voice(AnnouncementVoice::VinnytsiaCity).ending,
+            None
+        );
     }
 
     #[test]

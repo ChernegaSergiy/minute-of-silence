@@ -449,6 +449,7 @@ mod tests {
                 file("bell_vinnytsia.ogg"),
             ]
         );
+        // Vinnytsia has no spoken ending, so none is played.
         assert_eq!(
             steps(VoiceMetronomeEnding, voice),
             vec![
@@ -456,7 +457,6 @@ mod tests {
                 Step::Wait,
                 pause(1),
                 file("metronome_vinnytsia.ogg"),
-                file("bell_vinnytsia.ogg"),
             ]
         );
     }
