@@ -109,8 +109,7 @@
         "none": "Nothing",
         "ending": "Voice ending",
         "bell": "Bell",
-        "anthem": "Anthem",
-        "unavailable": "The selected voice has no ending."
+        "anthem": "Anthem"
       }
     },
     "voice": {

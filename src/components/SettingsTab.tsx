@@ -566,9 +566,6 @@ export default function SettingsTab({
               ))}
             </Dropdown>
           </div>
-          {!available.ending && (
-            <div className={styles.switchDesc}>{t("controls.constructor.closing.unavailable")}</div>
-          )}
         </div>
         {slots.closing === "anthem" && (
           <div className={styles.selectRow}>
