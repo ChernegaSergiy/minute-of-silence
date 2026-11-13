@@ -4,6 +4,7 @@
 //! have to know which recording belongs to which voice.
 
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
+use khvylyna_core::VoiceCapabilities;
 
 /// Audio files that belong to a single announcement voice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +70,21 @@ impl VoiceAssets {
             },
         }
     }
+}
+
+/// Returns what every announcement voice can play, for the interface.
+pub fn voice_capabilities() -> Vec<VoiceCapabilities> {
+    AnnouncementVoice::ALL
+        .into_iter()
+        .map(|voice| {
+            let assets = VoiceAssets::for_voice(voice);
+            VoiceCapabilities {
+                voice,
+                has_ending: assets.ending.is_some(),
+                announcement_includes_bell: assets.announcement_includes_bell,
+            }
+        })
+        .collect()
 }
 
 /// Returns the blocks the selected voice can actually play.
@@ -203,6 +219,25 @@ mod tests {
             assert_eq!(
                 effective_blocks(blocks, AnnouncementVoice::VinnytsiaCity),
                 blocks
+            );
+        }
+    }
+
+    #[test]
+    fn capabilities_cover_every_voice_and_match_the_manifest() {
+        let capabilities = voice_capabilities();
+        assert_eq!(capabilities.len(), VOICES.len());
+
+        for voice in VOICES {
+            let entry = capabilities
+                .iter()
+                .find(|entry| entry.voice == voice)
+                .unwrap_or_else(|| panic!("no capabilities for {voice:?}"));
+            let assets = VoiceAssets::for_voice(voice);
+            assert_eq!(entry.has_ending, assets.ending.is_some(), "{voice:?}");
+            assert_eq!(
+                entry.announcement_includes_bell, assets.announcement_includes_bell,
+                "{voice:?}"
             );
         }
     }

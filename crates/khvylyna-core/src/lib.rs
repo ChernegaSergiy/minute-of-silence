@@ -137,6 +137,34 @@ pub enum AnnouncementVoice {
     VinnytsiaCity,
 }
 
+impl AnnouncementVoice {
+    /// Every announcement voice, in declaration order.
+    pub const ALL: [Self; 6] = [
+        Self::BohdanHdal,
+        Self::SoniaSotnyk,
+        Self::DaniaKhomutovskyi,
+        Self::RadioBg,
+        Self::AirAlert,
+        Self::VinnytsiaCity,
+    ];
+}
+
+/// What an announcement voice can play.
+///
+/// Lets the interface disable the blocks a voice does not have.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceCapabilities {
+    /// The voice these capabilities belong to.
+    pub voice: AnnouncementVoice,
+    /// Whether the voice has a closing recording.
+    pub has_ending: bool,
+    /// Whether the announcement already starts with the bell.
+    pub announcement_includes_bell: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
@@ -327,6 +355,8 @@ pub struct AppInitialState {
     pub personal_dates: Vec<PersonalDate>,
     pub status: StatusSnapshot,
     pub version: String,
+    /// What each announcement voice can play.
+    pub voices: alloc::vec::Vec<VoiceCapabilities>,
 }
 
 /// Configuration import and validation errors.
@@ -905,6 +935,26 @@ mod tests {
             ..valid
         };
         assert!(empty_label.validate().is_err());
+    }
+
+    #[test]
+    fn test_all_voices_are_listed_once() {
+        for voice in AnnouncementVoice::ALL {
+            // Adding a voice breaks this match, a reminder to add it to ALL too.
+            match voice {
+                AnnouncementVoice::BohdanHdal
+                | AnnouncementVoice::SoniaSotnyk
+                | AnnouncementVoice::DaniaKhomutovskyi
+                | AnnouncementVoice::RadioBg
+                | AnnouncementVoice::AirAlert
+                | AnnouncementVoice::VinnytsiaCity => {}
+            }
+            let listed = AnnouncementVoice::ALL
+                .iter()
+                .filter(|other| **other == voice)
+                .count();
+            assert_eq!(listed, 1, "{voice:?}");
+        }
     }
 
     #[test]

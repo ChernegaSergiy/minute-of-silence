@@ -7,7 +7,11 @@ export type AnthemVoice = "default" | "mykhailo_khoma" | "oleksandr_ponomarov";
 /**
  * Combined initial application state for atomic startup hydration.
  */
-export type AppInitialState = { settings: Settings, personalDates: Array<PersonalDate>, status: StatusSnapshot, version: string, };
+export type AppInitialState = { settings: Settings, personalDates: Array<PersonalDate>, status: StatusSnapshot, version: string, 
+/**
+ * What each announcement voice can play.
+ */
+voices: Array<VoiceCapabilities>, };
 
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
 
@@ -162,3 +166,22 @@ skipDate: string | null, };
 export type StatusSnapshot = { ceremonyActive: boolean, skipTomorrow: boolean, lastActivation: string | null, lastNtpSync: string | null, };
 
 export type UiTheme = "light" | "dark";
+
+/**
+ * What an announcement voice can play.
+ *
+ * Lets the interface disable the blocks a voice does not have.
+ */
+export type VoiceCapabilities = { 
+/**
+ * The voice these capabilities belong to.
+ */
+voice: AnnouncementVoice, 
+/**
+ * Whether the voice has a closing recording.
+ */
+hasEnding: boolean, 
+/**
+ * Whether the announcement already starts with the bell.
+ */
+announcementIncludesBell: boolean, };
