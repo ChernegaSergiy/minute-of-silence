@@ -9,7 +9,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::core::settings::{AnnouncementVoice, AnthemVoice, AudioPreset, PresetBlock};
+use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
 use crate::core::voices::VoiceAssets;
 use crate::error::{AppError, Result};
 
@@ -105,9 +105,10 @@ impl AudioEngine {
         Ok(Duration::from_secs_f64(secs))
     }
 
-    pub fn play_preset(
+    /// Plays the given blocks one after another with the selected voices.
+    pub fn play_blocks(
         &self,
-        preset: AudioPreset,
+        blocks: &[PresetBlock],
         volume: u8,
         voice: AnnouncementVoice,
         anthem_voice: AnthemVoice,
@@ -124,7 +125,7 @@ impl AudioEngine {
         player.set_volume(volume_float);
 
         // Build the playback step sequence once and execute it.
-        let steps = preset_steps(preset, voice, anthem_voice);
+        let steps = blocks_to_steps(blocks, voice, anthem_voice);
 
         for step in steps {
             if self.is_stopped(start_counter) {
@@ -167,15 +168,15 @@ impl AudioEngine {
         Ok(())
     }
 
-    /// Estimate total duration of a preset by summing file durations and explicit pauses.
-    pub fn estimate_preset_duration(
+    /// Estimate total duration of the blocks by summing file durations and explicit pauses.
+    pub fn estimate_duration(
         &self,
-        preset: AudioPreset,
+        blocks: &[PresetBlock],
         voice: AnnouncementVoice,
         anthem_voice: AnthemVoice,
     ) -> Result<Duration> {
         let mut total = Duration::from_secs(0);
-        let steps = preset_steps(preset, voice, anthem_voice);
+        let steps = blocks_to_steps(blocks, voice, anthem_voice);
         for step in &steps {
             match step {
                 Step::File(f) | Step::Anthem(f) => {
@@ -246,15 +247,6 @@ impl AudioEngine {
     }
 }
 
-/// Return a list of ordered steps for the given preset.
-fn preset_steps(
-    preset: AudioPreset,
-    voice: AnnouncementVoice,
-    anthem_voice: AnthemVoice,
-) -> Vec<Step> {
-    blocks_to_steps(preset.blocks(), voice, anthem_voice)
-}
-
 /// Turns a list of preset blocks into playback steps.
 ///
 /// Every file comes from the manifest of the one selected voice. A block the
@@ -323,7 +315,7 @@ fn anthem_filename(voice: AnthemVoice) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use AudioPreset::*;
+    use crate::core::settings::AudioPreset::{self, *};
 
     const PRESETS: [AudioPreset; 10] = [
         VoiceMetronome,
@@ -360,7 +352,7 @@ mod tests {
     }
 
     fn steps(preset: AudioPreset, voice: AnnouncementVoice) -> Vec<Step> {
-        preset_steps(preset, voice, AnthemVoice::Default)
+        blocks_to_steps(preset.blocks(), voice, AnthemVoice::Default)
     }
 
     #[test]
@@ -494,7 +486,7 @@ mod tests {
             (AnthemVoice::MykhailoKhoma, "anthem_khoma.ogg"),
             (AnthemVoice::OleksandrPonomarov, "anthem_ponomarov.ogg"),
         ] {
-            let sequence = preset_steps(MetronomeAnthem, voice, anthem_voice);
+            let sequence = blocks_to_steps(MetronomeAnthem.blocks(), voice, anthem_voice);
             assert_eq!(sequence.last(), Some(&anthem(name)));
         }
     }

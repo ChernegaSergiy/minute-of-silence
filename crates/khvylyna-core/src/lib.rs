@@ -222,6 +222,13 @@ pub enum PresetBlock {
     Anthem,
 }
 
+impl PresetBlock {
+    /// Whether the block plays a recording. Only silence does not.
+    pub fn is_audible(self) -> bool {
+        self != Self::Silence
+    }
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -898,6 +905,16 @@ mod tests {
             ..valid
         };
         assert!(empty_label.validate().is_err());
+    }
+
+    #[test]
+    fn test_only_silence_is_not_audible() {
+        use PresetBlock::*;
+
+        for block in [Announcement, Bell, Metronome, Ending, Anthem] {
+            assert!(block.is_audible(), "{block:?}");
+        }
+        assert!(!Silence.is_audible());
     }
 
     #[test]
