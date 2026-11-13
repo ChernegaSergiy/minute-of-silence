@@ -34,6 +34,7 @@ import {
 } from "./utils/api";
 import type { PersonalDate, Settings, StatusSnapshot } from "./types";
 import { t } from "./utils/i18n";
+import { settingsChanged } from "./utils/settingsChanged";
 import AboutTab from "./components/AboutTab";
 import Overlay from "./components/Overlay";
 import SettingsTab from "./components/SettingsTab";
@@ -120,9 +121,7 @@ export default function App() {
 
   const isDirty = useMemo(() => {
     if (!hydrated || !settings || !initialSettings) return false;
-    return (Object.keys(settings) as (keyof Settings)[]).some(
-      (key) => settings[key] !== initialSettings[key]
-    );
+    return settingsChanged(settings, initialSettings);
   }, [hydrated, settings, initialSettings]);
 
   const effectiveDark = (settings?.useSystemTheme ?? true) ? prefersDark : settings?.uiTheme === "dark";
