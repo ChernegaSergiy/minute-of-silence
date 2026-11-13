@@ -3,7 +3,7 @@
 //! Every file a preset can play for a voice is listed here, so presets never
 //! have to know which recording belongs to which voice.
 
-use crate::core::settings::AnnouncementVoice;
+use crate::core::settings::{AnnouncementVoice, PresetBlock};
 
 /// Audio files that belong to a single announcement voice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,6 +16,8 @@ pub struct VoiceAssets {
     pub metronome: &'static str,
     /// Recording that closes the ceremony, if the voice has one.
     pub ending: Option<&'static str>,
+    /// Whether the announcement already starts with the bell.
+    pub announcement_includes_bell: bool,
 }
 
 impl VoiceAssets {
@@ -27,30 +29,35 @@ impl VoiceAssets {
                 bell: "bell.ogg",
                 metronome: "metronome.ogg",
                 ending: Some("ending.ogg"),
+                announcement_includes_bell: false,
             },
             AnnouncementVoice::SoniaSotnyk => Self {
                 announcement: "announcement_sotnyk.ogg",
                 bell: "bell.ogg",
                 metronome: "metronome.ogg",
                 ending: Some("ending_sotnyk.ogg"),
+                announcement_includes_bell: false,
             },
             AnnouncementVoice::DaniaKhomutovskyi => Self {
                 announcement: "announcement_khomutovskyi.ogg",
                 bell: "bell.ogg",
                 metronome: "metronome.ogg",
                 ending: Some("ending_khomutovskyi.ogg"),
+                announcement_includes_bell: false,
             },
             AnnouncementVoice::RadioBg => Self {
                 announcement: "announcement_radio_bg.ogg",
                 bell: "bell.ogg",
                 metronome: "metronome.ogg",
                 ending: Some("ending_radio_bg.ogg"),
+                announcement_includes_bell: false,
             },
             AnnouncementVoice::AirAlert => Self {
                 announcement: "announcement_air_alert.ogg",
                 bell: "bell.ogg",
                 metronome: "metronome.ogg",
                 ending: None,
+                announcement_includes_bell: false,
             },
             // The Vinnytsia city system closes with the same bell it opens with.
             AnnouncementVoice::VinnytsiaCity => Self {
@@ -58,9 +65,32 @@ impl VoiceAssets {
                 bell: "bell_vinnytsia.ogg",
                 metronome: "metronome_vinnytsia.ogg",
                 ending: Some("bell_vinnytsia.ogg"),
+                announcement_includes_bell: true,
             },
         }
     }
+}
+
+/// Returns the blocks the selected voice can actually play.
+///
+/// A block the voice does not have (an ending, for example) is dropped, and so
+/// is a bell right before an announcement that already starts with one.
+pub fn effective_blocks(blocks: &[PresetBlock], voice: AnnouncementVoice) -> Vec<PresetBlock> {
+    let assets = VoiceAssets::for_voice(voice);
+
+    blocks
+        .iter()
+        .enumerate()
+        .filter(|(index, block)| match block {
+            PresetBlock::Ending => assets.ending.is_some(),
+            PresetBlock::Bell => {
+                !(assets.announcement_includes_bell
+                    && blocks.get(index + 1) == Some(&PresetBlock::Announcement))
+            }
+            _ => true,
+        })
+        .map(|(_, block)| *block)
+        .collect()
 }
 
 #[cfg(test)]
@@ -118,5 +148,62 @@ mod tests {
         assert_eq!(assets.bell, "bell.ogg");
         assert_eq!(assets.metronome, "metronome.ogg");
         assert_eq!(assets.ending, Some("ending.ogg"));
+    }
+
+    #[test]
+    fn only_vinnytsia_announcement_includes_the_bell() {
+        for voice in VOICES {
+            assert_eq!(
+                VoiceAssets::for_voice(voice).announcement_includes_bell,
+                voice == AnnouncementVoice::VinnytsiaCity,
+                "{voice:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn effective_blocks_drop_a_missing_ending() {
+        use PresetBlock::*;
+
+        let blocks = [Announcement, Metronome, Ending];
+        assert_eq!(
+            effective_blocks(&blocks, AnnouncementVoice::AirAlert),
+            [Announcement, Metronome]
+        );
+        assert_eq!(
+            effective_blocks(&blocks, AnnouncementVoice::BohdanHdal),
+            blocks
+        );
+    }
+
+    #[test]
+    fn effective_blocks_drop_a_bell_before_an_announcement_with_a_bell() {
+        use PresetBlock::*;
+
+        let blocks = [Bell, Announcement, Metronome];
+        assert_eq!(
+            effective_blocks(&blocks, AnnouncementVoice::VinnytsiaCity),
+            [Announcement, Metronome]
+        );
+        assert_eq!(
+            effective_blocks(&blocks, AnnouncementVoice::BohdanHdal),
+            blocks
+        );
+    }
+
+    #[test]
+    fn effective_blocks_keep_the_other_bells_of_vinnytsia() {
+        use PresetBlock::*;
+
+        for blocks in [
+            &[Bell, Silence, Bell][..],
+            &[Announcement, Silence, Bell][..],
+            &[Bell, Metronome, Bell][..],
+        ] {
+            assert_eq!(
+                effective_blocks(blocks, AnnouncementVoice::VinnytsiaCity),
+                blocks
+            );
+        }
     }
 }

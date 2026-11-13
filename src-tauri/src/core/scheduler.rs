@@ -10,6 +10,7 @@ use tauri_plugin_notification::NotificationExt;
 use crate::core::CeremonyManager;
 use crate::core::audio::AudioEngine;
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
+use crate::core::voices::effective_blocks;
 use crate::state::AppState;
 
 /// Scheduler for the daily ceremony.
@@ -174,11 +175,9 @@ impl CeremonyScheduler {
                             .get(&voice)
                             .copied()
                             .unwrap_or(Duration::ZERO);
-                        let compensation = Self::get_compensation_duration(
-                            &inner.settings.blocks,
-                            voice_duration,
-                            bell_duration,
-                        );
+                        let blocks = effective_blocks(&inner.settings.blocks, voice);
+                        let compensation =
+                            Self::get_compensation_duration(&blocks, voice_duration, bell_duration);
                         // Check compensation window first: [09:00 - duration, 09:00)
                         let window_start = ceremony_time
                             - chrono::Duration::seconds(compensation.as_secs() as i64);
@@ -193,7 +192,7 @@ impl CeremonyScheduler {
                         if should && now_time.hour() == 8 && now_time.minute() == 59 {
                             log::info!(
                                 "Trigger check: blocks={:?}, compensation={:.2}s, now={}, window_start={}, in_compensation={}, in_grace={}, should_trigger={}",
-                                inner.settings.blocks,
+                                blocks,
                                 compensation.as_secs_f32(),
                                 now_time,
                                 window_start,
@@ -379,6 +378,20 @@ mod tests {
         for preset in [MetronomeOnly, MetronomeAnthem, Silence] {
             assert_eq!(compensation(preset), Duration::ZERO, "{preset:?}");
         }
+    }
+
+    #[test]
+    fn a_bell_built_into_the_announcement_is_not_counted_twice() {
+        use PresetBlock::*;
+
+        let blocks = effective_blocks(
+            &[Bell, Announcement, Metronome],
+            AnnouncementVoice::VinnytsiaCity,
+        );
+        assert_eq!(
+            CeremonyScheduler::get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
+            ANNOUNCEMENT
+        );
     }
 
     #[test]

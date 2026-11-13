@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
-use crate::core::voices::VoiceAssets;
+use crate::core::voices::{VoiceAssets, effective_blocks};
 use crate::error::{AppError, Result};
 
 /// Audio engine for ceremony playback.
@@ -249,9 +249,9 @@ impl AudioEngine {
 
 /// Turns a list of preset blocks into playback steps.
 ///
-/// Every file comes from the manifest of the one selected voice. A block the
-/// voice does not have (an ending, for example) is skipped, and the gaps
-/// between the remaining blocks are decided by what follows them.
+/// Every file comes from the manifest of the one selected voice. Blocks the
+/// voice cannot play are left out first, and the gaps between the remaining
+/// blocks are decided by what follows them.
 fn blocks_to_steps(
     blocks: &[PresetBlock],
     voice: AnnouncementVoice,
@@ -260,11 +260,7 @@ fn blocks_to_steps(
     use PresetBlock::*;
 
     let assets = VoiceAssets::for_voice(voice);
-    let blocks: Vec<PresetBlock> = blocks
-        .iter()
-        .copied()
-        .filter(|block| *block != Ending || assets.ending.is_some())
-        .collect();
+    let blocks = effective_blocks(blocks, voice);
 
     let mut out = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
@@ -461,6 +457,36 @@ mod tests {
                 pause(1),
                 file("metronome_vinnytsia.ogg"),
                 file("bell_vinnytsia.ogg"),
+            ]
+        );
+    }
+
+    #[test]
+    fn bell_before_a_voice_with_a_built_in_bell_is_not_doubled() {
+        use PresetBlock::*;
+
+        let blocks = [Bell, Announcement, Metronome];
+        assert_eq!(
+            blocks_to_steps(
+                &blocks,
+                AnnouncementVoice::VinnytsiaCity,
+                AnthemVoice::Default
+            ),
+            vec![
+                file("announcement_vinnytsia.ogg"),
+                Step::Wait,
+                pause(1),
+                file("metronome_vinnytsia.ogg"),
+            ]
+        );
+        assert_eq!(
+            blocks_to_steps(&blocks, AnnouncementVoice::BohdanHdal, AnthemVoice::Default),
+            vec![
+                file("bell.ogg"),
+                file("announcement.ogg"),
+                Step::Wait,
+                pause(1),
+                file("metronome.ogg"),
             ]
         );
     }
