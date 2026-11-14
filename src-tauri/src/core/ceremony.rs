@@ -1,5 +1,5 @@
 use crate::core::audio::AudioEngine;
-use crate::core::settings::AudioPreset;
+use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
 use crate::state::AppState;
 use rust_i18n::t;
@@ -37,7 +37,7 @@ impl CeremonyManager {
             volume_priority,
             auto_unmute,
             target_volume,
-            preset,
+            blocks,
             announcement_voice,
             anthem_voice,
         ) = {
@@ -49,7 +49,7 @@ impl CeremonyManager {
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
                 inner.settings.volume,
-                inner.settings.preset,
+                inner.settings.blocks.clone(),
                 inner.settings.announcement_voice,
                 inner.settings.anthem_voice,
             )
@@ -70,7 +70,7 @@ impl CeremonyManager {
             let inner = state.lock();
             inner.settings.show_flag_animation
                 && inner.settings.show_visual_overlay
-                && preset.has_anthem()
+                && blocks.contains(&PresetBlock::Anthem)
         };
         if should_show_flag {
             let app_clone = self.app.clone();
@@ -109,7 +109,7 @@ impl CeremonyManager {
         let duration_ms: u64 =
             match self
                 .audio
-                .estimate_preset_duration(preset, announcement_voice, anthem_voice)
+                .estimate_duration(&blocks, announcement_voice, anthem_voice)
             {
                 Ok(d) => d.as_millis() as u64,
                 Err(e) => {
@@ -131,8 +131,11 @@ impl CeremonyManager {
             }
         }
 
-        // 4. Handle Volume and Mute (skip for Silence preset)
-        if auto_unmute && preset != AudioPreset::Silence {
+        // 4. Handle Volume and Mute (skip when nothing is played)
+        let plays_audio = crate::core::voices::effective_blocks(&blocks, announcement_voice)
+            .iter()
+            .any(|block| block.is_audible());
+        if auto_unmute && plays_audio {
             // Save mute state and unmute if necessary
             if let Ok(muted) = self.platform.is_muted() {
                 if muted {
@@ -142,7 +145,7 @@ impl CeremonyManager {
             }
         }
 
-        if volume_priority && preset != AudioPreset::Silence {
+        if volume_priority && plays_audio {
             // Save and set volume
             if let Ok(vol) = self.platform.get_volume() {
                 *PREVIOUS_VOLUME.lock().unwrap() = Some(vol);
@@ -159,7 +162,7 @@ impl CeremonyManager {
 
         std::thread::spawn(move || {
             if let Err(e) =
-                audio_engine.play_preset(preset, target_volume, announcement_voice, anthem_voice)
+                audio_engine.play_blocks(&blocks, target_volume, announcement_voice, anthem_voice)
             {
                 log::error!("Ceremony audio error: {}", e);
             }

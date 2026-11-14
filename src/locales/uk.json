@@ -87,9 +87,29 @@
       "in": "За",
       "immediately": "Одразу"
     },
-    "audio_mode": {
-      "label": "Режим супроводу",
-      "description": "Вибір аудіосупроводу: голос, метроном, дзвін або гімн."
+    "constructor": {
+      "description": "Оберіть, що і в якому порядку звучить. Церемонія завжди використовує один голос, обраний вище.",
+      "opening_bell": {
+        "label": "Початковий дзвін",
+        "description": "Дзвін перед оголошенням.",
+        "unavailable": "Не потрібен: оголошення цього голосу вже починається з дзвону."
+      },
+      "announcement": {
+        "label": "Оголошення",
+        "description": "Голосове оголошення обраного голосу."
+      },
+      "body": {
+        "label": "Основна частина",
+        "metronome": "Метроном",
+        "silence": "Тиша (1 хвилина)"
+      },
+      "closing": {
+        "label": "Завершення",
+        "none": "Нічого",
+        "ending": "Завершення голосом",
+        "bell": "Дзвін",
+        "anthem": "Гімн"
+      }
     },
     "voice": {
       "label": "Голос оголошення",
@@ -107,18 +127,6 @@
       "default": "Запис за замовчуванням",
       "mykhailo_khoma": "Михайло Хома",
       "oleksandr_ponomarov": "Олександр Пономарьов"
-    },
-    "presets": {
-      "voice_metronome": "Голос + метроном",
-      "metronome_only": "Метроном",
-      "voice_silence_bell": "Голос + тиша + дзвін",
-      "voice_silence": "Голос + тиша",
-      "voice_metronome_anthem": "Голос + метроном + гімн",
-      "voice_metronome_ending": "Голос + метроном + завершення",
-      "metronome_anthem": "Метроном + гімн",
-      "bell_silence_bell": "Дзвін + тиша + дзвін",
-      "bell_metronome_bell": "Дзвін + метроном + дзвін",
-      "silence": "Тиша"
     },
     "volume": {
       "label": "Гучність",

@@ -9,7 +9,8 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
 use crate::core::audio::AudioEngine;
-use crate::core::settings::{AnnouncementVoice, AudioPreset};
+use crate::core::settings::{AnnouncementVoice, PresetBlock};
+use crate::core::voices::effective_blocks;
 use crate::state::AppState;
 
 /// Scheduler for the daily ceremony.
@@ -174,11 +175,9 @@ impl CeremonyScheduler {
                             .get(&voice)
                             .copied()
                             .unwrap_or(Duration::ZERO);
-                        let compensation = Self::get_compensation_duration(
-                            inner.settings.preset,
-                            voice_duration,
-                            bell_duration,
-                        );
+                        let blocks = effective_blocks(&inner.settings.blocks, voice);
+                        let compensation =
+                            Self::get_compensation_duration(&blocks, voice_duration, bell_duration);
                         // Check compensation window first: [09:00 - duration, 09:00)
                         let window_start = ceremony_time
                             - chrono::Duration::seconds(compensation.as_secs() as i64);
@@ -192,8 +191,8 @@ impl CeremonyScheduler {
                         let should = in_compensation_window || in_grace_window;
                         if should && now_time.hour() == 8 && now_time.minute() == 59 {
                             log::info!(
-                                "Trigger check: preset={:?}, compensation={:.2}s, now={}, window_start={}, in_compensation={}, in_grace={}, should_trigger={}",
-                                inner.settings.preset,
+                                "Trigger check: blocks={:?}, compensation={:.2}s, now={}, window_start={}, in_compensation={}, in_grace={}, should_trigger={}",
+                                blocks,
                                 compensation.as_secs_f32(),
                                 now_time,
                                 window_start,
@@ -275,36 +274,23 @@ impl CeremonyScheduler {
         elapsed_secs <= (grace_minutes as i64) * 60
     }
 
-    fn preset_has_announcement(preset: AudioPreset) -> bool {
-        matches!(
-            preset,
-            AudioPreset::VoiceMetronome
-                | AudioPreset::VoiceSilenceBell
-                | AudioPreset::VoiceSilence
-                | AudioPreset::VoiceMetronomeAnthem
-                | AudioPreset::VoiceMetronomeEnding
-        )
-    }
-
-    fn preset_has_bell(preset: AudioPreset) -> bool {
-        matches!(
-            preset,
-            AudioPreset::BellSilenceBell | AudioPreset::BellMetronomeBell
-        )
-    }
-
+    /// How long before 09:00 the ceremony has to start so that the main part
+    /// (the metronome or the silence) begins exactly at 09:00.
+    ///
+    /// That is the length of the announcement and bells that open the preset.
     fn get_compensation_duration(
-        preset: AudioPreset,
+        blocks: &[PresetBlock],
         announcement_duration: Duration,
         bell_duration: Duration,
     ) -> Duration {
-        if Self::preset_has_announcement(preset) {
-            announcement_duration
-        } else if Self::preset_has_bell(preset) {
-            bell_duration
-        } else {
-            Duration::ZERO
-        }
+        blocks
+            .iter()
+            .take_while(|block| matches!(block, PresetBlock::Announcement | PresetBlock::Bell))
+            .map(|block| match block {
+                PresetBlock::Announcement => announcement_duration,
+                _ => bell_duration,
+            })
+            .sum()
     }
 
     fn get_synchronized_now(&self) -> chrono::DateTime<FixedOffset> {
@@ -353,4 +339,69 @@ pub async fn run(app: AppHandle) {
 pub async fn trigger_now(app: AppHandle, is_test: bool) {
     let scheduler = CeremonyScheduler::new(app);
     scheduler.trigger_ceremony(is_test).await;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::settings::AudioPreset::{self, *};
+
+    const ANNOUNCEMENT: Duration = Duration::from_secs(40);
+    const BELL: Duration = Duration::from_secs(9);
+
+    fn compensation(preset: AudioPreset) -> Duration {
+        CeremonyScheduler::get_compensation_duration(preset.blocks(), ANNOUNCEMENT, BELL)
+    }
+
+    #[test]
+    fn presets_that_open_with_the_announcement_start_early_by_its_length() {
+        for preset in [
+            VoiceMetronome,
+            VoiceSilenceBell,
+            VoiceSilence,
+            VoiceMetronomeAnthem,
+            VoiceMetronomeEnding,
+        ] {
+            assert_eq!(compensation(preset), ANNOUNCEMENT, "{preset:?}");
+        }
+    }
+
+    #[test]
+    fn presets_that_open_with_a_bell_start_early_by_its_length() {
+        for preset in [BellSilenceBell, BellMetronomeBell] {
+            assert_eq!(compensation(preset), BELL, "{preset:?}");
+        }
+    }
+
+    #[test]
+    fn presets_without_an_opening_sound_do_not_start_early() {
+        for preset in [MetronomeOnly, MetronomeAnthem, Silence] {
+            assert_eq!(compensation(preset), Duration::ZERO, "{preset:?}");
+        }
+    }
+
+    #[test]
+    fn a_bell_built_into_the_announcement_is_not_counted_twice() {
+        use PresetBlock::*;
+
+        let blocks = effective_blocks(
+            &[Bell, Announcement, Metronome],
+            AnnouncementVoice::VinnytsiaCity,
+        );
+        assert_eq!(
+            CeremonyScheduler::get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
+            ANNOUNCEMENT
+        );
+    }
+
+    #[test]
+    fn a_bell_and_an_announcement_both_count_towards_the_lead_in() {
+        use PresetBlock::*;
+
+        let blocks = [Bell, Announcement, Metronome, Bell];
+        assert_eq!(
+            CeremonyScheduler::get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
+            ANNOUNCEMENT + BELL
+        );
+    }
 }

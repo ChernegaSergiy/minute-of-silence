@@ -10,7 +10,7 @@ use alloc::string::{String, ToString};
 use serde::{Deserialize, Serialize};
 
 /// Current configuration schema version.
-pub const CONFIG_SCHEMA_VERSION: u32 = 1;
+pub const CONFIG_SCHEMA_VERSION: u32 = 2;
 
 fn default_schema_version() -> u32 {
     CONFIG_SCHEMA_VERSION
@@ -40,7 +40,18 @@ pub struct Settings {
     pub weekdays_only: bool,
 
     /// Selected audio preset (1–10).
+    ///
+    /// Superseded by [`Settings::blocks`]. It is only read to migrate settings
+    /// saved before schema version 2.
     pub preset: AudioPreset,
+
+    /// Blocks the ceremony audio is made of, in playback order.
+    ///
+    /// Every file comes from the single selected `announcement_voice`. Settings
+    /// saved before schema version 2 have no blocks; [`Settings::migrate`] fills
+    /// them in from `preset`.
+    #[serde(default = "alloc::vec::Vec::new")]
+    pub blocks: alloc::vec::Vec<PresetBlock>,
 
     /// Master volume for the ceremony audio (0–100).
     pub volume: u8,
@@ -126,6 +137,34 @@ pub enum AnnouncementVoice {
     VinnytsiaCity,
 }
 
+impl AnnouncementVoice {
+    /// Every announcement voice, in declaration order.
+    pub const ALL: [Self; 6] = [
+        Self::BohdanHdal,
+        Self::SoniaSotnyk,
+        Self::DaniaKhomutovskyi,
+        Self::RadioBg,
+        Self::AirAlert,
+        Self::VinnytsiaCity,
+    ];
+}
+
+/// What an announcement voice can play.
+///
+/// Lets the interface disable the blocks a voice does not have.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct VoiceCapabilities {
+    /// The voice these capabilities belong to.
+    pub voice: AnnouncementVoice,
+    /// Whether the voice has a closing recording.
+    pub has_ending: bool,
+    /// Whether the announcement already starts with the bell.
+    pub announcement_includes_bell: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
@@ -167,6 +206,55 @@ impl AudioPreset {
     pub fn has_anthem(self) -> bool {
         matches!(self, Self::VoiceMetronomeAnthem | Self::MetronomeAnthem)
     }
+
+    /// Returns the blocks this built-in preset is made of, in playback order.
+    pub fn blocks(self) -> &'static [PresetBlock] {
+        use PresetBlock::*;
+
+        match self {
+            Self::VoiceMetronome => &[Announcement, Metronome],
+            Self::MetronomeOnly => &[Metronome],
+            Self::VoiceSilenceBell => &[Announcement, Silence, Bell],
+            Self::VoiceSilence => &[Announcement, Silence],
+            Self::VoiceMetronomeAnthem => &[Announcement, Metronome, Anthem],
+            Self::VoiceMetronomeEnding => &[Announcement, Metronome, Ending],
+            Self::MetronomeAnthem => &[Metronome, Anthem],
+            Self::BellSilenceBell => &[Bell, Silence, Bell],
+            Self::BellMetronomeBell => &[Bell, Metronome, Bell],
+            Self::Silence => &[Silence],
+        }
+    }
+}
+
+/// A building block of an audio preset.
+///
+/// Every file a block plays comes from the single selected announcement voice,
+/// so a preset never mixes recordings of different voices. The anthem is the
+/// exception: it has its own voice setting.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "snake_case")]
+pub enum PresetBlock {
+    /// Spoken announcement of the selected voice.
+    Announcement,
+    /// Bell of the selected voice.
+    Bell,
+    /// Metronome of the selected voice.
+    Metronome,
+    /// One minute of silence.
+    Silence,
+    /// Closing recording of the selected voice. Skipped when the voice has none.
+    Ending,
+    /// National anthem in the selected anthem voice.
+    Anthem,
+}
+
+impl PresetBlock {
+    /// Whether the block plays a recording. Only silence does not.
+    pub fn is_audible(self) -> bool {
+        self != Self::Silence
+    }
 }
 
 impl Default for Settings {
@@ -177,6 +265,7 @@ impl Default for Settings {
             autostart_enabled: true,
             weekdays_only: false,
             preset: AudioPreset::VoiceMetronome,
+            blocks: AudioPreset::VoiceMetronome.blocks().to_vec(),
             volume: 80,
             pause_other_players: true,
             resume_after_ceremony: false,
@@ -266,6 +355,8 @@ pub struct AppInitialState {
     pub personal_dates: Vec<PersonalDate>,
     pub status: StatusSnapshot,
     pub version: String,
+    /// What each announcement voice can play.
+    pub voices: alloc::vec::Vec<VoiceCapabilities>,
 }
 
 /// Configuration import and validation errors.
@@ -339,9 +430,42 @@ impl Settings {
         Ok(())
     }
 
+    /// Brings settings saved with an older schema up to date.
+    ///
+    /// Settings written before schema version 2 only know the selected `preset`,
+    /// so their blocks are taken from it. Settings that already have blocks keep
+    /// them. Invalid versions are left as they are so validation still rejects them.
+    ///
+    /// The Vinnytsia voice has no spoken ending. What it used to play as one was
+    /// its closing bell, so an ending of that voice becomes a bell.
+    pub fn migrate(&mut self) {
+        if self.blocks.is_empty() {
+            self.blocks = self.preset.blocks().to_vec();
+        }
+        if (1..CONFIG_SCHEMA_VERSION).contains(&self.version)
+            && self.announcement_voice == AnnouncementVoice::VinnytsiaCity
+        {
+            for block in &mut self.blocks {
+                if *block == PresetBlock::Ending {
+                    *block = PresetBlock::Bell;
+                }
+            }
+        }
+        if (1..CONFIG_SCHEMA_VERSION).contains(&self.version) {
+            self.version = CONFIG_SCHEMA_VERSION;
+        }
+    }
+
     /// Validates that settings conform to the schema version and field bounds.
     pub fn validate(&self) -> Result<(), ConfigError> {
         self.validate_version()?;
+
+        if let Err(message) = validate_blocks(&self.blocks) {
+            return Err(ConfigError::InvalidField {
+                field: "blocks",
+                message,
+            });
+        }
 
         if self.volume > 100 {
             return Err(ConfigError::InvalidField {
@@ -372,6 +496,36 @@ impl Settings {
         }
 
         Ok(())
+    }
+}
+
+/// Checks that a list of blocks has the layout the constructor can build: an
+/// optional opening bell, an optional announcement, exactly one main part (a
+/// metronome or silence) and at most one closing block (ending, bell or anthem),
+/// in this order.
+fn validate_blocks(blocks: &[PresetBlock]) -> Result<(), &'static str> {
+    use PresetBlock::*;
+
+    if blocks.is_empty() {
+        return Err("At least one block is required");
+    }
+
+    let mut rest = blocks;
+    for optional in [Bell, Announcement] {
+        if rest.first() == Some(&optional) {
+            rest = &rest[1..];
+        }
+    }
+
+    match rest.split_first() {
+        Some((Metronome | Silence, closing)) => match closing {
+            [] | [Ending | Bell | Anthem] => Ok(()),
+            _ => Err("Only one ending, bell or anthem may close a preset"),
+        },
+        _ => Err(
+            "Blocks must be an optional bell, an optional announcement, \
+             a metronome or silence, and an optional closing block, in this order",
+        ),
     }
 }
 
@@ -439,7 +593,8 @@ pub fn import_bundle_from_json(json_str: &str) -> Result<ImportedBundle, ConfigE
     // A root-level `settings` or `personalDates` key marks the input as a bundle,
     // so a malformed bundle is rejected instead of being read as legacy settings.
     if input.get("settings").is_some() || input.get("personalDates").is_some() {
-        let bundle: ExportBundle = serde_json::from_value(input)?;
+        let mut bundle: ExportBundle = serde_json::from_value(input)?;
+        bundle.settings.migrate();
         bundle.settings.validate()?;
         for date in &bundle.personal_dates {
             date.validate()?;
@@ -451,7 +606,8 @@ pub fn import_bundle_from_json(json_str: &str) -> Result<ImportedBundle, ConfigE
     }
 
     // Legacy Settings-only format.
-    let settings: Settings = serde_json::from_value(input)?;
+    let mut settings: Settings = serde_json::from_value(input)?;
+    settings.migrate();
     settings.validate()?;
     Ok(ImportedBundle {
         settings,
@@ -477,6 +633,68 @@ mod tests {
         assert!(!AudioPreset::Silence.has_anthem());
     }
 
+    #[test]
+    fn test_builtin_preset_blocks() {
+        use PresetBlock::*;
+
+        let expected: [(AudioPreset, &[PresetBlock]); 10] = [
+            (AudioPreset::VoiceMetronome, &[Announcement, Metronome]),
+            (AudioPreset::MetronomeOnly, &[Metronome]),
+            (
+                AudioPreset::VoiceSilenceBell,
+                &[Announcement, Silence, Bell],
+            ),
+            (AudioPreset::VoiceSilence, &[Announcement, Silence]),
+            (
+                AudioPreset::VoiceMetronomeAnthem,
+                &[Announcement, Metronome, Anthem],
+            ),
+            (
+                AudioPreset::VoiceMetronomeEnding,
+                &[Announcement, Metronome, Ending],
+            ),
+            (AudioPreset::MetronomeAnthem, &[Metronome, Anthem]),
+            (AudioPreset::BellSilenceBell, &[Bell, Silence, Bell]),
+            (AudioPreset::BellMetronomeBell, &[Bell, Metronome, Bell]),
+            (AudioPreset::Silence, &[Silence]),
+        ];
+
+        for (preset, blocks) in expected {
+            assert_eq!(preset.blocks(), blocks, "{preset:?}");
+        }
+    }
+
+    #[test]
+    fn test_has_anthem_matches_blocks() {
+        for preset in [
+            AudioPreset::VoiceMetronome,
+            AudioPreset::MetronomeOnly,
+            AudioPreset::VoiceSilenceBell,
+            AudioPreset::VoiceSilence,
+            AudioPreset::VoiceMetronomeAnthem,
+            AudioPreset::VoiceMetronomeEnding,
+            AudioPreset::MetronomeAnthem,
+            AudioPreset::BellSilenceBell,
+            AudioPreset::BellMetronomeBell,
+            AudioPreset::Silence,
+        ] {
+            assert_eq!(
+                preset.has_anthem(),
+                preset.blocks().contains(&PresetBlock::Anthem),
+                "{preset:?}"
+            );
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_preset_block_serialization() {
+        let json = serde_json::to_string(&PresetBlock::Silence).expect("serialization failed");
+        assert_eq!(json, "\"silence\"");
+        let block: PresetBlock = serde_json::from_str("\"announcement\"").expect("parse failed");
+        assert_eq!(block, PresetBlock::Announcement);
+    }
+
     #[cfg(feature = "std")]
     #[test]
     fn test_json_roundtrip() {
@@ -493,7 +711,7 @@ mod tests {
         let json = export_bundle_to_json(&bundle).expect("serialization failed");
         assert!(json.contains("\"settings\""));
         assert!(json.contains("\"personalDates\""));
-        assert!(json.contains("\"version\": 1"));
+        assert!(json.contains("\"version\": 2"));
 
         let deserialized = import_bundle_from_json(&json).expect("deserialization failed");
         assert_eq!(bundle.settings, deserialized.settings);
@@ -551,7 +769,7 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_backward_compatibility_missing_version() {
-        // Bundle with a settings object that is missing the "version" field — should default to 1.
+        // Bundle with a settings object that is missing the "version" field — should default to the current version.
         let json_without_version = r#"{
             "settings": {
                 "ceremonyEnabled": false,
@@ -733,5 +951,252 @@ mod tests {
             ..valid
         };
         assert!(empty_label.validate().is_err());
+    }
+
+    #[test]
+    fn test_all_voices_are_listed_once() {
+        for voice in AnnouncementVoice::ALL {
+            // Adding a voice breaks this match, a reminder to add it to ALL too.
+            match voice {
+                AnnouncementVoice::BohdanHdal
+                | AnnouncementVoice::SoniaSotnyk
+                | AnnouncementVoice::DaniaKhomutovskyi
+                | AnnouncementVoice::RadioBg
+                | AnnouncementVoice::AirAlert
+                | AnnouncementVoice::VinnytsiaCity => {}
+            }
+            let listed = AnnouncementVoice::ALL
+                .iter()
+                .filter(|other| **other == voice)
+                .count();
+            assert_eq!(listed, 1, "{voice:?}");
+        }
+    }
+
+    #[test]
+    fn test_only_silence_is_not_audible() {
+        use PresetBlock::*;
+
+        for block in [Announcement, Bell, Metronome, Ending, Anthem] {
+            assert!(block.is_audible(), "{block:?}");
+        }
+        assert!(!Silence.is_audible());
+    }
+
+    #[test]
+    fn test_default_blocks_match_default_preset() {
+        let settings = Settings::default();
+        assert_eq!(settings.blocks, settings.preset.blocks());
+        assert!(settings.validate().is_ok());
+    }
+
+    #[test]
+    fn test_builtin_presets_are_valid_block_layouts() {
+        for preset in [
+            AudioPreset::VoiceMetronome,
+            AudioPreset::MetronomeOnly,
+            AudioPreset::VoiceSilenceBell,
+            AudioPreset::VoiceSilence,
+            AudioPreset::VoiceMetronomeAnthem,
+            AudioPreset::VoiceMetronomeEnding,
+            AudioPreset::MetronomeAnthem,
+            AudioPreset::BellSilenceBell,
+            AudioPreset::BellMetronomeBell,
+            AudioPreset::Silence,
+        ] {
+            assert_eq!(validate_blocks(preset.blocks()), Ok(()), "{preset:?}");
+        }
+    }
+
+    #[test]
+    fn test_validate_accepts_every_slot_combination() {
+        use PresetBlock::*;
+
+        for opening_bell in [false, true] {
+            for announcement in [false, true] {
+                for body in [Metronome, Silence] {
+                    for closing in [None, Some(Ending), Some(Bell), Some(Anthem)] {
+                        let mut blocks = alloc::vec::Vec::new();
+                        if opening_bell {
+                            blocks.push(Bell);
+                        }
+                        if announcement {
+                            blocks.push(Announcement);
+                        }
+                        blocks.push(body);
+                        blocks.extend(closing);
+                        assert_eq!(validate_blocks(&blocks), Ok(()), "{blocks:?}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_rejects_invalid_blocks() {
+        use PresetBlock::*;
+
+        let invalid: [&[PresetBlock]; 17] = [
+            &[],
+            &[Announcement, Announcement],
+            &[Metronome, Silence],
+            &[Bell, Metronome, Bell, Bell],
+            &[Anthem, Metronome],
+            &[Metronome, Anthem, Anthem],
+            &[Ending, Ending],
+            // No main part.
+            &[Announcement],
+            &[Bell],
+            &[Anthem],
+            &[Announcement, Ending],
+            // Not in slot order.
+            &[Ending, Metronome],
+            &[Announcement, Bell, Metronome],
+            &[Bell, Bell, Announcement, Metronome],
+            // More than one closing block.
+            &[Metronome, Ending, Anthem],
+            &[Silence, Bell, Anthem],
+            &[Metronome, Bell, Bell],
+        ];
+        for blocks in invalid {
+            assert!(validate_blocks(blocks).is_err(), "{blocks:?}");
+        }
+
+        let settings = Settings {
+            blocks: alloc::vec![],
+            ..Settings::default()
+        };
+        assert!(matches!(
+            settings.validate(),
+            Err(ConfigError::InvalidField {
+                field: "blocks",
+                ..
+            })
+        ));
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_migrate_fills_blocks_from_legacy_preset() {
+        let legacy = r#"{ "version": 1, "preset": "bell_silence_bell", "volume": 50 }"#;
+        let mut settings: Settings = serde_json::from_str(legacy).expect("parse failed");
+        assert!(settings.blocks.is_empty());
+
+        settings.migrate();
+
+        assert_eq!(settings.version, CONFIG_SCHEMA_VERSION);
+        assert_eq!(settings.volume, 50);
+        assert_eq!(
+            settings.blocks,
+            [PresetBlock::Bell, PresetBlock::Silence, PresetBlock::Bell]
+        );
+        assert!(settings.validate().is_ok());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_migrate_turns_the_vinnytsia_ending_into_a_bell() {
+        let legacy = r#"{ "version": 1, "preset": "voice_metronome_ending", "announcementVoice": "vinnytsia_city" }"#;
+        let mut settings: Settings = serde_json::from_str(legacy).expect("parse failed");
+
+        settings.migrate();
+
+        assert_eq!(
+            settings.blocks,
+            [
+                PresetBlock::Announcement,
+                PresetBlock::Metronome,
+                PresetBlock::Bell
+            ]
+        );
+        assert!(settings.validate().is_ok());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_migrate_keeps_the_ending_of_other_voices() {
+        let legacy = r#"{ "version": 1, "preset": "voice_metronome_ending", "announcementVoice": "sonia_sotnyk" }"#;
+        let mut settings: Settings = serde_json::from_str(legacy).expect("parse failed");
+
+        settings.migrate();
+
+        assert_eq!(
+            settings.blocks,
+            [
+                PresetBlock::Announcement,
+                PresetBlock::Metronome,
+                PresetBlock::Ending
+            ]
+        );
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_migrate_keeps_existing_blocks() {
+        let current = r#"{ "version": 2, "preset": "silence", "blocks": ["metronome", "anthem"] }"#;
+        let mut settings: Settings = serde_json::from_str(current).expect("parse failed");
+
+        settings.migrate();
+
+        assert_eq!(
+            settings.blocks,
+            [PresetBlock::Metronome, PresetBlock::Anthem]
+        );
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_migrate_keeps_invalid_versions() {
+        for version in [0, CONFIG_SCHEMA_VERSION + 1] {
+            let mut settings = Settings {
+                version,
+                ..Settings::default()
+            };
+            settings.migrate();
+            assert_eq!(settings.version, version);
+            assert!(settings.validate().is_err());
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_import_legacy_settings_migrates_blocks() {
+        let legacy = r#"{ "version": 1, "preset": "metronome_anthem" }"#;
+        let imported = import_bundle_from_json(legacy).expect("should import");
+
+        assert_eq!(imported.settings.version, CONFIG_SCHEMA_VERSION);
+        assert_eq!(
+            imported.settings.blocks,
+            [PresetBlock::Metronome, PresetBlock::Anthem]
+        );
+        assert!(imported.personal_dates.is_none());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_import_bundle_migrates_blocks() {
+        let legacy = r#"{
+            "settings": { "version": 1, "preset": "voice_silence" },
+            "personalDates": []
+        }"#;
+        let imported = import_bundle_from_json(legacy).expect("should import");
+
+        assert_eq!(
+            imported.settings.blocks,
+            [PresetBlock::Announcement, PresetBlock::Silence]
+        );
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_import_rejects_invalid_blocks() {
+        let json = r#"{ "version": 2, "blocks": ["anthem", "metronome"] }"#;
+        assert!(matches!(
+            import_bundle_from_json(json),
+            Err(ConfigError::InvalidField {
+                field: "blocks",
+                ..
+            })
+        ));
     }
 }

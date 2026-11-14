@@ -5,8 +5,8 @@
   "tabs": {
     "settings": "SETTINGS",
     "about": "ABOUT",
-    "changelog": "CHANGELOG"
-    ,"personal_dates": "PERSONAL DATES"
+    "changelog": "CHANGELOG",
+    "personal_dates": "PERSONAL DATES"
   },
   "sections": {
     "general": "GENERAL",
@@ -87,9 +87,29 @@
       "in": "Before",
       "immediately": "Immediately"
     },
-    "audio_mode": {
-      "label": "Companion mode",
-      "description": "Select audio accompaniment: voice, metronome, bell, or anthem."
+    "constructor": {
+      "description": "Pick what plays, in order. The ceremony always uses the single voice chosen above.",
+      "opening_bell": {
+        "label": "Opening bell",
+        "description": "A bell before the announcement.",
+        "unavailable": "Not needed: the announcement of this voice already starts with the bell."
+      },
+      "announcement": {
+        "label": "Announcement",
+        "description": "The spoken announcement of the selected voice."
+      },
+      "body": {
+        "label": "Main part",
+        "metronome": "Metronome",
+        "silence": "Silence (1 minute)"
+      },
+      "closing": {
+        "label": "Closing",
+        "none": "Nothing",
+        "ending": "Voice ending",
+        "bell": "Bell",
+        "anthem": "Anthem"
+      }
     },
     "voice": {
       "label": "Announcement voice",
@@ -107,18 +127,6 @@
       "default": "Default recording",
       "mykhailo_khoma": "Mykhailo Khoma",
       "oleksandr_ponomarov": "Oleksandr Ponomarov"
-    },
-    "presets": {
-      "voice_metronome": "Voice + metronome",
-      "metronome_only": "Metronome",
-      "voice_silence_bell": "Voice + silence + bell",
-      "voice_silence": "Voice + silence",
-      "voice_metronome_anthem": "Voice + metronome + anthem",
-      "voice_metronome_ending": "Voice + metronome + ending",
-      "metronome_anthem": "Metronome + anthem",
-      "bell_silence_bell": "Bell + silence + bell",
-      "bell_metronome_bell": "Bell + metronome + bell",
-      "silence": "Silence"
     },
     "volume": {
       "label": "Volume",

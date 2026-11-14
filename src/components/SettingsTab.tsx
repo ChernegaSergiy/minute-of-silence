@@ -23,26 +23,31 @@ import {
   ClockDismiss20Regular,
 } from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
-import type { AnnouncementVoice, AnthemVoice, AudioPreset, PersonalDate, Settings, StatusSnapshot } from "../types";
+import type {
+  AnnouncementVoice,
+  AnthemVoice,
+  PersonalDate,
+  Settings,
+  StatusSnapshot,
+  VoiceCapabilities,
+} from "../types";
 import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
 import { t } from "../utils/i18n";
+import {
+  blocksToSlots,
+  normalizeSlots,
+  slotAvailability,
+  slotsToBlocks,
+  type BodyBlock,
+  type ClosingBlock,
+  type PresetSlots,
+} from "../utils/presetBlocks";
 
-const presets: AudioPreset[] = [
-  "voice_metronome",
-  "metronome_only",
-  "voice_silence_bell",
-  "voice_silence",
-  "voice_metronome_anthem",
-  "voice_metronome_ending",
-  "metronome_anthem",
-  "bell_silence_bell",
-  "bell_metronome_bell",
-  "silence",
-];
+const bodyBlocks: BodyBlock[] = ["metronome", "silence"];
+const bodyLabel = (block: BodyBlock) => t(`controls.constructor.body.${block}`);
 
-const presetLabel = (preset: AudioPreset) => t(`controls.presets.${preset}`);
-
-const anthemPresets = ["voice_metronome_anthem", "metronome_anthem"];
+const closingBlocks: ClosingBlock[] = ["none", "ending", "bell", "anthem"];
+const closingLabel = (block: ClosingBlock) => t(`controls.constructor.closing.${block}`);
 
 const announcementVoices: AnnouncementVoice[] = [
   "bohdan_hdal",
@@ -74,6 +79,7 @@ type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => v
 interface SettingsTabProps {
   settings: Settings;
   status: StatusSnapshot;
+  voices: VoiceCapabilities[];
   volumeValue: number;
   syncing: boolean;
   onUpdateSetting: UpdateSetting;
@@ -178,12 +184,14 @@ function SwitchRow({
   desc,
   checked,
   onChange,
+  disabled = false,
 }: {
   id: string;
   label: string;
   desc: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  disabled?: boolean;
 }) {
   const styles = useStyles();
   return (
@@ -195,6 +203,7 @@ function SwitchRow({
       <Switch
         id={id}
         checked={checked}
+        disabled={disabled}
         onChange={(_, data) => onChange(data.checked as boolean)}
       />
     </div>
@@ -204,6 +213,7 @@ function SwitchRow({
 export default function SettingsTab({
   settings,
   status,
+  voices,
   volumeValue,
   syncing,
   onUpdateSetting,
@@ -213,6 +223,19 @@ export default function SettingsTab({
   onPersonalDatesImported,
 }: SettingsTabProps) {
   const styles = useStyles();
+  const voice = voices.find((v) => v.voice === settings.announcementVoice);
+  const slots = blocksToSlots(settings.blocks);
+  const available = slotAvailability(slots, voice);
+
+  const updateSlots = (changes: Partial<PresetSlots>) => {
+    onUpdateSetting("blocks", slotsToBlocks(normalizeSlots({ ...slots, ...changes }, voice)));
+  };
+
+  const changeVoice = (next: AnnouncementVoice) => {
+    onUpdateSetting("announcementVoice", next);
+    const nextVoice = voices.find((v) => v.voice === next);
+    onUpdateSetting("blocks", slotsToBlocks(normalizeSlots(slots, nextVoice)));
+  };
   const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
   const [importState, setImportState] = useState<"idle" | "success" | "error" | "empty">("idle");
   const [exporting, setExporting] = useState(false);
@@ -472,21 +495,6 @@ export default function SettingsTab({
           {t("sections.audio_mode")}
         </Text>
         <div className={styles.selectRow}>
-          <div className={styles.selectLabel}>{t("controls.audio_mode.label")}</div>
-          <div className={styles.volumeRow}>
-            <Dropdown
-              className={styles.dropdown}
-              value={presetLabel(settings.preset)}
-              selectedOptions={[settings.preset]}
-              onOptionSelect={(_, data) =>
-                onUpdateSetting("preset", data.optionValue as AudioPreset)
-              }
-            >
-              {renderOptions(presets, presetLabel)}
-            </Dropdown>
-          </div>
-        </div>
-        <div className={styles.selectRow}>
           <div className={styles.selectLabel}>{t("controls.voice.label")}</div>
           <div className={styles.volumeRow}>
             <Dropdown
@@ -494,14 +502,72 @@ export default function SettingsTab({
               value={announcementVoiceLabel(settings.announcementVoice)}
               selectedOptions={[settings.announcementVoice]}
               onOptionSelect={(_, data) =>
-                onUpdateSetting("announcementVoice", data.optionValue as AnnouncementVoice)
+                changeVoice(data.optionValue as AnnouncementVoice)
               }
             >
               {renderOptions(announcementVoices, announcementVoiceLabel)}
             </Dropdown>
           </div>
         </div>
-        {anthemPresets.includes(settings.preset) && (
+        <div className={styles.selectLabel}>{t("controls.constructor.description")}</div>
+        <Divider />
+        <SwitchRow
+          id="openingBellToggle"
+          label={t("controls.constructor.opening_bell.label")}
+          desc={
+            available.openingBell
+              ? t("controls.constructor.opening_bell.description")
+              : t("controls.constructor.opening_bell.unavailable")
+          }
+          checked={slots.openingBell}
+          disabled={!available.openingBell}
+          onChange={(v) => updateSlots({ openingBell: v })}
+        />
+        <Divider />
+        <SwitchRow
+          id="announcementToggle"
+          label={t("controls.constructor.announcement.label")}
+          desc={t("controls.constructor.announcement.description")}
+          checked={slots.announcement}
+          onChange={(v) => updateSlots({ announcement: v })}
+        />
+        <Divider />
+        <div className={styles.selectRow}>
+          <div className={styles.selectLabel}>{t("controls.constructor.body.label")}</div>
+          <div className={styles.volumeRow}>
+            <Dropdown
+              className={styles.dropdown}
+              value={bodyLabel(slots.body)}
+              selectedOptions={[slots.body]}
+              onOptionSelect={(_, data) => updateSlots({ body: data.optionValue as BodyBlock })}
+            >
+              {renderOptions(bodyBlocks, bodyLabel)}
+            </Dropdown>
+          </div>
+        </div>
+        <div className={styles.selectRow}>
+          <div className={styles.selectLabel}>{t("controls.constructor.closing.label")}</div>
+          <div className={styles.volumeRow}>
+            <Dropdown
+              className={styles.dropdown}
+              value={closingLabel(slots.closing)}
+              selectedOptions={[slots.closing]}
+              onOptionSelect={(_, data) => updateSlots({ closing: data.optionValue as ClosingBlock })}
+            >
+              {closingBlocks.map((block) => (
+                <Option
+                  key={block}
+                  value={block}
+                  text={closingLabel(block)}
+                  disabled={block === "ending" && !available.ending}
+                >
+                  {closingLabel(block)}
+                </Option>
+              ))}
+            </Dropdown>
+          </div>
+        </div>
+        {slots.closing === "anthem" && (
           <div className={styles.selectRow}>
             <div className={styles.selectLabel}>{t("controls.anthem_voice.label")}</div>
             <div className={styles.volumeRow}>
