@@ -442,7 +442,9 @@ impl Settings {
         if self.blocks.is_empty() {
             self.blocks = self.preset.blocks().to_vec();
         }
-        if self.announcement_voice == AnnouncementVoice::VinnytsiaCity {
+        if (1..CONFIG_SCHEMA_VERSION).contains(&self.version)
+            && self.announcement_voice == AnnouncementVoice::VinnytsiaCity
+        {
             for block in &mut self.blocks {
                 if *block == PresetBlock::Ending {
                     *block = PresetBlock::Bell;
