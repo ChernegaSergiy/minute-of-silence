@@ -499,7 +499,10 @@ impl Settings {
     }
 }
 
-/// Checks that a list of blocks forms a playable preset.
+/// Checks that a list of blocks has the layout the constructor can build: an
+/// optional opening bell, an optional announcement, exactly one main part (a
+/// metronome or silence) and at most one closing block (ending, bell or anthem),
+/// in this order.
 fn validate_blocks(blocks: &[PresetBlock]) -> Result<(), &'static str> {
     use PresetBlock::*;
 
@@ -507,22 +510,23 @@ fn validate_blocks(blocks: &[PresetBlock]) -> Result<(), &'static str> {
         return Err("At least one block is required");
     }
 
-    let count = |wanted: PresetBlock| blocks.iter().filter(|block| **block == wanted).count();
-
-    if count(Announcement) > 1 || count(Ending) > 1 || count(Silence) > 1 || count(Metronome) > 1 {
-        return Err("Announcement, metronome, silence and ending may appear only once");
-    }
-    if count(Metronome) > 0 && count(Silence) > 0 {
-        return Err("A preset has either a metronome or silence, not both");
-    }
-    if count(Bell) > 2 {
-        return Err("A bell may appear at most twice");
-    }
-    if count(Anthem) > 1 || (count(Anthem) == 1 && blocks.last() != Some(&Anthem)) {
-        return Err("The anthem must be the last block");
+    let mut rest = blocks;
+    for optional in [Bell, Announcement] {
+        if rest.first() == Some(&optional) {
+            rest = &rest[1..];
+        }
     }
 
-    Ok(())
+    match rest.split_first() {
+        Some((Metronome | Silence, closing)) => match closing {
+            [] | [Ending | Bell | Anthem] => Ok(()),
+            _ => Err("Only one ending, bell or anthem may close a preset"),
+        },
+        _ => Err(
+            "Blocks must be an optional bell, an optional announcement, \
+             a metronome or silence, and an optional closing block, in this order",
+        ),
+    }
 }
 
 /// A portable export bundle that carries both application settings and personal dates.
@@ -1005,10 +1009,34 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_accepts_every_slot_combination() {
+        use PresetBlock::*;
+
+        for opening_bell in [false, true] {
+            for announcement in [false, true] {
+                for body in [Metronome, Silence] {
+                    for closing in [None, Some(Ending), Some(Bell), Some(Anthem)] {
+                        let mut blocks = alloc::vec::Vec::new();
+                        if opening_bell {
+                            blocks.push(Bell);
+                        }
+                        if announcement {
+                            blocks.push(Announcement);
+                        }
+                        blocks.push(body);
+                        blocks.extend(closing);
+                        assert_eq!(validate_blocks(&blocks), Ok(()), "{blocks:?}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn test_validate_rejects_invalid_blocks() {
         use PresetBlock::*;
 
-        let invalid: [&[PresetBlock]; 7] = [
+        let invalid: [&[PresetBlock]; 17] = [
             &[],
             &[Announcement, Announcement],
             &[Metronome, Silence],
@@ -1016,6 +1044,19 @@ mod tests {
             &[Anthem, Metronome],
             &[Metronome, Anthem, Anthem],
             &[Ending, Ending],
+            // No main part.
+            &[Announcement],
+            &[Bell],
+            &[Anthem],
+            &[Announcement, Ending],
+            // Not in slot order.
+            &[Ending, Metronome],
+            &[Announcement, Bell, Metronome],
+            &[Bell, Bell, Announcement, Metronome],
+            // More than one closing block.
+            &[Metronome, Ending, Anthem],
+            &[Silence, Bell, Anthem],
+            &[Metronome, Bell, Bell],
         ];
         for blocks in invalid {
             assert!(validate_blocks(blocks).is_err(), "{blocks:?}");
