@@ -30,6 +30,7 @@ const noEndingVoice: VoiceCapabilities = { ...plainVoice, voice: "air_alert", ha
 const builtInBellVoice: VoiceCapabilities = {
   ...plainVoice,
   voice: "vinnytsia_city",
+  hasEnding: false,
   announcementIncludesBell: true,
 };
 
