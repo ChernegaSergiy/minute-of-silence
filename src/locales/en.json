@@ -88,8 +88,7 @@
       "immediately": "Immediately"
     },
     "constructor": {
-      "label": "Ceremony structure",
-      "description": "Pick what plays, in order. The ceremony always uses the single voice chosen below.",
+      "description": "Pick what plays, in order. The ceremony always uses the single voice chosen above.",
       "opening_bell": {
         "label": "Opening bell",
         "description": "A bell before the announcement.",
