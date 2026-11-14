@@ -132,7 +132,9 @@ impl CeremonyManager {
         }
 
         // 4. Handle Volume and Mute (skip when nothing is played)
-        let plays_audio = blocks.iter().any(|block| block.is_audible());
+        let plays_audio = crate::core::voices::effective_blocks(&blocks, announcement_voice)
+            .iter()
+            .any(|block| block.is_audible());
         if auto_unmute && plays_audio {
             // Save mute state and unmute if necessary
             if let Ok(muted) = self.platform.is_muted() {
