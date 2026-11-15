@@ -124,7 +124,7 @@ pub enum UiTheme {
     Dark,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "snake_case")]
@@ -135,6 +135,25 @@ pub enum AnnouncementVoice {
     RadioBg,
     AirAlert,
     VinnytsiaCity,
+}
+
+/// A saved name that is not a known voice reads as the default voice, so a voice
+/// that was removed from the app does not make the whole settings file unreadable.
+impl<'de> Deserialize<'de> for AnnouncementVoice {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let name = String::deserialize(deserializer)?;
+        Ok(match name.as_str() {
+            "sonia_sotnyk" => Self::SoniaSotnyk,
+            "dania_khomutovskyi" => Self::DaniaKhomutovskyi,
+            "radio_bg" => Self::RadioBg,
+            "air_alert" => Self::AirAlert,
+            "vinnytsia_city" => Self::VinnytsiaCity,
+            _ => Self::BohdanHdal,
+        })
+    }
 }
 
 impl AnnouncementVoice {
@@ -1127,6 +1146,38 @@ mod tests {
                 PresetBlock::Metronome,
                 PresetBlock::Ending
             ]
+        );
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_unknown_voice_falls_back_to_the_default_voice() {
+        let json = r#"{ "version": 2, "announcementVoice": "no_such_voice", "volume": 50 }"#;
+        let settings: Settings = serde_json::from_str(json).expect("parse failed");
+
+        assert_eq!(settings.announcement_voice, AnnouncementVoice::BohdanHdal);
+        assert_eq!(settings.volume, 50);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_every_voice_survives_a_round_trip() {
+        for voice in AnnouncementVoice::ALL {
+            let json = serde_json::to_string(&voice).expect("serialize failed");
+            let back: AnnouncementVoice = serde_json::from_str(&json).expect("parse failed");
+            assert_eq!(back, voice, "{json}");
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_known_voice_is_kept() {
+        let json = r#"{ "version": 2, "announcementVoice": "vinnytsia_city" }"#;
+        let settings: Settings = serde_json::from_str(json).expect("parse failed");
+
+        assert_eq!(
+            settings.announcement_voice,
+            AnnouncementVoice::VinnytsiaCity
         );
     }
 
