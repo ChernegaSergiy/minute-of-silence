@@ -10,7 +10,7 @@
 [![CI](https://github.com/ChernegaSergiy/minute-of-silence/actions/workflows/ci.yml/badge.svg)](https://github.com/ChernegaSergiy/minute-of-silence/actions)
 [![License: CSSM Unlimited License v2.0](https://img.shields.io/badge/License-CSSM%20Unlimited%20License%20v2.0-blue.svg?logo=opensourceinitiative)](LICENSE)
 
-[Screenshots](#screenshots) · [Features](#features) · [Audio Presets](#audio-presets) · [Installation](#installation) · [Building](#building-from-source) · [Contributing](#contributing)
+[Screenshots](#screenshots) · [Features](#features) · [Installation](#installation) · [Building](#building-from-source) · [Contributing](#contributing)
 
 ---
 
@@ -40,21 +40,6 @@
 - **Persistent Settings**: Stored as JSON in the platform config directory; no registry writes.
 - **Autostart on Login**: Can be registered for autostart via the settings menu.
 - **Structured Logging**: Log files written to the platform log directory.
-
-## Audio Presets
-
-| # | Preset | Description |
-| --- | --- | --- |
-| 1 | Voice + Metronome | Announcement with a metronome for the silence duration |
-| 2 | Metronome | Metronome only (no voice) |
-| 3 | Voice + Silence + Bell | Announcement, 60 s of silence, closing bell |
-| 4 | Voice + Silence | Announcement followed by 60 s of silence |
-| 5 | Voice + Metronome + Anthem | Announcement, metronome, then anthem |
-| 6 | Voice + Metronome + Ending | Announcement, metronome, then ending ("Slava Ukrajini") |
-| 7 | Metronome + Anthem | Metronome followed by the national anthem |
-| 8 | Bell + Silence + Bell | Bell, 60 s of silence, closing bell |
-| 9 | Bell + Metronome + Bell | Bell, metronome, closing bell |
-| 10 | Silence | Visual overlay and pause other players only, no sound |
 
 ## Voice Selection
 
