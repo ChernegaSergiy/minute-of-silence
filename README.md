@@ -181,7 +181,9 @@ minute-of-silence/
 |   +-- utils/                        # Core utilities and services
 |   |   +-- api.ts                    # Typed wrappers around Tauri IPC invoke()
 |   |   +-- changelog.ts              # Changelog parser/loader helper
-|   |   \-- i18n.ts                   # Localization configuration
+|   |   +-- i18n.ts                   # Localization configuration
+|   |   +-- presetBlocks.ts           # Ceremony constructor slots mapped to the stored blocks
+|   |   \-- settingsChanged.ts        # Unsaved settings detection
 |   +-- App.tsx                       # Root container, layout, and event handlers
 |   +-- main.tsx                      # React mounting entry point
 |   +-- style.css                     # Custom global CSS overrides
@@ -200,7 +202,8 @@ minute-of-silence/
 |   |   |   +-- ceremony.rs           # Ceremony flow and state management
 |   |   |   +-- ntp_service.rs        # NTP time synchronization and offset caching
 |   |   |   +-- scheduler.rs          # Precise daily scheduler check loop
-|   |   |   \-- settings.rs           # Application configuration load/save
+|   |   |   +-- settings.rs           # Application configuration load/save
+|   |   |   \-- voices.rs             # Voice manifest and the blocks a voice can play
 |   |   +-- platform/                 # OS-specific trait and implementations
 |   |   |   +-- mod.rs                # Platform selection logic
 |   |   |   +-- windows/
