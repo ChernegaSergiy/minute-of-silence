@@ -129,7 +129,7 @@
     },
     "volume": {
       "label": "Volume",
-      "description": "Volume level for the application's audio presets."
+      "description": "Volume level for the ceremony audio."
     },
     "volume_priority": {
       "label": "Volume priority",
