@@ -124,7 +124,7 @@ pub enum UiTheme {
     Dark,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
 #[serde(rename_all = "snake_case")]
@@ -133,18 +133,49 @@ pub enum AnnouncementVoice {
     SoniaSotnyk,
     DaniaKhomutovskyi,
     RadioBg,
-    AirAlert,
     VinnytsiaCity,
+}
+
+/// The name of a voice that was removed from the app reads as the default voice,
+/// so the rest of an old settings file stays readable. Any other unknown name is
+/// an error, so a misspelled voice in an imported file is not silently replaced.
+impl<'de> Deserialize<'de> for AnnouncementVoice {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let name = String::deserialize(deserializer)?;
+        Ok(match name.as_str() {
+            "bohdan_hdal" => Self::BohdanHdal,
+            "sonia_sotnyk" => Self::SoniaSotnyk,
+            "dania_khomutovskyi" => Self::DaniaKhomutovskyi,
+            "radio_bg" => Self::RadioBg,
+            "vinnytsia_city" => Self::VinnytsiaCity,
+            // Removed from the app.
+            "air_alert" => Self::BohdanHdal,
+            other => {
+                return Err(serde::de::Error::unknown_variant(
+                    other,
+                    &[
+                        "bohdan_hdal",
+                        "sonia_sotnyk",
+                        "dania_khomutovskyi",
+                        "radio_bg",
+                        "vinnytsia_city",
+                    ],
+                ));
+            }
+        })
+    }
 }
 
 impl AnnouncementVoice {
     /// Every announcement voice, in declaration order.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 5] = [
         Self::BohdanHdal,
         Self::SoniaSotnyk,
         Self::DaniaKhomutovskyi,
         Self::RadioBg,
-        Self::AirAlert,
         Self::VinnytsiaCity,
     ];
 }
@@ -962,7 +993,6 @@ mod tests {
                 | AnnouncementVoice::SoniaSotnyk
                 | AnnouncementVoice::DaniaKhomutovskyi
                 | AnnouncementVoice::RadioBg
-                | AnnouncementVoice::AirAlert
                 | AnnouncementVoice::VinnytsiaCity => {}
             }
             let listed = AnnouncementVoice::ALL
@@ -1127,6 +1157,46 @@ mod tests {
                 PresetBlock::Metronome,
                 PresetBlock::Ending
             ]
+        );
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_unknown_voice_is_rejected() {
+        let json = r#"{ "version": 2, "announcementVoice": "no_such_voice" }"#;
+
+        assert!(serde_json::from_str::<Settings>(json).is_err());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_every_voice_survives_a_round_trip() {
+        for voice in AnnouncementVoice::ALL {
+            let json = serde_json::to_string(&voice).expect("serialize failed");
+            let back: AnnouncementVoice = serde_json::from_str(&json).expect("parse failed");
+            assert_eq!(back, voice, "{json}");
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_removed_air_alert_voice_reads_as_the_default_voice() {
+        let json = r#"{ "version": 2, "announcementVoice": "air_alert", "volume": 50 }"#;
+        let settings: Settings = serde_json::from_str(json).expect("parse failed");
+
+        assert_eq!(settings.announcement_voice, AnnouncementVoice::BohdanHdal);
+        assert_eq!(settings.volume, 50);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_known_voice_is_kept() {
+        let json = r#"{ "version": 2, "announcementVoice": "vinnytsia_city" }"#;
+        let settings: Settings = serde_json::from_str(json).expect("parse failed");
+
+        assert_eq!(
+            settings.announcement_voice,
+            AnnouncementVoice::VinnytsiaCity
         );
     }
 

@@ -326,12 +326,11 @@ mod tests {
         Silence,
     ];
 
-    const VOICES: [AnnouncementVoice; 6] = [
+    const VOICES: [AnnouncementVoice; 5] = [
         AnnouncementVoice::BohdanHdal,
         AnnouncementVoice::SoniaSotnyk,
         AnnouncementVoice::DaniaKhomutovskyi,
         AnnouncementVoice::RadioBg,
-        AnnouncementVoice::AirAlert,
         AnnouncementVoice::VinnytsiaCity,
     ];
 
@@ -484,19 +483,6 @@ mod tests {
             vec![
                 file("bell.ogg"),
                 file("announcement.ogg"),
-                Step::Wait,
-                pause(1),
-                file("metronome.ogg"),
-            ]
-        );
-    }
-
-    #[test]
-    fn voice_without_an_ending_skips_it() {
-        assert_eq!(
-            steps(VoiceMetronomeEnding, AnnouncementVoice::AirAlert),
-            vec![
-                file("announcement_air_alert.ogg"),
                 Step::Wait,
                 pause(1),
                 file("metronome.ogg"),

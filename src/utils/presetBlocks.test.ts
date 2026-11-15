@@ -26,13 +26,14 @@ const plainVoice: VoiceCapabilities = {
   hasEnding: true,
   announcementIncludesBell: false,
 };
-const noEndingVoice: VoiceCapabilities = { ...plainVoice, voice: "air_alert", hasEnding: false };
 const builtInBellVoice: VoiceCapabilities = {
   ...plainVoice,
   voice: "vinnytsia_city",
   hasEnding: false,
   announcementIncludesBell: true,
 };
+// Vinnytsia is the one voice that has no ending.
+const noEndingVoice = builtInBellVoice;
 
 const slots = (overrides: Partial<PresetSlots> = {}): PresetSlots => ({
   openingBell: false,

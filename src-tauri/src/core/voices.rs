@@ -53,13 +53,6 @@ impl VoiceAssets {
                 ending: Some("ending_radio_bg.ogg"),
                 announcement_includes_bell: false,
             },
-            AnnouncementVoice::AirAlert => Self {
-                announcement: "announcement_air_alert.ogg",
-                bell: "bell.ogg",
-                metronome: "metronome.ogg",
-                ending: None,
-                announcement_includes_bell: false,
-            },
             // The Vinnytsia city system has no spoken ending, only the closing bell.
             AnnouncementVoice::VinnytsiaCity => Self {
                 announcement: "announcement_vinnytsia.ogg",
@@ -114,12 +107,11 @@ mod tests {
     use super::*;
     use std::path::Path;
 
-    const VOICES: [AnnouncementVoice; 6] = [
+    const VOICES: [AnnouncementVoice; 5] = [
         AnnouncementVoice::BohdanHdal,
         AnnouncementVoice::SoniaSotnyk,
         AnnouncementVoice::DaniaKhomutovskyi,
         AnnouncementVoice::RadioBg,
-        AnnouncementVoice::AirAlert,
         AnnouncementVoice::VinnytsiaCity,
     ];
 
@@ -152,14 +144,6 @@ mod tests {
     }
 
     #[test]
-    fn air_alert_has_no_ending() {
-        assert_eq!(
-            VoiceAssets::for_voice(AnnouncementVoice::AirAlert).ending,
-            None
-        );
-    }
-
-    #[test]
     fn default_voice_files_match_the_original_names() {
         let assets = VoiceAssets::for_voice(AnnouncementVoice::BohdanHdal);
         assert_eq!(assets.announcement, "announcement.ogg");
@@ -185,7 +169,7 @@ mod tests {
 
         let blocks = [Announcement, Metronome, Ending];
         assert_eq!(
-            effective_blocks(&blocks, AnnouncementVoice::AirAlert),
+            effective_blocks(&blocks, AnnouncementVoice::VinnytsiaCity),
             [Announcement, Metronome]
         );
         assert_eq!(
