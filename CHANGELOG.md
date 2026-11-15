@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Existing settings and imported exports are migrated to the constructor automatically; exports made by this version cannot be imported by older versions.
 - Prevent settings form from being marked as modified when list settings are unchanged.
 
+### Removed
+- Air Alert announcement voice. Settings that used it switch to the default voice.
+
 ## [0.11.5] - 2026-11-10
 
 ### Added
