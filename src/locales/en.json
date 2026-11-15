@@ -235,6 +235,13 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.12.0": {
+      "vinnytsia_city_voice": "Vinnytsia city announcement voice recorded from the city's minute-of-silence system, including its own bell for the bell presets.",
+      "ceremony_constructor": "Ceremony constructor in settings: choose the opening bell, announcement, main part (metronome or silence) and closing (nothing, voice ending, bell or anthem) instead of picking one of ten fixed presets. Options the selected voice cannot play are disabled.",
+      "settings_constructor_migration": "Existing settings and imported exports are migrated to the constructor automatically; exports made by this version cannot be imported by older versions.",
+      "list_settings_dirty_fix": "Prevent settings form from being marked as modified when list settings are unchanged.",
+      "air_alert_voice_removed": "Air Alert announcement voice. Settings that used it switch to the default voice."
+    },
     "0.11.5": {
       "schedule_status_card": "Prominent ceremony schedule status card in settings with direct skip and resume controls.",
       "tray_skip_toggle": "Update system tray menu to toggle ceremony skip and restore actions with dynamic labels.",
