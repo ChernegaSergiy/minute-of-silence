@@ -68,11 +68,11 @@ Scheduler loop (every 1 s)
             └─ Grace window: [09:00, 09:00 + grace_minutes)        ← late start / wake up
                  └─ trigger_ceremony() (CeremonyManager)
                       ├─ Set ceremony_active = true & last_activation = now
-                      ├─ Setup flag animation webview window (if enabled & preset has anthem)
+                      ├─ Setup flag animation webview window (if enabled & the ceremony ends with the anthem)
                       ├─ emit("ceremony-start", { duration_ms })   → Frontend shows overlay
                       ├─ platform.pause_media()                    → Pause other players (if enabled)
                       ├─ Auto-unmute & set system volume priority
-                      ├─ audio_engine.play_preset(...)             → Runs on a dedicated thread
+                      ├─ audio_engine.play_blocks(...)             → Runs on a dedicated thread
                       └─ finish_ceremony()                         ← Called when audio ends
                            ├─ Restore system volume & mute states
                            ├─ platform.resume_media(...)           → Resume players (if enabled)
