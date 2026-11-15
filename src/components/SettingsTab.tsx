@@ -197,11 +197,13 @@ function SwitchRow({
   return (
     <div className={styles.switchRow}>
       <div className={styles.switchLabel}>
-        <Text size={200}>{label}</Text>
-        <div className={styles.switchDesc}>{desc}</div>
+        <Text size={200} id={`${id}-label`}>{label}</Text>
+        <div className={styles.switchDesc} id={`${id}-desc`}>{desc}</div>
       </div>
       <Switch
         id={id}
+        aria-labelledby={`${id}-label`}
+        aria-describedby={`${id}-desc`}
         checked={checked}
         disabled={disabled}
         onChange={(_, data) => onChange(data.checked as boolean)}
