@@ -68,7 +68,7 @@ Scheduler loop (every 1 s)
             └─ Grace window: [09:00, 09:00 + grace_minutes)        ← late start / wake up
                  └─ trigger_ceremony() (CeremonyManager)
                       ├─ Set ceremony_active = true & last_activation = now
-                      ├─ Setup flag animation webview window (if enabled & the ceremony ends with the anthem)
+                      ├─ Register anthem-start/end listeners (if flag animation and visual overlay are enabled & blocks contain the anthem)
                       ├─ emit("ceremony-start", { duration_ms })   → Frontend shows overlay
                       ├─ platform.pause_media()                    → Pause other players (if enabled)
                       ├─ Auto-unmute & set system volume priority
