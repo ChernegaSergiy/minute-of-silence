@@ -10,13 +10,13 @@
 [![CI](https://github.com/ChernegaSergiy/minute-of-silence/actions/workflows/ci.yml/badge.svg)](https://github.com/ChernegaSergiy/minute-of-silence/actions)
 [![License: CSSM Unlimited License v2.0](https://img.shields.io/badge/License-CSSM%20Unlimited%20License%20v2.0-blue.svg?logo=opensourceinitiative)](LICENSE)
 
-[Screenshots](#screenshots) · [Features](#features) · [Audio Presets](#audio-presets) · [Installation](#installation) · [Building](#building-from-source) · [Contributing](#contributing)
+[Screenshots](#screenshots) · [Features](#features) · [Installation](#installation) · [Building](#building-from-source) · [Contributing](#contributing)
 
 ---
 
 </div>
 
-**Minute of Silence** is a lightweight desktop application built with [Tauri 2](https://tauri.app) (Rust + TypeScript) that runs silently in the system tray and accurately triggers the daily ceremony at 09:00 using NTP time correction. Upon activation, it automatically pauses background media, plays a selected audio preset, and seamlessly restores playback afterward, offering flexible control through persistent settings and a convenient one-shot skip option.
+**Minute of Silence** is a lightweight desktop application built with [Tauri 2](https://tauri.app) (Rust + TypeScript) that runs silently in the system tray and accurately triggers the daily ceremony at 09:00 using NTP time correction. Upon activation, it automatically pauses background media, plays the audio you set up in the ceremony constructor, and seamlessly restores playback afterward, offering flexible control through persistent settings and a convenient one-shot skip option.
 
 ## Screenshots
 
@@ -31,7 +31,7 @@
 ## Features
 
 - **Automatic Daily Activation**: Activates at 09:00 with NTP time correction.
-- **Ten Audio Presets**: Voice announcement combined with silence, bell, metronome, national anthem, and/or ending, plus a silent "Silence" preset.
+- **Ceremony Constructor**: Build the ceremony from an optional opening bell, an optional announcement, a metronome or one minute of silence, and an optional closing ending, bell or national anthem. Options the selected voice cannot play are disabled.
 - **Voice Selection**: Five announcer voices available (original, Vshanui organization voices, Radio BG, Vinnytsia city system).
 - **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony (supports MPRIS on Linux).
 - **Visual Status**: A visual overlay with an animated candle and progress ring is displayed during the ceremony.
@@ -40,21 +40,6 @@
 - **Persistent Settings**: Stored as JSON in the platform config directory; no registry writes.
 - **Autostart on Login**: Can be registered for autostart via the settings menu.
 - **Structured Logging**: Log files written to the platform log directory.
-
-## Audio Presets
-
-| # | Preset | Description |
-| --- | --- | --- |
-| 1 | Voice + Metronome | Announcement with a metronome for the silence duration |
-| 2 | Metronome | Metronome only (no voice) |
-| 3 | Voice + Silence + Bell | Announcement, 60 s of silence, closing bell |
-| 4 | Voice + Silence | Announcement followed by 60 s of silence |
-| 5 | Voice + Metronome + Anthem | Announcement, metronome, then anthem |
-| 6 | Voice + Metronome + Ending | Announcement, metronome, then ending ("Slava Ukrajini") |
-| 7 | Metronome + Anthem | Metronome followed by the national anthem |
-| 8 | Bell + Silence + Bell | Bell, 60 s of silence, closing bell |
-| 9 | Bell + Metronome + Bell | Bell, metronome, closing bell |
-| 10 | Silence | Visual overlay and pause other players only, no sound |
 
 ## Voice Selection
 
@@ -196,7 +181,9 @@ minute-of-silence/
 |   +-- utils/                        # Core utilities and services
 |   |   +-- api.ts                    # Typed wrappers around Tauri IPC invoke()
 |   |   +-- changelog.ts              # Changelog parser/loader helper
-|   |   \-- i18n.ts                   # Localization configuration
+|   |   +-- i18n.ts                   # Localization configuration
+|   |   +-- presetBlocks.ts           # Ceremony constructor slots mapped to the stored blocks
+|   |   \-- settingsChanged.ts        # Unsaved settings detection
 |   +-- App.tsx                       # Root container, layout, and event handlers
 |   +-- main.tsx                      # React mounting entry point
 |   +-- style.css                     # Custom global CSS overrides
@@ -215,7 +202,8 @@ minute-of-silence/
 |   |   |   +-- ceremony.rs           # Ceremony flow and state management
 |   |   |   +-- ntp_service.rs        # NTP time synchronization and offset caching
 |   |   |   +-- scheduler.rs          # Precise daily scheduler check loop
-|   |   |   \-- settings.rs           # Application configuration load/save/presets
+|   |   |   +-- settings.rs           # Application configuration load/save
+|   |   |   \-- voices.rs             # Voice manifest and the blocks a voice can play
 |   |   +-- platform/                 # OS-specific trait and implementations
 |   |   |   +-- mod.rs                # Platform selection logic
 |   |   |   +-- windows/
