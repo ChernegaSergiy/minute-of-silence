@@ -33,7 +33,7 @@ In a headless/cloud sandbox you usually cannot run `tauri dev` or build the full
 
 - `crates/khvylyna-core/` — core models, contracts, and schema definitions (`Settings`, `AudioPreset`, `AnnouncementVoice`, `AnthemVoice`, `UiTheme`), validation, JSON serialization, and TypeScript type generation via `ts-rs`.
 - `src/` — React 19 + Fluent UI frontend. `App.tsx` is the root (event listeners, tabs); `components/` holds tabs and `Overlay.tsx`; `utils/api.ts` wraps shared Tauri IPC calls (some components invoke commands directly); `types.gen.ts` holds generated types from `khvylyna-core`; `types.ts` re-exports them and defines frontend-only types/helpers; `locales/{en,uk}.json` are UI strings.
-- `src-tauri/src/core/` — business logic: `scheduler.rs` (1 s loop, compensation + grace windows), `ceremony.rs` (start/finish flow), `audio.rs` (rodio, presets), `ntp_service.rs`, `settings.rs`.
+- `src-tauri/src/core/` — business logic: `scheduler.rs` (1 s loop, compensation + grace windows), `ceremony.rs` (start/finish flow), `audio.rs` (rodio, block playback), `ntp_service.rs`, `settings.rs`.
 - `src-tauri/src/app/` — Tauri glue: `commands.rs` (IPC), `tray.rs`, `apng.rs`.
 - `src-tauri/src/platform/{windows,linux,macos}/` — OS code behind the `Platform` trait in `platform/mod.rs` (volume, mute, media pause/resume, autostart, theme). Selected via `cfg(target_os)`.
 - `src-tauri/locales/{en,uk}.toml` — backend strings (`rust-i18n`: tray, notifications).
