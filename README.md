@@ -31,7 +31,7 @@
 ## Features
 
 - **Automatic Daily Activation**: Activates at 09:00 with NTP time correction.
-- **Ceremony Constructor**: Build the ceremony from an optional opening bell, the announcement, a metronome or one minute of silence, and a closing ending, bell or national anthem. Options the selected voice cannot play are disabled.
+- **Ceremony Constructor**: Build the ceremony from an optional opening bell, an optional announcement, a metronome or one minute of silence, and an optional closing ending, bell or national anthem. Options the selected voice cannot play are disabled.
 - **Voice Selection**: Five announcer voices available (original, Vshanui organization voices, Radio BG, Vinnytsia city system).
 - **Media Management**: Pauses Spotify, browser video, VLC, and other players before the ceremony (supports MPRIS on Linux).
 - **Visual Status**: A visual overlay with an animated candle and progress ring is displayed during the ceremony.
