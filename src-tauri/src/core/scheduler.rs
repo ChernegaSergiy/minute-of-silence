@@ -31,7 +31,6 @@ impl CeremonyScheduler {
             AnnouncementVoice::SoniaSotnyk,
             AnnouncementVoice::DaniaKhomutovskyi,
             AnnouncementVoice::RadioBg,
-            AnnouncementVoice::AirAlert,
             AnnouncementVoice::VinnytsiaCity,
         ] {
             let filename = audio.get_announcement_filename(voice);

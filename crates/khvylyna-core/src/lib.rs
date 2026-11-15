@@ -133,7 +133,6 @@ pub enum AnnouncementVoice {
     SoniaSotnyk,
     DaniaKhomutovskyi,
     RadioBg,
-    AirAlert,
     VinnytsiaCity,
 }
 
@@ -149,7 +148,6 @@ impl<'de> Deserialize<'de> for AnnouncementVoice {
             "sonia_sotnyk" => Self::SoniaSotnyk,
             "dania_khomutovskyi" => Self::DaniaKhomutovskyi,
             "radio_bg" => Self::RadioBg,
-            "air_alert" => Self::AirAlert,
             "vinnytsia_city" => Self::VinnytsiaCity,
             _ => Self::BohdanHdal,
         })
@@ -158,12 +156,11 @@ impl<'de> Deserialize<'de> for AnnouncementVoice {
 
 impl AnnouncementVoice {
     /// Every announcement voice, in declaration order.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 5] = [
         Self::BohdanHdal,
         Self::SoniaSotnyk,
         Self::DaniaKhomutovskyi,
         Self::RadioBg,
-        Self::AirAlert,
         Self::VinnytsiaCity,
     ];
 }
@@ -981,7 +978,6 @@ mod tests {
                 | AnnouncementVoice::SoniaSotnyk
                 | AnnouncementVoice::DaniaKhomutovskyi
                 | AnnouncementVoice::RadioBg
-                | AnnouncementVoice::AirAlert
                 | AnnouncementVoice::VinnytsiaCity => {}
             }
             let listed = AnnouncementVoice::ALL
@@ -1167,6 +1163,15 @@ mod tests {
             let back: AnnouncementVoice = serde_json::from_str(&json).expect("parse failed");
             assert_eq!(back, voice, "{json}");
         }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_removed_air_alert_voice_reads_as_the_default_voice() {
+        let json = r#"{ "version": 2, "announcementVoice": "air_alert" }"#;
+        let settings: Settings = serde_json::from_str(json).expect("parse failed");
+
+        assert_eq!(settings.announcement_voice, AnnouncementVoice::BohdanHdal);
     }
 
     #[cfg(feature = "std")]
