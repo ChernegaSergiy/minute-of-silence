@@ -136,8 +136,9 @@ pub enum AnnouncementVoice {
     VinnytsiaCity,
 }
 
-/// A saved name that is not a known voice reads as the default voice, so a voice
-/// that was removed from the app does not make the whole settings file unreadable.
+/// The name of a voice that was removed from the app reads as the default voice,
+/// so the rest of an old settings file stays readable. Any other unknown name is
+/// an error, so a misspelled voice in an imported file is not silently replaced.
 impl<'de> Deserialize<'de> for AnnouncementVoice {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -145,11 +146,25 @@ impl<'de> Deserialize<'de> for AnnouncementVoice {
     {
         let name = String::deserialize(deserializer)?;
         Ok(match name.as_str() {
+            "bohdan_hdal" => Self::BohdanHdal,
             "sonia_sotnyk" => Self::SoniaSotnyk,
             "dania_khomutovskyi" => Self::DaniaKhomutovskyi,
             "radio_bg" => Self::RadioBg,
             "vinnytsia_city" => Self::VinnytsiaCity,
-            _ => Self::BohdanHdal,
+            // Removed from the app.
+            "air_alert" => Self::BohdanHdal,
+            other => {
+                return Err(serde::de::Error::unknown_variant(
+                    other,
+                    &[
+                        "bohdan_hdal",
+                        "sonia_sotnyk",
+                        "dania_khomutovskyi",
+                        "radio_bg",
+                        "vinnytsia_city",
+                    ],
+                ));
+            }
         })
     }
 }
@@ -1147,12 +1162,10 @@ mod tests {
 
     #[cfg(feature = "std")]
     #[test]
-    fn test_unknown_voice_falls_back_to_the_default_voice() {
-        let json = r#"{ "version": 2, "announcementVoice": "no_such_voice", "volume": 50 }"#;
-        let settings: Settings = serde_json::from_str(json).expect("parse failed");
+    fn test_unknown_voice_is_rejected() {
+        let json = r#"{ "version": 2, "announcementVoice": "no_such_voice" }"#;
 
-        assert_eq!(settings.announcement_voice, AnnouncementVoice::BohdanHdal);
-        assert_eq!(settings.volume, 50);
+        assert!(serde_json::from_str::<Settings>(json).is_err());
     }
 
     #[cfg(feature = "std")]
@@ -1168,10 +1181,11 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_removed_air_alert_voice_reads_as_the_default_voice() {
-        let json = r#"{ "version": 2, "announcementVoice": "air_alert" }"#;
+        let json = r#"{ "version": 2, "announcementVoice": "air_alert", "volume": 50 }"#;
         let settings: Settings = serde_json::from_str(json).expect("parse failed");
 
         assert_eq!(settings.announcement_voice, AnnouncementVoice::BohdanHdal);
+        assert_eq!(settings.volume, 50);
     }
 
     #[cfg(feature = "std")]
