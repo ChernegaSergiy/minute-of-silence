@@ -7,7 +7,11 @@ export type AnthemVoice = "default" | "mykhailo_khoma" | "oleksandr_ponomarov";
 /**
  * Combined initial application state for atomic startup hydration.
  */
-export type AppInitialState = { settings: Settings, personalDates: Array<PersonalDate>, status: StatusSnapshot, version: string, };
+export type AppInitialState = { settings: Settings, personalDates: Array<PersonalDate>, status: StatusSnapshot, version: string, 
+/**
+ * What each announcement voice can play.
+ */
+voices: Array<VoiceCapabilities>, };
 
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
 
@@ -34,6 +38,15 @@ personalDates: Array<PersonalDate>, };
 export type PersonalDate = { id?: string | null, month: number, day: number, year: number, label: string, };
 
 /**
+ * A building block of an audio preset.
+ *
+ * Every file a block plays comes from the single selected announcement voice,
+ * so a preset never mixes recordings of different voices. The anthem is the
+ * exception: it has its own voice setting.
+ */
+export type PresetBlock = "announcement" | "bell" | "metronome" | "silence" | "ending" | "anthem";
+
+/**
  * User-configurable application settings.
  */
 export type Settings = { 
@@ -55,8 +68,19 @@ autostartEnabled: boolean,
 weekdaysOnly: boolean, 
 /**
  * Selected audio preset (1–10).
+ *
+ * Superseded by [`Settings::blocks`]. It is only read to migrate settings
+ * saved before schema version 2.
  */
 preset: AudioPreset, 
+/**
+ * Blocks the ceremony audio is made of, in playback order.
+ *
+ * Every file comes from the single selected `announcement_voice`. Settings
+ * saved before schema version 2 have no blocks; [`Settings::migrate`] fills
+ * them in from `preset`.
+ */
+blocks: Array<PresetBlock>, 
 /**
  * Master volume for the ceremony audio (0–100).
  */
@@ -142,3 +166,22 @@ skipDate: string | null, };
 export type StatusSnapshot = { ceremonyActive: boolean, skipTomorrow: boolean, lastActivation: string | null, lastNtpSync: string | null, };
 
 export type UiTheme = "light" | "dark";
+
+/**
+ * What an announcement voice can play.
+ *
+ * Lets the interface disable the blocks a voice does not have.
+ */
+export type VoiceCapabilities = { 
+/**
+ * The voice these capabilities belong to.
+ */
+voice: AnnouncementVoice, 
+/**
+ * Whether the voice has a closing recording.
+ */
+hasEnding: boolean, 
+/**
+ * Whether the announcement already starts with the bell.
+ */
+announcementIncludesBell: boolean, };

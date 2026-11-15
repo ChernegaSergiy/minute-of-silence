@@ -39,6 +39,7 @@ pub fn get_initial_state(
         personal_dates,
         status,
         version,
+        voices: crate::core::voices::voice_capabilities(),
     })
 }
 

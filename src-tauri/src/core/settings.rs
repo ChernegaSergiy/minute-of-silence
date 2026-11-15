@@ -6,8 +6,8 @@
 use std::path::PathBuf;
 
 pub use khvylyna_core::{
-    AnnouncementVoice, AnthemVoice, AudioPreset, CONFIG_SCHEMA_VERSION, PersonalDate, Settings,
-    UiTheme,
+    AnnouncementVoice, AnthemVoice, AudioPreset, CONFIG_SCHEMA_VERSION, PersonalDate, PresetBlock,
+    Settings, UiTheme,
 };
 
 use crate::error::{AppError, Result};
@@ -51,7 +51,9 @@ impl SettingsExt for Settings {
                 .store("settings.json")
                 .map_err(|e| e.to_string())?;
             if let Some(val) = store.get("settings") {
-                let settings: Settings = serde_json::from_value(val).map_err(|e| e.to_string())?;
+                let mut settings: Settings =
+                    serde_json::from_value(val).map_err(|e| e.to_string())?;
+                settings.migrate();
                 Ok(settings)
             } else {
                 Ok(Settings::default())
@@ -85,7 +87,8 @@ impl SettingsExt for Settings {
             return Ok(Self::default());
         }
         let raw = std::fs::read_to_string(&path)?;
-        let settings: Settings = serde_json::from_str(&raw)?;
+        let mut settings: Settings = serde_json::from_str(&raw)?;
+        settings.migrate();
         Ok(settings)
     }
 

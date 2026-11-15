@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Vinnytsia city announcement voice recorded from the city's minute-of-silence system, including its own bell for the bell presets.
+- Ceremony constructor in settings: choose the opening bell, announcement, main part (metronome or silence) and closing (nothing, voice ending, bell or anthem) instead of picking one of ten fixed presets. Options the selected voice cannot play are disabled.
+
+### Changed
+- Existing settings and imported exports are migrated to the constructor automatically; exports made by this version cannot be imported by older versions.
+- Prevent settings form from being marked as modified when list settings are unchanged.
 
 ## [0.11.5] - 2026-11-10
 
