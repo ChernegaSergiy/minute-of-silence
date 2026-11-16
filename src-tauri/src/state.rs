@@ -32,6 +32,8 @@ pub struct Inner {
     pub ceremony_active: bool,
     /// Whether the running ceremony was started with the Test button.
     pub ceremony_is_test: bool,
+    /// Set when a stop is requested; consumed right before playback starts.
+    pub stop_requested: bool,
     pub last_activation: Option<DateTime<Local>>,
     pub pending_update: Option<tauri_plugin_updater::Update>,
     pub pending_restart: bool,
@@ -43,6 +45,7 @@ impl std::fmt::Debug for Inner {
             .field("settings", &self.settings)
             .field("ceremony_active", &self.ceremony_active)
             .field("ceremony_is_test", &self.ceremony_is_test)
+            .field("stop_requested", &self.stop_requested)
             .field("last_activation", &self.last_activation)
             .field(
                 "pending_update",
@@ -79,6 +82,7 @@ impl AppState {
                 settings: settings.clone(),
                 ceremony_active: false,
                 ceremony_is_test: false,
+                stop_requested: false,
                 last_activation: None,
                 pending_update: None,
                 pending_restart: false,
