@@ -278,7 +278,7 @@ impl CeremonyScheduler {
     ///
     /// That is the length of the announcement and bells that open the preset,
     /// plus the short pause that separates them from the metronome.
-    fn get_compensation_duration(
+    pub(crate) fn get_compensation_duration(
         blocks: &[PresetBlock],
         announcement_duration: Duration,
         bell_duration: Duration,
