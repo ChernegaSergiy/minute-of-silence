@@ -30,6 +30,8 @@ pub struct AppState {
 pub struct Inner {
     pub settings: Settings,
     pub ceremony_active: bool,
+    /// Whether the running ceremony was started with the Test button.
+    pub ceremony_is_test: bool,
     pub last_activation: Option<DateTime<Local>>,
     pub pending_update: Option<tauri_plugin_updater::Update>,
     pub pending_restart: bool,
@@ -40,6 +42,7 @@ impl std::fmt::Debug for Inner {
         f.debug_struct("Inner")
             .field("settings", &self.settings)
             .field("ceremony_active", &self.ceremony_active)
+            .field("ceremony_is_test", &self.ceremony_is_test)
             .field("last_activation", &self.last_activation)
             .field(
                 "pending_update",
@@ -75,6 +78,7 @@ impl AppState {
             inner: Arc::new(Mutex::new(Inner {
                 settings: settings.clone(),
                 ceremony_active: false,
+                ceremony_is_test: false,
                 last_activation: None,
                 pending_update: None,
                 pending_restart: false,
