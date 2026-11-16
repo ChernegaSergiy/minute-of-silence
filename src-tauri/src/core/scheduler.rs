@@ -8,7 +8,7 @@ use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
-use crate::core::audio::{AudioEngine, METRONOME_LEAD_PAUSE};
+use crate::core::audio::{AudioEngine, lead_in_pause};
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
 use crate::core::voices::effective_blocks;
 use crate::state::AppState;
@@ -283,22 +283,16 @@ impl CeremonyScheduler {
         announcement_duration: Duration,
         bell_duration: Duration,
     ) -> Duration {
-        let lead_in = blocks
+        let lead_in_duration: Duration = blocks
             .iter()
-            .take_while(|block| matches!(block, PresetBlock::Announcement | PresetBlock::Bell));
-        let lead_in_len = lead_in.clone().count();
-        let lead_in_duration: Duration = lead_in
+            .take_while(|block| matches!(block, PresetBlock::Announcement | PresetBlock::Bell))
             .map(|block| match block {
                 PresetBlock::Announcement => announcement_duration,
                 _ => bell_duration,
             })
             .sum();
 
-        if lead_in_len > 0 && blocks.get(lead_in_len) == Some(&PresetBlock::Metronome) {
-            lead_in_duration + METRONOME_LEAD_PAUSE
-        } else {
-            lead_in_duration
-        }
+        lead_in_duration + lead_in_pause(blocks)
     }
 
     fn get_synchronized_now(&self) -> chrono::DateTime<FixedOffset> {
@@ -352,6 +346,7 @@ pub async fn trigger_now(app: AppHandle, is_test: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::audio::METRONOME_LEAD_PAUSE;
     use crate::core::settings::AudioPreset::{self, *};
 
     const ANNOUNCEMENT: Duration = Duration::from_secs(40);
