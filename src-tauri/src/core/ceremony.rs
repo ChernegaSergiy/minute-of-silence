@@ -1,7 +1,7 @@
 use crate::core::audio::AudioEngine;
 use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
-use crate::state::AppState;
+use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase};
 use rust_i18n::t;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
@@ -59,15 +59,22 @@ impl CeremonyManager {
         let ceremony_id = {
             let state = self.app.state::<AppState>();
             let mut inner = state.lock();
-            if is_test && inner.ceremony_active {
+            if is_test && inner.active_ceremony.is_some() {
                 log::info!("Test ceremony ignored: a ceremony is already running");
                 return;
             }
-            inner.ceremony_active = true;
-            inner.ceremony_is_test = is_test;
-            inner.ceremony_id += 1;
+            inner.next_ceremony_id += 1;
+            let ceremony_id = inner.next_ceremony_id;
+            inner.active_ceremony = Some(ActiveCeremony::new(
+                ceremony_id,
+                if is_test {
+                    CeremonyKind::Test
+                } else {
+                    CeremonyKind::Scheduled
+                },
+            ));
             inner.last_activation = Some(chrono::Local::now());
-            inner.ceremony_id
+            ceremony_id
         };
         // 2. Setup flag animation listeners if conditions are met
         let should_show_flag = {
@@ -171,10 +178,15 @@ impl CeremonyManager {
         let stop_requested = {
             let state = self.app.state::<AppState>();
             let mut inner = state.lock();
-            let requested = inner.stop_requested_for == Some(ceremony_id);
-            if requested {
-                inner.stop_requested_for = None;
+            let Some(active) = inner.active_ceremony.as_mut() else {
+                return;
+            };
+            if active.id != ceremony_id {
+                return;
             }
+            let requested = active.stop_requested;
+            active.stop_requested = false;
+            active.phase = CeremonyPhase::Playing;
             requested
         };
 
@@ -219,14 +231,13 @@ impl CeremonyManager {
         let (volume_priority, auto_unmute, should_resume, pending_restart) = {
             let state = app.state::<AppState>();
             let mut inner = state.lock();
-            if !inner.ceremony_active
-                || inner.ceremony_finishing
-                || inner.ceremony_id != ceremony_id
-            {
+            let Some(active) = inner.active_ceremony.as_mut() else {
+                return;
+            };
+            if active.id != ceremony_id || active.phase == CeremonyPhase::Finishing {
                 return;
             }
-            inner.ceremony_finishing = true;
-            inner.stop_requested_for = None;
+            active.phase = CeremonyPhase::Finishing;
             (
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
@@ -279,10 +290,11 @@ impl CeremonyManager {
         {
             let state = app.state::<AppState>();
             let mut inner = state.lock();
-            if inner.ceremony_id == ceremony_id {
-                inner.ceremony_active = false;
-                inner.ceremony_finishing = false;
-                inner.ceremony_is_test = false;
+            if inner
+                .active_ceremony
+                .is_some_and(|ceremony| ceremony.id == ceremony_id)
+            {
+                inner.active_ceremony = None;
             }
         }
 

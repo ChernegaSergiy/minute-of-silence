@@ -155,7 +155,7 @@ impl CeremonyScheduler {
                     || (inner.settings.weekdays_only && today.weekday().number_from_monday() > 5)
                 {
                     false
-                } else if !inner.ceremony_active {
+                } else if inner.active_ceremony.is_none() {
                     let grace_minutes = inner.settings.late_start_grace_minutes;
                     let ceremony_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
 
