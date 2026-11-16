@@ -251,6 +251,23 @@ pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
     Ok(())
 }
 
+/// Stop the running test ceremony. A real ceremony is never stopped from here.
+#[tauri::command]
+pub fn stop_test_ceremony(app: AppHandle) -> Result<()> {
+    let state = app.state::<AppState>();
+    let mut inner = state.lock();
+    if inner.ceremony_active && inner.ceremony_is_test {
+        log::info!("Test ceremony stop requested");
+        // The request names the ceremony it is meant for and is recorded before
+        // the counter moves, so a stop that lands while the ceremony is still
+        // being set up is not lost. The lock is held so that a ceremony started
+        // in between cannot be caught by this stop.
+        inner.stop_requested_for = Some(inner.ceremony_id);
+        state.audio.stop();
+    }
+    Ok(())
+}
+
 /// Return debug info and a tail of the latest application log file.
 #[tauri::command]
 pub fn get_log_contents(app: AppHandle) -> Result<String> {

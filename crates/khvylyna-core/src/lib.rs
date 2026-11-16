@@ -327,6 +327,7 @@ impl Default for Settings {
 #[serde(rename_all = "camelCase")]
 pub struct StatusSnapshot {
     pub ceremony_active: bool,
+    pub ceremony_is_test: bool,
     pub skip_tomorrow: bool,
     pub last_activation: Option<String>,
     pub last_ntp_sync: Option<String>,

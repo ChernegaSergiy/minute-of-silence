@@ -179,6 +179,7 @@
     "sync": "SYNCHRONIZE",
     "retry": "RETRY",
     "test": "TEST",
+    "stop": "STOP",
     "save": "SAVE",
     "save_dirty": "SAVE *",
     "add": "ADD",

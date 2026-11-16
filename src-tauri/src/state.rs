@@ -30,6 +30,12 @@ pub struct AppState {
 pub struct Inner {
     pub settings: Settings,
     pub ceremony_active: bool,
+    /// Whether the running ceremony was started with the Test button.
+    pub ceremony_is_test: bool,
+    /// Number of the latest started ceremony.
+    pub ceremony_id: u64,
+    /// The ceremony a pending stop request is meant for.
+    pub stop_requested_for: Option<u64>,
     pub last_activation: Option<DateTime<Local>>,
     pub pending_update: Option<tauri_plugin_updater::Update>,
     pub pending_restart: bool,
@@ -40,6 +46,9 @@ impl std::fmt::Debug for Inner {
         f.debug_struct("Inner")
             .field("settings", &self.settings)
             .field("ceremony_active", &self.ceremony_active)
+            .field("ceremony_is_test", &self.ceremony_is_test)
+            .field("ceremony_id", &self.ceremony_id)
+            .field("stop_requested_for", &self.stop_requested_for)
             .field("last_activation", &self.last_activation)
             .field(
                 "pending_update",
@@ -75,6 +84,9 @@ impl AppState {
             inner: Arc::new(Mutex::new(Inner {
                 settings: settings.clone(),
                 ceremony_active: false,
+                ceremony_is_test: false,
+                ceremony_id: 0,
+                stop_requested_for: None,
                 last_activation: None,
                 pending_update: None,
                 pending_restart: false,
@@ -263,6 +275,7 @@ impl AppState {
 
         StatusSnapshot {
             ceremony_active: inner.ceremony_active,
+            ceremony_is_test: inner.ceremony_is_test,
             skip_tomorrow: inner.settings.skip_date == Some(skip_target),
             last_activation: inner
                 .last_activation

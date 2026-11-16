@@ -18,6 +18,7 @@ import {
   Play20Regular,
   Save20Regular,
   Settings20Regular,
+  Stop20Regular,
   CalendarMonth20Regular,
 } from "@fluentui/react-icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -29,6 +30,7 @@ import {
   onCeremonyEnd,
   onCeremonyStart,
   saveSettings,
+  stopTestCeremony,
   syncNtpNow,
   triggerCeremonyNow,
 } from "./utils/api";
@@ -46,6 +48,7 @@ const ChangelogTab = lazy(() => import("./components/ChangelogTab"));
 
 const DEFAULT_STATUS: StatusSnapshot = {
   ceremonyActive: false,
+  ceremonyIsTest: false,
   skipTomorrow: false,
   lastActivation: null,
   lastNtpSync: null,
@@ -109,6 +112,7 @@ export default function App() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
+  const [testRunning, setTestRunning] = useState(false);
   const [volumeValue, setVolumeValue] = useState(80);
   const [syncing, setSyncing] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -146,6 +150,7 @@ export default function App() {
         }
         setPersonalDates(init.personalDates);
         setStatus(init.status);
+        setTestRunning(init.status.ceremonyIsTest);
         setVersion(init.version);
         setVoices(init.voices);
       } catch (error) {
@@ -170,7 +175,9 @@ export default function App() {
   useEffect(() => {
     const refresh = async () => {
       try {
-        setStatus(await getStatus());
+        const nextStatus = await getStatus();
+        setStatus(nextStatus);
+        setTestRunning(nextStatus.ceremonyIsTest);
       } catch {
         // ignore transient status refresh errors
       }
@@ -179,8 +186,14 @@ export default function App() {
     const unlisteners: (() => void)[] = [];
     (async () => {
       unlisteners.push(
-        await onCeremonyStart((_p) => refresh()),
-        await onCeremonyEnd(refresh),
+        await onCeremonyStart((payload) => {
+          setTestRunning(payload?.is_test ?? false);
+          refresh();
+        }),
+        await onCeremonyEnd(() => {
+          setTestRunning(false);
+          refresh();
+        }),
         await listen("ntp-synced", refresh),
         await listen("status-updated", refresh),
         await listen<UpdateInfo>("update-available", (event) => {
@@ -292,7 +305,10 @@ export default function App() {
     hasImportedRef.current = true;
     setSettings(imported);
     void getStatus()
-      .then(setStatus)
+      .then((nextStatus) => {
+        setStatus(nextStatus);
+        setTestRunning(nextStatus.ceremonyIsTest);
+      })
       .catch((error) => console.error("Failed to refresh status after import:", error));
     setInitialSettings(imported);
     setVolumeValue(imported.volume);
@@ -301,7 +317,9 @@ export default function App() {
   const handleSyncNtp = useCallback(async () => {
     setSyncing(true);
     try {
-      setStatus(await syncNtpNow());
+      const nextStatus = await syncNtpNow();
+      setStatus(nextStatus);
+      setTestRunning(nextStatus.ceremonyIsTest);
     } finally {
       setSyncing(false);
     }
@@ -422,12 +440,12 @@ export default function App() {
           {selectedNav === "settings" && (
             <div className={styles.buttonBar}>
               <Button
-                icon={<Play20Regular />}
+                icon={testRunning ? <Stop20Regular /> : <Play20Regular />}
                 appearance="secondary"
-                onClick={triggerCeremonyNow}
+                onClick={testRunning ? stopTestCeremony : triggerCeremonyNow}
                 disabled={!hydrated}
               >
-                {t("buttons.test")}
+                {testRunning ? t("buttons.stop") : t("buttons.test")}
               </Button>
               <Button
                 icon={<Save20Regular />}

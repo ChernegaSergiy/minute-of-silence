@@ -63,6 +63,12 @@ impl AudioEngine {
         self.stop_counter.fetch_add(1, Ordering::SeqCst);
     }
 
+    /// The current stop counter. Playback started with this value ends as soon
+    /// as a stop is requested after it was taken.
+    pub fn stop_baseline(&self) -> u64 {
+        self.stop_counter.load(Ordering::SeqCst)
+    }
+
     fn is_stopped(&self, start_counter: u64) -> bool {
         self.stop_counter.load(Ordering::SeqCst) > start_counter
     }
@@ -126,15 +132,17 @@ impl AudioEngine {
     }
 
     /// Plays the given blocks one after another with the selected voices.
+    ///
+    /// Playback ends early when a stop is requested after `start_counter`,
+    /// which the caller takes from [`AudioEngine::stop_baseline`].
     pub fn play_blocks(
         &self,
         blocks: &[PresetBlock],
         volume: u8,
         voice: AnnouncementVoice,
         anthem_voice: AnthemVoice,
+        start_counter: u64,
     ) -> Result<()> {
-        let start_counter = self.stop_counter.load(Ordering::SeqCst);
-
         let sink = DeviceSinkBuilder::open_default_sink()
             .map_err(|e| AppError::Audio(format!("Failed to open audio stream: {e}")))?;
 
