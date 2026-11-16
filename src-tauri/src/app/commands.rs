@@ -256,8 +256,14 @@ pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
 pub fn stop_test_ceremony(app: AppHandle) -> Result<()> {
     let state = app.state::<AppState>();
     let is_test_running = {
-        let inner = state.lock();
-        inner.ceremony_active && inner.ceremony_is_test
+        let mut inner = state.lock();
+        let running = inner.ceremony_active && inner.ceremony_is_test;
+        if running {
+            // Recorded before the counter moves, so a stop that lands while
+            // the ceremony is still being set up is not lost.
+            inner.stop_requested = true;
+        }
+        running
     };
     if is_test_running {
         log::info!("Test ceremony stop requested");

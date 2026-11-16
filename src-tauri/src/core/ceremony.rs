@@ -61,6 +61,7 @@ impl CeremonyManager {
             let mut inner = state.lock();
             inner.ceremony_active = true;
             inner.ceremony_is_test = is_test;
+            inner.stop_requested = false;
             inner.last_activation = Some(chrono::Local::now());
         }
         ACTIVE_TRIGGER_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -157,13 +158,23 @@ impl CeremonyManager {
         // 6. Play Audio (Stop previous first)
         self.audio.stop();
         let stop_baseline = self.audio.stop_baseline();
+        // A stop pressed while the ceremony was still being set up is replayed here.
+        // The baseline is taken first, so a stop that arrives after this check
+        // still ends the playback through the counter.
+        let stop_requested = {
+            let state = self.app.state::<AppState>();
+            let mut inner = state.lock();
+            std::mem::take(&mut inner.stop_requested)
+        };
 
         let audio_engine = Arc::clone(&self.audio);
         let app_handle = self.app.clone();
         let platform_handle = crate::platform::get_platform();
 
         std::thread::spawn(move || {
-            if let Err(e) = audio_engine.play_blocks(
+            if stop_requested {
+                log::info!("Ceremony stopped before playback started");
+            } else if let Err(e) = audio_engine.play_blocks(
                 &blocks,
                 target_volume,
                 announcement_voice,
@@ -211,6 +222,7 @@ impl CeremonyManager {
             let mut inner = state.lock();
             inner.ceremony_active = false;
             inner.ceremony_is_test = false;
+            inner.stop_requested = false;
             inner.pending_restart
         };
 
