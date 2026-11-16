@@ -64,7 +64,7 @@ Scheduler loop (every 1 s)
   ├─ sync_ntp() if needed          ← hourly or on sleep resume
   └─ get_synchronized_now()        ← NTP-corrected or system clock
        └─ Should trigger today?
-            ├─ Compensation window: [09:00 - compensation, 09:00)  ← voice/bell early start
+            ├─ Compensation window: [09:00 - compensation, 09:00)  ← opening voice/bell + 1 s pause before the metronome
             └─ Grace window: [09:00, 09:00 + grace_minutes)        ← late start / wake up
                  └─ trigger_ceremony() (CeremonyManager)
                       ├─ Set ceremony_active = true & last_activation = now

@@ -21,6 +21,26 @@ pub struct AudioEngine {
     stop_counter: AtomicU64,
 }
 
+/// Silence between a voice or a bell and the metronome that follows it.
+pub const METRONOME_LEAD_PAUSE: Duration = Duration::from_secs(1);
+
+/// The pause that separates the opening announcement and bells from the metronome.
+///
+/// It is [`METRONOME_LEAD_PAUSE`] when the metronome directly follows them and
+/// zero otherwise. Playback and the start compensation both use this rule.
+pub(crate) fn lead_in_pause(blocks: &[PresetBlock]) -> Duration {
+    let lead_in_len = blocks
+        .iter()
+        .take_while(|block| matches!(block, PresetBlock::Announcement | PresetBlock::Bell))
+        .count();
+
+    if lead_in_len > 0 && blocks.get(lead_in_len) == Some(&PresetBlock::Metronome) {
+        METRONOME_LEAD_PAUSE
+    } else {
+        Duration::ZERO
+    }
+}
+
 /// A single step in a preset playback sequence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Step {
@@ -262,6 +282,8 @@ fn blocks_to_steps(
     let assets = VoiceAssets::for_voice(voice);
     let blocks = effective_blocks(blocks, voice);
 
+    let metronome_pause = lead_in_pause(&blocks);
+
     let mut out = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
         let next = blocks.get(index + 1).copied();
@@ -276,9 +298,11 @@ fn blocks_to_steps(
 
                 match next {
                     // A short pause separates a voice or a bell from the metronome.
-                    Some(Metronome) if matches!(block, Announcement | Bell) => {
+                    Some(Metronome)
+                        if !metronome_pause.is_zero() && matches!(block, Announcement | Bell) =>
+                    {
                         out.push(Step::Wait);
-                        out.push(Step::Pause(Duration::from_secs(1)));
+                        out.push(Step::Pause(metronome_pause));
                     }
                     // Silence and the anthem start only after the file has finished.
                     Some(Silence | Anthem) => out.push(Step::Wait),
@@ -348,6 +372,30 @@ mod tests {
 
     fn steps(preset: AudioPreset, voice: AnnouncementVoice) -> Vec<Step> {
         blocks_to_steps(preset.blocks(), voice, AnthemVoice::Default)
+    }
+
+    #[test]
+    fn the_start_compensation_counts_the_pause_exactly_where_the_steps_play_it() {
+        use crate::core::scheduler::CeremonyScheduler;
+
+        // With zero-length recordings only the pause is left in the compensation.
+        for preset in PRESETS {
+            for voice in VOICES {
+                let plays_pause = steps(preset, voice).contains(&Step::Pause(METRONOME_LEAD_PAUSE));
+                let blocks = effective_blocks(preset.blocks(), voice);
+                let compensation = CeremonyScheduler::get_compensation_duration(
+                    &blocks,
+                    Duration::ZERO,
+                    Duration::ZERO,
+                );
+                let expected = if plays_pause {
+                    METRONOME_LEAD_PAUSE
+                } else {
+                    Duration::ZERO
+                };
+                assert_eq!(compensation, expected, "{preset:?} / {voice:?}");
+            }
+        }
     }
 
     #[test]

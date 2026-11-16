@@ -8,7 +8,7 @@ use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
-use crate::core::audio::AudioEngine;
+use crate::core::audio::{AudioEngine, lead_in_pause};
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
 use crate::core::voices::effective_blocks;
 use crate::state::AppState;
@@ -276,20 +276,23 @@ impl CeremonyScheduler {
     /// How long before 09:00 the ceremony has to start so that the main part
     /// (the metronome or the silence) begins exactly at 09:00.
     ///
-    /// That is the length of the announcement and bells that open the preset.
-    fn get_compensation_duration(
+    /// That is the length of the announcement and bells that open the preset,
+    /// plus the short pause that separates them from the metronome.
+    pub(crate) fn get_compensation_duration(
         blocks: &[PresetBlock],
         announcement_duration: Duration,
         bell_duration: Duration,
     ) -> Duration {
-        blocks
+        let lead_in_duration: Duration = blocks
             .iter()
             .take_while(|block| matches!(block, PresetBlock::Announcement | PresetBlock::Bell))
             .map(|block| match block {
                 PresetBlock::Announcement => announcement_duration,
                 _ => bell_duration,
             })
-            .sum()
+            .sum();
+
+        lead_in_duration + lead_in_pause(blocks)
     }
 
     fn get_synchronized_now(&self) -> chrono::DateTime<FixedOffset> {
@@ -343,6 +346,7 @@ pub async fn trigger_now(app: AppHandle, is_test: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::audio::METRONOME_LEAD_PAUSE;
     use crate::core::settings::AudioPreset::{self, *};
 
     const ANNOUNCEMENT: Duration = Duration::from_secs(40);
@@ -354,22 +358,26 @@ mod tests {
 
     #[test]
     fn presets_that_open_with_the_announcement_start_early_by_its_length() {
-        for preset in [
-            VoiceMetronome,
-            VoiceSilenceBell,
-            VoiceSilence,
-            VoiceMetronomeAnthem,
-            VoiceMetronomeEnding,
-        ] {
+        for preset in [VoiceSilenceBell, VoiceSilence] {
             assert_eq!(compensation(preset), ANNOUNCEMENT, "{preset:?}");
         }
     }
 
     #[test]
     fn presets_that_open_with_a_bell_start_early_by_its_length() {
-        for preset in [BellSilenceBell, BellMetronomeBell] {
-            assert_eq!(compensation(preset), BELL, "{preset:?}");
+        assert_eq!(compensation(BellSilenceBell), BELL);
+    }
+
+    #[test]
+    fn the_pause_before_the_metronome_starts_the_ceremony_one_second_earlier() {
+        for preset in [VoiceMetronome, VoiceMetronomeAnthem, VoiceMetronomeEnding] {
+            assert_eq!(
+                compensation(preset),
+                ANNOUNCEMENT + METRONOME_LEAD_PAUSE,
+                "{preset:?}"
+            );
         }
+        assert_eq!(compensation(BellMetronomeBell), BELL + METRONOME_LEAD_PAUSE);
     }
 
     #[test]
@@ -389,7 +397,7 @@ mod tests {
         );
         assert_eq!(
             CeremonyScheduler::get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
-            ANNOUNCEMENT
+            ANNOUNCEMENT + METRONOME_LEAD_PAUSE
         );
     }
 
@@ -400,7 +408,7 @@ mod tests {
         let blocks = [Bell, Announcement, Metronome, Bell];
         assert_eq!(
             CeremonyScheduler::get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
-            ANNOUNCEMENT + BELL
+            ANNOUNCEMENT + BELL + METRONOME_LEAD_PAUSE
         );
     }
 }
