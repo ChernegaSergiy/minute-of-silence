@@ -6,12 +6,14 @@ use rust_i18n::t;
 use serde_json::json;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Listener, Manager, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, EventId, Listener, Manager, WebviewWindowBuilder};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
 static PAUSED_PLAYERS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static ACTIVE_TRIGGER_COUNT: AtomicU32 = AtomicU32::new(0);
+/// One-shot anthem listeners of the running ceremony, removed when it finishes.
+static ANTHEM_LISTENERS: Mutex<Vec<EventId>> = Mutex::new(Vec::new());
 
 /// Orchestrator for the ceremony.
 /// This class manages the sequence of events during the ceremony.
@@ -81,7 +83,7 @@ impl CeremonyManager {
         };
         if should_show_flag {
             let app_clone = self.app.clone();
-            let _ = self.app.once("anthem-start", move |_| {
+            let start_listener = self.app.once("anthem-start", move |_| {
                 let app = app_clone.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Err(e) = WebviewWindowBuilder::new(
@@ -102,7 +104,7 @@ impl CeremonyManager {
             });
 
             let app_clone2 = self.app.clone();
-            let _ = self.app.once("anthem-end", move |_| {
+            let end_listener = self.app.once("anthem-end", move |_| {
                 let app = app_clone2.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Some(window) = app.get_webview_window("flag-animation") {
@@ -110,6 +112,10 @@ impl CeremonyManager {
                     }
                 });
             });
+
+            if let Ok(mut listeners) = ANTHEM_LISTENERS.lock() {
+                listeners.extend([start_listener, end_listener]);
+            }
         }
 
         // 3. Notify UI with estimated duration (ms)
@@ -200,11 +206,25 @@ impl CeremonyManager {
         });
     }
 
+    /// Drop the one-shot anthem listeners that did not fire, for example when
+    /// the ceremony was stopped before the anthem. Removing a listener that
+    /// already fired does nothing.
+    fn remove_anthem_listeners(app: &AppHandle) {
+        let listeners = match ANTHEM_LISTENERS.lock() {
+            Ok(mut lock) => std::mem::take(&mut *lock),
+            Err(_) => return,
+        };
+        for id in listeners {
+            app.unlisten(id);
+        }
+    }
+
     pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>) {
         // Decrement trigger count - only finish if this was the last one
         let count = ACTIVE_TRIGGER_COUNT.fetch_sub(1, Ordering::SeqCst);
         if count == 1 {
             // This was the last trigger, proceed to finish
+            Self::remove_anthem_listeners(&app);
         } else if count > 1 {
             // More triggers still active, skip restoration and emit
             return;
