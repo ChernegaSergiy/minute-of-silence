@@ -246,8 +246,16 @@ pub async fn trigger_ceremony_now(app: AppHandle) -> Result<()> {
 #[tauri::command]
 pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
     log::info!("Ceremony finish requested by audio engine");
+    let ceremony_id = {
+        let state = app.state::<AppState>();
+        let inner = state.lock();
+        if !inner.ceremony_active {
+            return Ok(());
+        }
+        inner.ceremony_id
+    };
     let platform = crate::platform::get_platform();
-    crate::core::CeremonyManager::finish_ceremony(app, platform).await;
+    crate::core::CeremonyManager::finish_ceremony(app, platform, ceremony_id).await;
     Ok(())
 }
 
@@ -256,7 +264,7 @@ pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
 pub fn stop_test_ceremony(app: AppHandle) -> Result<()> {
     let state = app.state::<AppState>();
     let mut inner = state.lock();
-    if inner.ceremony_active && inner.ceremony_is_test {
+    if inner.ceremony_active && !inner.ceremony_finishing && inner.ceremony_is_test {
         log::info!("Test ceremony stop requested");
         // The request names the ceremony it is meant for and is recorded before
         // the counter moves, so a stop that lands while the ceremony is still
