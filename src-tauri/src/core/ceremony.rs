@@ -59,6 +59,10 @@ impl CeremonyManager {
         let ceremony_id = {
             let state = self.app.state::<AppState>();
             let mut inner = state.lock();
+            if is_test && inner.ceremony_active {
+                log::info!("Test ceremony ignored: a ceremony is already running");
+                return;
+            }
             inner.ceremony_active = true;
             inner.ceremony_is_test = is_test;
             inner.ceremony_id += 1;
