@@ -156,15 +156,20 @@ impl CeremonyManager {
 
         // 6. Play Audio (Stop previous first)
         self.audio.stop();
+        let stop_baseline = self.audio.stop_baseline();
 
         let audio_engine = Arc::clone(&self.audio);
         let app_handle = self.app.clone();
         let platform_handle = crate::platform::get_platform();
 
         std::thread::spawn(move || {
-            if let Err(e) =
-                audio_engine.play_blocks(&blocks, target_volume, announcement_voice, anthem_voice)
-            {
+            if let Err(e) = audio_engine.play_blocks(
+                &blocks,
+                target_volume,
+                announcement_voice,
+                anthem_voice,
+                stop_baseline,
+            ) {
                 log::error!("Ceremony audio error: {}", e);
             }
 
