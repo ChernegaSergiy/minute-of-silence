@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The Test button turns into a Stop button while a test ceremony is playing, so the test can be stopped before it ends. A real ceremony is never stopped this way.
+
 ### Fixed
 - The metronome now starts exactly at 09:00 after the announcement or the bell. The ceremony starts one second earlier to account for the pause before the metronome.
 
