@@ -30,6 +30,7 @@ pub struct AppState {
 pub struct Inner {
     pub settings: Settings,
     pub ceremony_active: bool,
+    pub ceremony_finishing: bool,
     /// Whether the running ceremony was started with the Test button.
     pub ceremony_is_test: bool,
     /// Number of the latest started ceremony.
@@ -46,6 +47,7 @@ impl std::fmt::Debug for Inner {
         f.debug_struct("Inner")
             .field("settings", &self.settings)
             .field("ceremony_active", &self.ceremony_active)
+            .field("ceremony_finishing", &self.ceremony_finishing)
             .field("ceremony_is_test", &self.ceremony_is_test)
             .field("ceremony_id", &self.ceremony_id)
             .field("stop_requested_for", &self.stop_requested_for)
@@ -84,6 +86,7 @@ impl AppState {
             inner: Arc::new(Mutex::new(Inner {
                 settings: settings.clone(),
                 ceremony_active: false,
+                ceremony_finishing: false,
                 ceremony_is_test: false,
                 ceremony_id: 0,
                 stop_requested_for: None,
