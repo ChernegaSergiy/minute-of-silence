@@ -82,6 +82,10 @@ export async function finishCeremonyNow(): Promise<void> {
   return invoke<void>("finish_ceremony_now");
 }
 
+export async function stopTestCeremony(): Promise<void> {
+  return invoke<void>("stop_test_ceremony");
+}
+
 export async function getLogContents(): Promise<string> {
   return invoke<string>("get_log_contents");
 }
