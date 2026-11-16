@@ -56,14 +56,15 @@ impl CeremonyManager {
         };
 
         // 1. Mark active
-        {
+        let ceremony_id = {
             let state = self.app.state::<AppState>();
             let mut inner = state.lock();
             inner.ceremony_active = true;
             inner.ceremony_is_test = is_test;
-            inner.stop_requested = false;
+            inner.ceremony_id += 1;
             inner.last_activation = Some(chrono::Local::now());
-        }
+            inner.ceremony_id
+        };
         ACTIVE_TRIGGER_COUNT.fetch_add(1, Ordering::SeqCst);
 
         // 2. Setup flag animation listeners if conditions are met
@@ -164,7 +165,11 @@ impl CeremonyManager {
         let stop_requested = {
             let state = self.app.state::<AppState>();
             let mut inner = state.lock();
-            std::mem::take(&mut inner.stop_requested)
+            let requested = inner.stop_requested_for == Some(ceremony_id);
+            if requested {
+                inner.stop_requested_for = None;
+            }
+            requested
         };
 
         let audio_engine = Arc::clone(&self.audio);
@@ -222,7 +227,6 @@ impl CeremonyManager {
             let mut inner = state.lock();
             inner.ceremony_active = false;
             inner.ceremony_is_test = false;
-            inner.stop_requested = false;
             inner.pending_restart
         };
 
