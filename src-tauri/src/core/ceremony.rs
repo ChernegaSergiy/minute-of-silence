@@ -60,6 +60,7 @@ impl CeremonyManager {
             let state = self.app.state::<AppState>();
             let mut inner = state.lock();
             inner.ceremony_active = true;
+            inner.ceremony_is_test = is_test;
             inner.last_activation = Some(chrono::Local::now());
         }
         ACTIVE_TRIGGER_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -204,6 +205,7 @@ impl CeremonyManager {
             let state = app.state::<AppState>();
             let mut inner = state.lock();
             inner.ceremony_active = false;
+            inner.ceremony_is_test = false;
             inner.pending_restart
         };
 
