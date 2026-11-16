@@ -48,6 +48,7 @@ const ChangelogTab = lazy(() => import("./components/ChangelogTab"));
 
 const DEFAULT_STATUS: StatusSnapshot = {
   ceremonyActive: false,
+  ceremonyIsTest: false,
   skipTomorrow: false,
   lastActivation: null,
   lastNtpSync: null,
@@ -149,6 +150,7 @@ export default function App() {
         }
         setPersonalDates(init.personalDates);
         setStatus(init.status);
+        setTestRunning(init.status.ceremonyIsTest);
         setVersion(init.version);
         setVoices(init.voices);
       } catch (error) {
@@ -173,7 +175,9 @@ export default function App() {
   useEffect(() => {
     const refresh = async () => {
       try {
-        setStatus(await getStatus());
+        const nextStatus = await getStatus();
+        setStatus(nextStatus);
+        setTestRunning(nextStatus.ceremonyIsTest);
       } catch {
         // ignore transient status refresh errors
       }
@@ -301,7 +305,10 @@ export default function App() {
     hasImportedRef.current = true;
     setSettings(imported);
     void getStatus()
-      .then(setStatus)
+      .then((nextStatus) => {
+        setStatus(nextStatus);
+        setTestRunning(nextStatus.ceremonyIsTest);
+      })
       .catch((error) => console.error("Failed to refresh status after import:", error));
     setInitialSettings(imported);
     setVolumeValue(imported.volume);
@@ -310,7 +317,9 @@ export default function App() {
   const handleSyncNtp = useCallback(async () => {
     setSyncing(true);
     try {
-      setStatus(await syncNtpNow());
+      const nextStatus = await syncNtpNow();
+      setStatus(nextStatus);
+      setTestRunning(nextStatus.ceremonyIsTest);
     } finally {
       setSyncing(false);
     }

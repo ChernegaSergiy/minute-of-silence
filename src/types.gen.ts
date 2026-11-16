@@ -163,7 +163,7 @@ skipDate: string | null, };
 /**
  * Serialisable runtime status snapshot for the frontend.
  */
-export type StatusSnapshot = { ceremonyActive: boolean, skipTomorrow: boolean, lastActivation: string | null, lastNtpSync: string | null, };
+export type StatusSnapshot = { ceremonyActive: boolean, ceremonyIsTest: boolean, skipTomorrow: boolean, lastActivation: string | null, lastNtpSync: string | null, };
 
 export type UiTheme = "light" | "dark";
 

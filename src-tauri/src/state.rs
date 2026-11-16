@@ -275,6 +275,7 @@ impl AppState {
 
         StatusSnapshot {
             ceremony_active: inner.ceremony_active,
+            ceremony_is_test: inner.ceremony_is_test,
             skip_tomorrow: inner.settings.skip_date == Some(skip_target),
             last_activation: inner
                 .last_activation
