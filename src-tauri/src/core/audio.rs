@@ -21,6 +21,9 @@ pub struct AudioEngine {
     stop_counter: AtomicU64,
 }
 
+/// Silence between a voice or a bell and the metronome that follows it.
+pub const METRONOME_LEAD_PAUSE: Duration = Duration::from_secs(1);
+
 /// A single step in a preset playback sequence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Step {
@@ -278,7 +281,7 @@ fn blocks_to_steps(
                     // A short pause separates a voice or a bell from the metronome.
                     Some(Metronome) if matches!(block, Announcement | Bell) => {
                         out.push(Step::Wait);
-                        out.push(Step::Pause(Duration::from_secs(1)));
+                        out.push(Step::Pause(METRONOME_LEAD_PAUSE));
                     }
                     // Silence and the anthem start only after the file has finished.
                     Some(Silence | Anthem) => out.push(Step::Wait),
