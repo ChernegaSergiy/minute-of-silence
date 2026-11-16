@@ -63,8 +63,8 @@ impl CeremonyManager {
                 log::info!("Test ceremony ignored: a ceremony is already running");
                 return;
             }
-            inner.next_ceremony_id += 1;
-            let ceremony_id = inner.next_ceremony_id;
+            inner.ceremony_id_counter += 1;
+            let ceremony_id = inner.ceremony_id_counter;
             inner.active_ceremony = Some(ActiveCeremony::new(
                 ceremony_id,
                 if is_test {

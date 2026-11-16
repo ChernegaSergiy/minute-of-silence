@@ -65,7 +65,7 @@ pub struct AppState {
 pub struct Inner {
     pub settings: Settings,
     pub active_ceremony: Option<ActiveCeremony>,
-    pub next_ceremony_id: u64,
+    pub ceremony_id_counter: u64,
     pub last_activation: Option<DateTime<Local>>,
     pub pending_update: Option<tauri_plugin_updater::Update>,
     pub pending_restart: bool,
@@ -76,7 +76,7 @@ impl std::fmt::Debug for Inner {
         f.debug_struct("Inner")
             .field("settings", &self.settings)
             .field("active_ceremony", &self.active_ceremony)
-            .field("next_ceremony_id", &self.next_ceremony_id)
+            .field("ceremony_id_counter", &self.ceremony_id_counter)
             .field("last_activation", &self.last_activation)
             .field(
                 "pending_update",
@@ -112,7 +112,7 @@ impl AppState {
             inner: Arc::new(Mutex::new(Inner {
                 settings: settings.clone(),
                 active_ceremony: None,
-                next_ceremony_id: 0,
+                ceremony_id_counter: 0,
                 last_activation: None,
                 pending_update: None,
                 pending_restart: false,
