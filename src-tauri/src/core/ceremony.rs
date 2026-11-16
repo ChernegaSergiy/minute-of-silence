@@ -4,14 +4,12 @@ use crate::platform::Platform;
 use crate::state::AppState;
 use rust_i18n::t;
 use serde_json::json;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, EventId, Listener, Manager, WebviewWindowBuilder};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
 static PAUSED_PLAYERS: Mutex<Vec<String>> = Mutex::new(Vec::new());
-static ACTIVE_TRIGGER_COUNT: AtomicU32 = AtomicU32::new(0);
 /// One-shot anthem listeners of the running ceremony, removed when it finishes.
 static ANTHEM_LISTENERS: Mutex<Vec<EventId>> = Mutex::new(Vec::new());
 
@@ -71,8 +69,6 @@ impl CeremonyManager {
             inner.last_activation = Some(chrono::Local::now());
             inner.ceremony_id
         };
-        ACTIVE_TRIGGER_COUNT.fetch_add(1, Ordering::SeqCst);
-
         // 2. Setup flag animation listeners if conditions are met
         let should_show_flag = {
             let state = self.app.state::<AppState>();
@@ -201,7 +197,7 @@ impl CeremonyManager {
 
             // 7. Finish
             tauri::async_runtime::spawn(async move {
-                CeremonyManager::finish_ceremony(app_handle, platform_handle).await;
+                CeremonyManager::finish_ceremony(app_handle, platform_handle, ceremony_id).await;
             });
         });
     }
@@ -219,40 +215,26 @@ impl CeremonyManager {
         }
     }
 
-    pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>) {
-        // Decrement trigger count - only finish if this was the last one
-        let count = ACTIVE_TRIGGER_COUNT.fetch_sub(1, Ordering::SeqCst);
-        if count == 1 {
-            // This was the last trigger, proceed to finish
-            Self::remove_anthem_listeners(&app);
-        } else if count > 1 {
-            // More triggers still active, skip restoration and emit
-            return;
-        } else {
-            // count was 0, nothing to do
-            return;
-        }
-
-        let (volume_priority, auto_unmute, should_resume) = {
+    pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>, ceremony_id: u64) {
+        let (volume_priority, auto_unmute, should_resume, pending_restart) = {
             let state = app.state::<AppState>();
-            let inner = state.lock();
-            if !inner.ceremony_active {
+            let mut inner = state.lock();
+            if !inner.ceremony_active
+                || inner.ceremony_finishing
+                || inner.ceremony_id != ceremony_id
+            {
                 return;
             }
+            inner.ceremony_finishing = true;
+            inner.stop_requested_for = None;
             (
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
                 inner.settings.resume_after_ceremony,
+                inner.pending_restart,
             )
         };
-
-        let pending_restart = {
-            let state = app.state::<AppState>();
-            let mut inner = state.lock();
-            inner.ceremony_active = false;
-            inner.ceremony_is_test = false;
-            inner.pending_restart
-        };
+        Self::remove_anthem_listeners(&app);
 
         // Restore volume and mute
         if volume_priority {
@@ -291,6 +273,16 @@ impl CeremonyManager {
                 }) {
                     log::warn!("Failed to clear skip_date: {e}");
                 }
+            }
+        }
+
+        {
+            let state = app.state::<AppState>();
+            let mut inner = state.lock();
+            if inner.ceremony_id == ceremony_id {
+                inner.ceremony_active = false;
+                inner.ceremony_finishing = false;
+                inner.ceremony_is_test = false;
             }
         }
 
