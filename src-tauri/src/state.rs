@@ -16,6 +16,41 @@ rust_i18n::i18n!("locales");
 
 use rust_i18n::t;
 
+/// Whether a ceremony was started by the scheduler or by the Test button.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CeremonyKind {
+    Scheduled,
+    Test,
+}
+
+/// Lifecycle phase of an active ceremony.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CeremonyPhase {
+    SettingUp,
+    Playing,
+    Finishing,
+}
+
+/// Runtime lifecycle state for one active ceremony.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActiveCeremony {
+    pub id: u64,
+    pub kind: CeremonyKind,
+    pub phase: CeremonyPhase,
+    pub stop_requested: bool,
+}
+
+impl ActiveCeremony {
+    pub fn new(id: u64, kind: CeremonyKind) -> Self {
+        Self {
+            id,
+            kind,
+            phase: CeremonyPhase::SettingUp,
+            stop_requested: false,
+        }
+    }
+}
+
 /// Runtime state shared between the scheduler, commands, and tray.
 #[derive(Debug)]
 pub struct AppState {
@@ -29,6 +64,7 @@ pub struct AppState {
 #[derive(Default)]
 pub struct Inner {
     pub settings: Settings,
+    pub active_ceremony: Option<ActiveCeremony>,
     pub ceremony_active: bool,
     pub ceremony_finishing: bool,
     /// Whether the running ceremony was started with the Test button.
@@ -46,6 +82,7 @@ impl std::fmt::Debug for Inner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Inner")
             .field("settings", &self.settings)
+            .field("active_ceremony", &self.active_ceremony)
             .field("ceremony_active", &self.ceremony_active)
             .field("ceremony_finishing", &self.ceremony_finishing)
             .field("ceremony_is_test", &self.ceremony_is_test)
@@ -85,6 +122,7 @@ impl AppState {
         Self {
             inner: Arc::new(Mutex::new(Inner {
                 settings: settings.clone(),
+                active_ceremony: None,
                 ceremony_active: false,
                 ceremony_finishing: false,
                 ceremony_is_test: false,
