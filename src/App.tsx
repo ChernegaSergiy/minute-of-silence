@@ -18,6 +18,7 @@ import {
   Play20Regular,
   Save20Regular,
   Settings20Regular,
+  Stop20Regular,
   CalendarMonth20Regular,
 } from "@fluentui/react-icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -29,6 +30,7 @@ import {
   onCeremonyEnd,
   onCeremonyStart,
   saveSettings,
+  stopTestCeremony,
   syncNtpNow,
   triggerCeremonyNow,
 } from "./utils/api";
@@ -109,6 +111,7 @@ export default function App() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
+  const [testRunning, setTestRunning] = useState(false);
   const [volumeValue, setVolumeValue] = useState(80);
   const [syncing, setSyncing] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -179,8 +182,14 @@ export default function App() {
     const unlisteners: (() => void)[] = [];
     (async () => {
       unlisteners.push(
-        await onCeremonyStart((_p) => refresh()),
-        await onCeremonyEnd(refresh),
+        await onCeremonyStart((payload) => {
+          setTestRunning(payload?.is_test ?? false);
+          refresh();
+        }),
+        await onCeremonyEnd(() => {
+          setTestRunning(false);
+          refresh();
+        }),
         await listen("ntp-synced", refresh),
         await listen("status-updated", refresh),
         await listen<UpdateInfo>("update-available", (event) => {
@@ -422,12 +431,12 @@ export default function App() {
           {selectedNav === "settings" && (
             <div className={styles.buttonBar}>
               <Button
-                icon={<Play20Regular />}
+                icon={testRunning ? <Stop20Regular /> : <Play20Regular />}
                 appearance="secondary"
-                onClick={triggerCeremonyNow}
+                onClick={testRunning ? stopTestCeremony : triggerCeremonyNow}
                 disabled={!hydrated}
               >
-                {t("buttons.test")}
+                {testRunning ? t("buttons.stop") : t("buttons.test")}
               </Button>
               <Button
                 icon={<Save20Regular />}
