@@ -195,6 +195,7 @@ pub fn run() {
             app::commands::unskip_next,
             app::commands::trigger_ceremony_now,
             app::commands::finish_ceremony_now,
+            app::commands::stop_test_ceremony,
             app::commands::get_log_contents,
             app::commands::check_for_updates,
             app::commands::install_update,
