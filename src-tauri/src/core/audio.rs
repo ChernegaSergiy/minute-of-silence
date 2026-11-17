@@ -1,8 +1,12 @@
 //! Backend audio playback engine.
 
+#[cfg(not(target_os = "android"))]
 use rodio::{Decoder, DeviceSinkBuilder, Player};
+#[cfg(not(target_os = "android"))]
 use std::fs::File;
+#[cfg(not(target_os = "android"))]
 use std::io::BufReader;
+#[cfg(not(target_os = "android"))]
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
@@ -106,6 +110,7 @@ impl AudioEngine {
         false
     }
 
+    #[cfg(not(target_os = "android"))]
     fn wait_player_interruptible(&self, player: &Player, start_counter: u64) -> bool {
         while !player.empty() {
             if self.is_stopped(start_counter) {
@@ -117,6 +122,7 @@ impl AudioEngine {
         false
     }
 
+    #[cfg(not(target_os = "android"))]
     pub fn get_duration(&self, filename: &str) -> Result<Duration> {
         use symphonia::core::formats::FormatOptions;
         use symphonia::core::formats::TrackType;
@@ -157,6 +163,7 @@ impl AudioEngine {
     ///
     /// Playback ends early when a stop is requested after `start_counter`,
     /// which the caller takes from [`AudioEngine::stop_baseline`].
+    #[cfg(not(target_os = "android"))]
     pub fn play_blocks(
         &self,
         blocks: &[PresetBlock],
@@ -218,6 +225,27 @@ impl AudioEngine {
         Ok(())
     }
 
+    #[cfg(target_os = "android")]
+    pub fn get_duration(&self, _filename: &str) -> Result<Duration> {
+        Err(AppError::Platform(
+            "Android audio backend is not implemented yet".to_string(),
+        ))
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn play_blocks(
+        &self,
+        _blocks: &[PresetBlock],
+        _volume: u8,
+        _voice: AnnouncementVoice,
+        _anthem_voice: AnthemVoice,
+        _start_counter: u64,
+    ) -> Result<()> {
+        Err(AppError::Platform(
+            "Android audio backend is not implemented yet".to_string(),
+        ))
+    }
+
     /// Estimate total duration of the blocks by summing file durations and explicit pauses.
     pub fn estimate_duration(
         &self,
@@ -255,6 +283,7 @@ impl AudioEngine {
 
     /// Resolves the absolute path to an audio resource using Tauri's path resolver.
     /// Works on all platforms: EXE, MSI, MSIX, AppImage, Snap.
+    #[cfg(not(target_os = "android"))]
     fn get_path(&self, filename: &str) -> Result<PathBuf> {
         let resource_path = format!("audio/{}", filename);
 
