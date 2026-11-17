@@ -44,8 +44,40 @@ jobs:
       - name: Initialize Tauri Android
         run: npm run tauri -- android init --ci --skip-targets-install
 
+      - name: Prepare Android signing keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.TAURI_ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/minute-of-silence-release.keystore"
+
+      - name: Create Android signing init script
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
+        run: |
+          cat > "$RUNNER_TEMP/android-signing.init.gradle" <<'EOF'
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.name != "app") {
+                      return
+                  }
+
+                  def signingConfig = project.android.signingConfigs.findByName("release")
+                      ?: project.android.signingConfigs.create("release")
+                  signingConfig.keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                  signingConfig.keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                  signingConfig.storePassword = System.getenv("ANDROID_KEY_PASSWORD")
+                  signingConfig.storeFile = new File(System.getenv("ANDROID_KEYSTORE_FILE"))
+                  project.android.buildTypes.release.signingConfig = signingConfig
+              }
+          }
+          EOF
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/minute-of-silence-release.keystore" >> "$GITHUB_ENV"
+
       - name: Build APK
-        run: npm run tauri -- android build --ci --debug --target aarch64 --apk
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
+        run: npm run tauri -- android build --ci --target aarch64 --split-per-abi --apk -- --init-script "$RUNNER_TEMP/android-signing.init.gradle"
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
