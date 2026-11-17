@@ -107,6 +107,7 @@ const useStyles = makeStyles({
       display: "block",
       borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
       backgroundColor: tokens.colorNeutralBackground1,
+      paddingBottom: "env(safe-area-inset-bottom, 0px)",
     },
   },
   mobileNavList: {
@@ -117,6 +118,31 @@ const useStyles = makeStyles({
     minWidth: 0,
     height: "56px",
     padding: "4px 0",
+  },
+  mobileNavContent: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "2px",
+    width: "100%",
+    height: "100%",
+  },
+  mobileNavIcon: {
+    display: "grid",
+    placeItems: "center",
+    height: "20px",
+    "& svg": {
+      width: "20px",
+      height: "20px",
+    },
+  },
+  mobileNavLabel: {
+    fontSize: "9px",
+    fontWeight: tokens.fontWeightRegular,
+    lineHeight: "12px",
+    letterSpacing: 0,
+    whiteSpace: "nowrap",
   },
 });
 
@@ -489,17 +515,29 @@ export default function App() {
               onTabSelect={(_, data) => setSelectedNav(data.value as string)}
               className={styles.mobileNavList}
             >
-              <Tab className={styles.mobileNavItem} value="settings" icon={<Settings20Regular />}>
-                {t("tabs.settings")}
+              <Tab className={styles.mobileNavItem} value="settings">
+                <span className={styles.mobileNavContent}>
+                  <span className={styles.mobileNavIcon}><Settings20Regular /></span>
+                  <span className={styles.mobileNavLabel}>{t("tabs.settings")}</span>
+                </span>
               </Tab>
-              <Tab className={styles.mobileNavItem} value="personal_dates" icon={<CalendarMonth20Regular />}>
-                {t("tabs.personal_dates")}
+              <Tab className={styles.mobileNavItem} value="personal_dates">
+                <span className={styles.mobileNavContent}>
+                  <span className={styles.mobileNavIcon}><CalendarMonth20Regular /></span>
+                  <span className={styles.mobileNavLabel}>{t("tabs.personal_dates")}</span>
+                </span>
               </Tab>
-              <Tab className={styles.mobileNavItem} value="about" icon={<Info20Regular />}>
-                {t("tabs.about")}
+              <Tab className={styles.mobileNavItem} value="about">
+                <span className={styles.mobileNavContent}>
+                  <span className={styles.mobileNavIcon}><Info20Regular /></span>
+                  <span className={styles.mobileNavLabel}>{t("tabs.about")}</span>
+                </span>
               </Tab>
-              <Tab className={styles.mobileNavItem} value="changelog" icon={<DocumentBulletList20Regular />}>
-                {t("tabs.changelog")}
+              <Tab className={styles.mobileNavItem} value="changelog">
+                <span className={styles.mobileNavContent}>
+                  <span className={styles.mobileNavIcon}><DocumentBulletList20Regular /></span>
+                  <span className={styles.mobileNavLabel}>{t("tabs.changelog")}</span>
+                </span>
               </Tab>
             </TabList>
           </nav>
