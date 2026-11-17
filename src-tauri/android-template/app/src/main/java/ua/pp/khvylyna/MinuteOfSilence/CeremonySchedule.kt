@@ -1,0 +1,108 @@
+package ua.pp.khvylyna.MinuteOfSilence
+
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import java.util.Calendar
+import java.util.Locale
+
+/**
+ * Wakes the device shortly before the ceremony.
+ *
+ * The Rust scheduler still decides whether the ceremony runs. The alarm only
+ * brings the app up in time, so it may wake the app on a day the ceremony is
+ * skipped but it must never miss a day the ceremony runs.
+ */
+object CeremonySchedule {
+  private const val PREFS = "ceremony_schedule"
+  private const val KEY_ENABLED = "enabled"
+  private const val KEY_WEEKDAYS_ONLY = "weekdaysOnly"
+  private const val KEY_SKIP_DATE = "skipDate"
+
+  private const val CEREMONY_HOUR = 9
+
+  /** The app wakes a minute early to start and sync the time before 09:00. */
+  const val WAKE_LEAD_MS = 60_000L
+
+  /** Stores the schedule and sets the alarm for the next ceremony. */
+  fun configure(context: Context, enabled: Boolean, weekdaysOnly: Boolean, skipDate: String?) {
+    preferences(context).edit()
+      .putBoolean(KEY_ENABLED, enabled)
+      .putBoolean(KEY_WEEKDAYS_ONLY, weekdaysOnly)
+      .putString(KEY_SKIP_DATE, skipDate)
+      .apply()
+    schedule(context)
+  }
+
+  /** Sets the alarm for the next wake-up, or removes it when the ceremony is off. */
+  fun schedule(context: Context) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val operation = alarmIntent(context)
+    alarmManager.cancel(operation)
+
+    val prefs = preferences(context)
+    if (!prefs.getBoolean(KEY_ENABLED, false)) return
+
+    val wakeAt = nextWakeMillis(
+      System.currentTimeMillis(),
+      prefs.getBoolean(KEY_WEEKDAYS_ONLY, false),
+      prefs.getString(KEY_SKIP_DATE, null)
+    ) ?: return
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+      alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, wakeAt, operation)
+    } else {
+      alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, wakeAt, operation)
+    }
+  }
+
+  /** Whether a ceremony is switched on in the stored schedule. */
+  fun isEnabled(context: Context): Boolean =
+    preferences(context).getBoolean(KEY_ENABLED, false)
+
+  /**
+   * The next moment to wake the app, in epoch milliseconds, or null when no
+   * ceremony is due within the next days.
+   */
+  fun nextWakeMillis(now: Long, weekdaysOnly: Boolean, skipDate: String?): Long? {
+    for (offset in 0..8) {
+      val day = Calendar.getInstance().apply {
+        timeInMillis = now
+        add(Calendar.DAY_OF_YEAR, offset)
+        set(Calendar.HOUR_OF_DAY, CEREMONY_HOUR)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+      }
+      val wakeAt = day.timeInMillis - WAKE_LEAD_MS
+      if (wakeAt <= now) continue
+
+      val dayOfWeek = day.get(Calendar.DAY_OF_WEEK)
+      if (weekdaysOnly && (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY)) continue
+      if (skipDate != null && isoDate(day) == skipDate) continue
+
+      return wakeAt
+    }
+    return null
+  }
+
+  private fun isoDate(day: Calendar): String = String.format(
+    Locale.ROOT,
+    "%04d-%02d-%02d",
+    day.get(Calendar.YEAR),
+    day.get(Calendar.MONTH) + 1,
+    day.get(Calendar.DAY_OF_MONTH)
+  )
+
+  private fun alarmIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+    context,
+    0,
+    Intent(context, CeremonyAlarmReceiver::class.java),
+    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+  )
+
+  private fun preferences(context: Context) =
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+}

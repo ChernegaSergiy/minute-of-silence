@@ -30,6 +30,13 @@ class EnqueueAudioArgs {
 }
 
 @InvokeArg
+class ScheduleArgs {
+  var enabled: Boolean = false
+  var weekdaysOnly: Boolean = false
+  var skipDate: String? = null
+}
+
+@InvokeArg
 class AudioNameArgs {
   lateinit var name: String
 }
@@ -198,6 +205,23 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
       invoke.resolve(result)
     } catch (e: Exception) {
       invoke.reject("Failed to read the recording length: ${e.message}")
+    }
+  }
+
+  /** Stores the ceremony schedule and sets the wake-up alarm. */
+  @Command
+  fun configureSchedule(invoke: Invoke) {
+    try {
+      val args = invoke.parseArgs(ScheduleArgs::class.java)
+      CeremonySchedule.configure(
+        activity.applicationContext,
+        args.enabled,
+        args.weekdaysOnly,
+        args.skipDate
+      )
+      invoke.resolve()
+    } catch (e: Exception) {
+      invoke.reject("Failed to set the wake-up alarm: ${e.message}")
     }
   }
 }

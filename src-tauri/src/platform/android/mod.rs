@@ -1,6 +1,7 @@
 pub mod audio;
 pub mod bridge;
 mod media;
+pub mod schedule;
 mod volume;
 
 use crate::error::Result;
