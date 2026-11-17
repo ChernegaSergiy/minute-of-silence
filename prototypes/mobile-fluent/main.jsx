@@ -1,11 +1,12 @@
 import React,{useState,useEffect} from "react";
 import {createRoot} from "react-dom/client";
-import {FluentProvider,webLightTheme,webDarkTheme,Switch,Button,Card,CardHeader,Text,Caption1,Divider,Dropdown,Option,Slider,Field,Input,TabList,Tab,tokens} from "@fluentui/react-components";
-import {Settings20Regular,CalendarMonth20Regular,Info20Regular,DocumentBulletList20Regular,Clock20Regular,ClockDismiss20Regular,CalendarCancel20Regular,ArrowSync20Regular,ClipboardRegular,Delete20Regular,Edit20Regular,Play20Regular,Stop20Regular} from "@fluentui/react-icons";
+import {FluentProvider,webLightTheme,webDarkTheme,Switch,Button,Card,CardHeader,Text,Caption1,Divider,Dropdown,Option,Slider,Field,Input,Link,TabList,Tab,tokens} from "@fluentui/react-components";
+import {Settings20Regular,CalendarMonth20Regular,Info20Regular,DocumentBulletList20Regular,Clock20Regular,ClockDismiss20Regular,CalendarCancel20Regular,ArrowSync20Regular,ArrowSyncRegular,ClipboardRegular,ClipboardCheckmarkRegular,Delete20Regular,Edit20Regular,Play20Regular,Stop20Regular} from "@fluentui/react-icons";
 import {DatePicker,defaultDatePickerStrings} from "@fluentui/react-datepicker-compat";
 import uk from "../../src/locales/uk.json";
 import clRaw from "../../CHANGELOG.yaml?raw";
 import {parse} from "yaml";
+import logo from "../../public/logo.png";
 const D={uk,ch:uk.changelog,cl:parse(clRaw).slice(0,4)};
 const T=p=>p.split(".").reduce((o,k)=>o?.[k],D.uk)??p;
 const Sec=({k})=><Text size={100} weight="semibold" block style={{color:tokens.colorNeutralForeground3}}>{T("sections."+k)}</Text>;
@@ -67,10 +68,14 @@ return <><Card style={cardSt}><Text weight="semibold">{P.title}</Text>
 <Button appearance="primary" disabled={!date||!name} onClick={()=>{setList([...list,{date,name,id:Date.now()}]);setDate(null);setName("")}}>{T("buttons.add")}</Button></Card>
 <Card style={cardSt}><Text weight="semibold">{P.list_title}</Text>{list.length===0?<Caption1>{P.empty}</Caption1>:list.map(x=><div key={x.id} style={{display:"flex",alignItems:"center",gap:8}}><div style={{flex:1}}><Text weight="medium" block>{x.name}</Text><Caption1>{fmt(x.date)}</Caption1></div><Button appearance="subtle" icon={<Edit20Regular/>} aria-label={T("buttons.edit")}/><Button appearance="subtle" icon={<Delete20Regular/>} aria-label={T("buttons.delete")} onClick={()=>setList(list.filter(y=>y.id!==x.id))}/></div>)}</Card></>}
 function About(){const A=T("about"),[m,setM]=useState({});const f=(k,v)=>{setM({...m,[k]:v});setTimeout(()=>setM({}),1500)};
-return <><Card style={cardSt}><Text weight="semibold" size={500}>{T("app.title")}</Text><Text>{A.description}</Text><Caption1>{A.acknowledgments}</Caption1><Text>{A.version} <strong>0.12.1</strong></Text>
-<Button icon={<ClipboardRegular/>} onClick={()=>f("l",A.copy_logs_copied)}>{m.l||A.copy_logs}</Button>
-<Button icon={<ArrowSync20Regular/>} onClick={()=>{f("u",A.check_updates_checking);setTimeout(()=>f("u",A.check_updates_up_to_date),900)}}>{m.u||A.check_updates}</Button></Card>
-<Card style={cardSt}><Caption1>{A.license}</Caption1><Text>{A.glory}</Text></Card></>}
+return <div style={{display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",padding:"24px 8px",gap:16}}>
+<img src={logo} alt="" style={{width:96,height:96,borderRadius:8}} />
+<div style={{display:"flex",flexDirection:"column",gap:6}}><Text size={500} weight="semibold">{T("app.title")}</Text><Caption1 style={{color:tokens.colorNeutralForeground3}}>{A.version} 0.12.1</Caption1></div>
+<div style={{display:"flex",flexDirection:"column",gap:10,color:tokens.colorNeutralForeground2}}><Text>{A.description}</Text><Text>{A.acknowledgments}</Text></div>
+<div style={{display:"flex",flexDirection:"column",gap:8}}><Link href="https://bohdan.com.ua/memoryminute" target="_blank">bohdan.com.ua/memoryminute</Link><Link href="https://github.com/ChernegaSergiy/minute-of-silence" target="_blank">github.com/ChernegaSergiy/minute-of-silence</Link></div>
+<div style={{display:"flex",justifyContent:"center",gap:8,flexWrap:"wrap"}}><Button appearance="subtle" icon={<ArrowSyncRegular/>} onClick={()=>{f("u",A.check_updates_checking);setTimeout(()=>f("u",A.check_updates_up_to_date),900)}}>{m.u||A.check_updates}</Button><Button appearance="subtle" icon={m.l===A.copy_logs_copied?<ClipboardCheckmarkRegular/>:<ClipboardRegular/>} onClick={()=>f("l",A.copy_logs_copied)}>{m.l||A.copy_logs}</Button></div>
+<div style={{marginTop:8,color:tokens.colorNeutralForeground3,fontSize:12}}>{A.license}<br/>{A.glory}</div>
+</div>}
 function Changelog(){return <>{D.cl.map(v=><Card key={v.version} style={cardSt}><Text weight="semibold">v{v.version} — {v.date}</Text>{[...new Set(v.entries.map(e=>e.category))].map(c=><div key={c}><Caption1 weight="semibold" block style={{color:tokens.colorBrandForeground1}}>{D.ch.categories[c]}</Caption1>{v.entries.filter(e=>e.category===c).map(e=><div key={e.key} style={{fontSize:13,lineHeight:"18px",margin:"4px 0"}}>• {D.ch[v.version]?.[e.key]??e.key}</div>)}</div>)}</Card>)}</>}
 const S0={ceremony:true,autostart:true,weekdays:false,sysTheme:true,theme:"dark",grace:2,sysTime:false,nearby:true,reminder:"5",overlay:true,flag:true,voice:"bohdan_hdal",bell:true,ann:true,body:"metronome",closing:"anthem",anthem:"default",volume:70,pause:true,resume:true,prio:false,unmute:true};
 function App(){const[tab,setTab]=useState("settings"),[s,setS]=useState(S0),[status,setStatus]=useState({skip:false,last:"—",ntp:"—"}),[saved,setSaved]=useState(S0),[ov,setOv]=useState(false);
