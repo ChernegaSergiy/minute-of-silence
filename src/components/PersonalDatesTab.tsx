@@ -46,6 +46,9 @@ const useStyles = makeStyles({
     flexShrink: 0,
     alignSelf: "flex-end",
     marginBottom: "1px",
+    "@media (max-width: 600px)": {
+      width: "100%",
+    },
   },
 
   listItem: {
@@ -115,6 +118,13 @@ const useStyles = makeStyles({
     display: "flex",
     gap: tokens.spacingHorizontalXS,
     justifyContent: "flex-end",
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > button": {
+        width: "100%",
+      },
+    },
   },
 });
 
