@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use tauri::AppHandle;
 
 use crate::app::next_skip_date;
-use crate::core::audio::AudioEngine;
+use crate::core::audio::{AudioEngine, CeremonyAudioBackend};
 use crate::core::ntp_service::NtpService;
 use crate::core::settings::{PersonalDate, Settings, SettingsExt};
 
@@ -57,7 +57,7 @@ pub struct AppState {
     inner: Arc<Mutex<Inner>>,
     settings_mutex: Mutex<()>,
     pub ntp_service: NtpService,
-    pub audio: Arc<AudioEngine>,
+    pub audio: Arc<dyn CeremonyAudioBackend>,
     pub app_handle: AppHandle,
 }
 
