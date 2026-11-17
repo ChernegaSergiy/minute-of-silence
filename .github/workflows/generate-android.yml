@@ -1,0 +1,55 @@
+name: Generate Android project
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    name: Generate Tauri Android project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Android branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/android-platform
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Generate Android project
+        run: |
+          export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
+          npm run tauri -- android init --ci --skip-targets-install
+
+      - name: Upload generated Android project
+        uses: actions/upload-artifact@v4
+        with:
+          name: gen-android
+          path: src-tauri/gen/android
+          if-no-files-found: error
