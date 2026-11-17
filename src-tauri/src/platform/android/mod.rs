@@ -1,4 +1,5 @@
 pub mod bridge;
+mod volume;
 
 use crate::error::{AppError, Result};
 
@@ -23,19 +24,19 @@ fn unsupported<T>() -> Result<T> {
 #[async_trait::async_trait]
 impl super::Platform for AndroidPlatform {
     fn get_volume(&self) -> Result<u8> {
-        unsupported()
+        volume::get_volume()
     }
 
-    fn set_volume(&self, _level: u8) -> Result<()> {
-        unsupported()
+    fn set_volume(&self, level: u8) -> Result<()> {
+        volume::set_volume(level)
     }
 
     fn is_muted(&self) -> Result<bool> {
-        unsupported()
+        volume::is_muted()
     }
 
-    fn set_mute(&self, _mute: bool) -> Result<()> {
-        unsupported()
+    fn set_mute(&self, mute: bool) -> Result<()> {
+        volume::set_mute(mute)
     }
 
     async fn pause_media(&self) -> Result<Vec<String>> {
