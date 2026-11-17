@@ -4,9 +4,13 @@ pub mod windows;
 #[cfg(target_os = "linux")]
 pub mod linux;
 
+#[cfg(target_os = "android")]
+pub mod android;
 #[cfg(target_os = "macos")]
 pub mod macos;
 
+#[cfg(target_os = "android")]
+use android as sys;
 #[cfg(target_os = "linux")]
 use linux as sys;
 #[cfg(target_os = "macos")]
@@ -82,4 +86,6 @@ pub fn get_platform() -> Box<dyn Platform> {
     return Box::new(linux::LinuxPlatform);
     #[cfg(target_os = "macos")]
     return Box::new(macos::MacosPlatform);
+    #[cfg(target_os = "android")]
+    return Box::new(android::AndroidPlatform);
 }

@@ -1,5 +1,6 @@
 pub mod apng;
 pub mod commands;
+#[cfg(desktop)]
 pub mod tray;
 
 use chrono::{DateTime, Datelike, Local, NaiveDate, NaiveTime};
