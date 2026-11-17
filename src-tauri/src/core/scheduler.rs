@@ -8,7 +8,7 @@ use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
-use crate::core::audio::{AudioEngine, lead_in_pause};
+use crate::core::audio::{CeremonyAudioBackend, lead_in_pause};
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
 use crate::core::voices::effective_blocks;
 use crate::state::AppState;
@@ -16,7 +16,7 @@ use crate::state::AppState;
 /// Scheduler for the daily ceremony.
 pub struct CeremonyScheduler {
     app: AppHandle,
-    audio: Arc<AudioEngine>,
+    audio: Arc<dyn CeremonyAudioBackend>,
     voice_durations: HashMap<AnnouncementVoice, Duration>,
     bell_durations: HashMap<AnnouncementVoice, Duration>,
 }
