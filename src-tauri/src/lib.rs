@@ -125,6 +125,11 @@ pub fn run() {
                 crate::platform::windows::power::register_power_hook(&window);
             }
 
+            #[cfg(mobile)]
+            tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                .title("Minute of Silence")
+                .build()?;
+
             #[cfg(all(desktop, not(test)))]
             {
                 let app_handle = handle.clone();
