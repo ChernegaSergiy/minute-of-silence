@@ -6,6 +6,8 @@ import {
   NavDrawerBody,
   NavItem,
   Spinner,
+  Tab,
+  TabList,
   makeStyles,
   shorthands,
   tokens,
@@ -92,6 +94,29 @@ const useStyles = makeStyles({
     justifyContent: "center",
     alignItems: "center",
     height: "100%",
+  },
+  desktopNav: {
+    display: "block",
+    "@media (max-width: 600px)": {
+      display: "none",
+    },
+  },
+  mobileNav: {
+    display: "none",
+    "@media (max-width: 600px)": {
+      display: "block",
+      borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+      backgroundColor: tokens.colorNeutralBackground1,
+    },
+  },
+  mobileNavList: {
+    display: "flex",
+  },
+  mobileNavItem: {
+    flex: 1,
+    minWidth: 0,
+    height: "56px",
+    padding: "4px 0",
   },
 });
 
@@ -369,6 +394,7 @@ export default function App() {
         <div className={styles.layout}>
           <div className={styles.body}>
             <NavDrawer
+              className={styles.desktopNav}
               selectedValue={selectedNav}
               onNavItemSelect={(_, data) => setSelectedNav(data.value as string)}
               open
@@ -457,6 +483,26 @@ export default function App() {
               </Button>
             </div>
           )}
+          <nav className={styles.mobileNav}>
+            <TabList
+              selectedValue={selectedNav}
+              onTabSelect={(_, data) => setSelectedNav(data.value as string)}
+              className={styles.mobileNavList}
+            >
+              <Tab className={styles.mobileNavItem} value="settings" icon={<Settings20Regular />}>
+                {t("tabs.settings")}
+              </Tab>
+              <Tab className={styles.mobileNavItem} value="personal_dates" icon={<CalendarMonth20Regular />}>
+                {t("tabs.personal_dates")}
+              </Tab>
+              <Tab className={styles.mobileNavItem} value="about" icon={<Info20Regular />}>
+                {t("tabs.about")}
+              </Tab>
+              <Tab className={styles.mobileNavItem} value="changelog" icon={<DocumentBulletList20Regular />}>
+                {t("tabs.changelog")}
+              </Tab>
+            </TabList>
+          </nav>
         </div>
         <UpdateDialog
           updateInfo={showUpdateDialog ? updateInfo : null}
