@@ -21,26 +21,41 @@ use windows as sys;
 use crate::error::Result;
 
 // Re-exports from system-specific modules
+#[cfg(target_os = "android")]
+pub use android::is_dark_mode;
+#[cfg(target_os = "android")]
+pub use android::{apply_autostart_enabled, system_autostart_enabled};
+#[cfg(desktop)]
 pub use sys::autostart::{apply_autostart_enabled, system_autostart_enabled};
+#[cfg(desktop)]
 pub use sys::theme::is_dark_mode;
 
 /// Sync the persisted autostart setting with the actual platform state.
 pub fn sync_autostart_from_system(state: tauri::State<'_, crate::AppState>) -> Result<()> {
-    let system_enabled = system_autostart_enabled().unwrap_or_else(|| {
-        use tauri_plugin_autostart::ManagerExt;
-        state.app_handle.autolaunch().is_enabled().unwrap_or(false)
-    });
-
-    if state.lock().settings.autostart_enabled != system_enabled {
-        let updated = state.update_settings(|s| {
-            s.autostart_enabled = system_enabled;
-        })?;
-        log::info!("Autostart setting synced from system: {}", system_enabled);
-        use tauri::Emitter;
-        let _ = state.app_handle.emit("settings-updated", updated);
+    #[cfg(not(desktop))]
+    {
+        let _ = state;
+        return Ok(());
     }
 
-    Ok(())
+    #[cfg(desktop)]
+    {
+        let system_enabled = system_autostart_enabled().unwrap_or_else(|| {
+            use tauri_plugin_autostart::ManagerExt;
+            state.app_handle.autolaunch().is_enabled().unwrap_or(false)
+        });
+
+        if state.lock().settings.autostart_enabled != system_enabled {
+            let updated = state.update_settings(|s| {
+                s.autostart_enabled = system_enabled;
+            })?;
+            log::info!("Autostart setting synced from system: {}", system_enabled);
+            use tauri::Emitter;
+            let _ = state.app_handle.emit("settings-updated", updated);
+        }
+
+        Ok(())
+    }
 }
 
 /// Returns true when the current process is running from an MSIX package
