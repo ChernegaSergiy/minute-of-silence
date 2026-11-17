@@ -65,22 +65,6 @@ jobs:
             echo "storeFile=$RUNNER_TEMP/minute-of-silence-release.keystore"
           } > keystore.properties
 
-      - name: Validate Android signing credentials
-        env:
-          ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
-        run: |
-          keytool -importkeystore \
-            -srckeystore "$RUNNER_TEMP/minute-of-silence-release.keystore" \
-            -srcstorepass "$ANDROID_KEYSTORE_PASSWORD" \
-            -srcalias "$ANDROID_KEY_ALIAS" \
-            -srckeypass "$ANDROID_KEYSTORE_PASSWORD" \
-            -destkeystore "$RUNNER_TEMP/android-signing-validation.p12" \
-            -deststoretype PKCS12 \
-            -deststorepass validation-only \
-            -destkeypass validation-only \
-            -noprompt
-
       - name: Build APK
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
