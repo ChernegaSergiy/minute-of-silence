@@ -208,7 +208,7 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     }
   }
 
-  /** Stores the ceremony schedule and sets the wake-up alarm. */
+  /** Stores the ceremony schedule, sets the wake-up alarm and runs the service while it is on. */
   @Command
   fun configureSchedule(invoke: Invoke) {
     try {
@@ -219,6 +219,11 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
         args.weekdaysOnly,
         args.skipDate
       )
+      if (args.enabled) {
+        CeremonyService.start(activity.applicationContext)
+      } else {
+        CeremonyService.stop(activity.applicationContext)
+      }
       invoke.resolve()
     } catch (e: Exception) {
       invoke.reject("Failed to set the wake-up alarm: ${e.message}")

@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 /** Notifications the ceremony needs: the wake-up one and the one of the service. */
 object CeremonyNotifications {
   const val CHANNEL_ID = "ceremony"
+  const val SERVICE_CHANNEL_ID = "ceremony_service"
   const val WAKE_NOTIFICATION_ID = 1
   const val SERVICE_NOTIFICATION_ID = 2
 
@@ -64,12 +65,14 @@ object CeremonyNotifications {
 
   private fun ensureChannel(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-    val channel = NotificationChannel(
-      CHANNEL_ID,
-      context.getString(R.string.ceremony_channel_name),
-      NotificationManager.IMPORTANCE_HIGH
+    val name = context.getString(R.string.ceremony_channel_name)
+    // The wake-up notification must pop up, the one of the service must stay quiet.
+    manager(context).createNotificationChannel(
+      NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_HIGH)
     )
-    manager(context).createNotificationChannel(channel)
+    manager(context).createNotificationChannel(
+      NotificationChannel(SERVICE_CHANNEL_ID, name, NotificationManager.IMPORTANCE_LOW)
+    )
   }
 
   private fun manager(context: Context) =
