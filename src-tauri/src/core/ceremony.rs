@@ -2,10 +2,13 @@ use crate::core::audio::AudioEngine;
 use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
 use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase};
+#[cfg(desktop)]
 use rust_i18n::t;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, EventId, Listener, Manager, WebviewWindowBuilder};
+#[cfg(desktop)]
+use tauri::WebviewWindowBuilder;
+use tauri::{AppHandle, Emitter, EventId, Listener, Manager};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
@@ -79,6 +82,7 @@ impl CeremonyManager {
             ceremony_id
         };
         // 2. Setup flag animation listeners if conditions are met
+        #[cfg(desktop)]
         let should_show_flag = {
             let state = self.app.state::<AppState>();
             let inner = state.lock();
@@ -86,6 +90,7 @@ impl CeremonyManager {
                 && inner.settings.show_visual_overlay
                 && blocks.contains(&PresetBlock::Anthem)
         };
+        #[cfg(desktop)]
         if should_show_flag {
             let app_clone = self.app.clone();
             let start_listener = self.app.once("anthem-start", move |_| {
