@@ -36,8 +36,6 @@ log = "0.4"
 thiserror = "2.0"
 anyhow = "1.0"
 dirs = "7.0"
-rodio = { version = "0.23", default-features = false, features = ["playback", "symphonia-ogg", "symphonia-vorbis"] }
-symphonia = { version = "0.6", default-features = false, features = ["ogg", "vorbis"] }
 rust-i18n = "4.0"
 sys-locale = "0.3"
 async-trait = "0.1"
@@ -51,6 +49,8 @@ tauri-plugin-clipboard-manager = "2.4"
 khvylyna-core = { path = "../crates/khvylyna-core" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
+rodio = { version = "0.23", default-features = false, features = ["playback", "symphonia-ogg", "symphonia-vorbis"] }
+symphonia = { version = "0.6", default-features = false, features = ["ogg", "vorbis"] }
 winreg = "0.56"
 tauri-winrt-notification = "0.8.0"
 windows = { version = "0.62.2", features = [
