@@ -128,6 +128,19 @@ const useStyles = makeStyles({
     marginRight: tokens.spacingHorizontalM,
     minWidth: 0,
   },
+  dataRow: {
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      gap: tokens.spacingVerticalS,
+      "& > div": {
+        marginRight: 0,
+      },
+      "& > button": {
+        width: "100%",
+      },
+    },
+  },
   switchDesc: {
     fontSize: tokens.fontSizeBase100,
     color: tokens.colorNeutralForeground3,
@@ -650,7 +663,7 @@ export default function SettingsTab({
         <Text size={100} weight="semibold" block>
           {t("sections.data")}
         </Text>
-        <div className={styles.switchRow}>
+        <div className={mergeClasses(styles.switchRow, styles.dataRow)}>
           <div className={styles.switchLabel}>
             <Text weight="medium">{t("controls.export.label")}</Text>
             <div className={styles.switchDesc}>{t("controls.export.description")}</div>
@@ -669,7 +682,7 @@ export default function SettingsTab({
           </Button>
         </div>
         <Divider />
-        <div className={styles.switchRow}>
+        <div className={mergeClasses(styles.switchRow, styles.dataRow)}>
           <div className={styles.switchLabel}>
             <Text weight="medium">{t("controls.import.label")}</Text>
             <div className={styles.switchDesc}>{t("controls.import.description")}</div>
