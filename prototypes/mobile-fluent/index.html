@@ -13,6 +13,10 @@
   .phone { width: 100%; height: 100dvh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
   .phone > main { min-height: 0; }
   .phone > main > * { flex: 0 0 auto; }
+  .nav-content { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 100%; height: 100%; }
+  .nav-icon { display: grid; place-items: center; height: 20px; color: #242424; }
+  .nav-icon svg { width: 20px; height: 20px; }
+  .nav-label { font-size: 9px !important; font-weight: 400 !important; line-height: 12px !important; letter-spacing: 0; white-space: nowrap; }
   @media (min-width: 500px) { .phone { width: 390px; height: min(780px, 96dvh); border-radius: 36px; border: 10px solid #111; } }
 </style>
 </head>
