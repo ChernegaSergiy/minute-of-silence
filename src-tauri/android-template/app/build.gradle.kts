@@ -34,7 +34,7 @@ android {
             keyAlias = keystoreProperties["keyAlias"] as String
             keyPassword = keystoreProperties["password"] as String
             storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["password"] as String
+            storePassword = keystoreProperties["keystorePassword"] as String
         }
     }
     buildTypes {
