@@ -13,6 +13,28 @@ use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
 use crate::core::voices::{VoiceAssets, effective_blocks};
 use crate::error::{AppError, Result};
 
+pub trait CeremonyAudioBackend: Send + Sync + std::fmt::Debug {
+    fn stop(&self);
+    fn stop_baseline(&self) -> u64;
+    fn get_duration(&self, filename: &str) -> Result<Duration>;
+    fn play_blocks(
+        &self,
+        blocks: &[PresetBlock],
+        volume: u8,
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+        start_counter: u64,
+    ) -> Result<()>;
+    fn estimate_duration(
+        &self,
+        blocks: &[PresetBlock],
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+    ) -> Result<Duration>;
+    fn get_announcement_filename(&self, voice: AnnouncementVoice) -> String;
+    fn get_bell_filename(&self, voice: AnnouncementVoice) -> String;
+}
+
 /// Audio engine for ceremony playback.
 /// This acts as a class responsible for all audio operations.
 #[derive(Debug)]
