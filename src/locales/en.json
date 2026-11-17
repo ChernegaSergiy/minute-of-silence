@@ -236,6 +236,11 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.12.1": {
+      "test_ceremony_stop_button": "The Test button turns into a Stop button while a test ceremony is playing, so the test can be stopped before it ends. A real ceremony is never stopped this way.",
+      "metronome_start_compensation_fix": "The metronome now starts exactly at 09:00 after the announcement or the bell. The ceremony starts one second earlier to account for the pause before the metronome.",
+      "test_ceremony_scheduling_fix": "A test ceremony no longer prevents the scheduled ceremony from running later on the same day."
+    },
     "0.12.0": {
       "vinnytsia_city_voice": "Vinnytsia city announcement voice recorded from the city's minute-of-silence system, including its own bell for the bell presets.",
       "ceremony_constructor": "Ceremony constructor in settings: choose the opening bell, announcement, main part (metronome or silence) and closing (nothing, voice ending, bell or anthem) instead of picking one of ten fixed presets. Options the selected voice cannot play are disabled.",
