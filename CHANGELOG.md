@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-17
+
 ### Added
 - The Test button turns into a Stop button while a test ceremony is playing, so the test can be stopped before it ends. A real ceremony is never stopped this way.
 
