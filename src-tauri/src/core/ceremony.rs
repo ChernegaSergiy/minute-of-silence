@@ -1,4 +1,4 @@
-use crate::core::audio::AudioEngine;
+use crate::core::audio::CeremonyAudioBackend;
 use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
 use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase};
@@ -21,11 +21,15 @@ static ANTHEM_LISTENERS: Mutex<Vec<EventId>> = Mutex::new(Vec::new());
 pub struct CeremonyManager {
     app: AppHandle,
     platform: Box<dyn Platform>,
-    audio: Arc<AudioEngine>,
+    audio: Arc<dyn CeremonyAudioBackend>,
 }
 
 impl CeremonyManager {
-    pub fn new(app: AppHandle, platform: Box<dyn Platform>, audio: Arc<AudioEngine>) -> Self {
+    pub fn new(
+        app: AppHandle,
+        platform: Box<dyn Platform>,
+        audio: Arc<dyn CeremonyAudioBackend>,
+    ) -> Self {
         Self {
             app,
             platform,
