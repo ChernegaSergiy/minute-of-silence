@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "proto:mobile": "vite --config prototypes/mobile-fluent/vite.config.mjs",
     "tauri": "tauri",
     "lint": "eslint src --max-warnings 0",
     "typecheck": "tsc --noEmit",
