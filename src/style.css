@@ -5,6 +5,7 @@ html, body {
   height: 100%;
   font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
   background: transparent;
+  -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
   overflow: hidden;
 }
