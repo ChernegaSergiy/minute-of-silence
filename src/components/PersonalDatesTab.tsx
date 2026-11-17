@@ -52,6 +52,7 @@ const useStyles = makeStyles({
     minWidth: "120px",
   },
   addButton: {
+    flexGrow: 1,
     flexShrink: 0,
     alignSelf: "flex-end",
     marginBottom: "1px",
