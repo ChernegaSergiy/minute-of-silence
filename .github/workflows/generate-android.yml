@@ -48,7 +48,9 @@ jobs:
           npm run tauri -- android init --ci --skip-targets-install
 
       - name: Archive generated Android project
-        run: tar -czf gen-android.tar.gz -C src-tauri/gen android
+        run: |
+          test -n "$(find src-tauri/gen/android -type f -print -quit)" || exit 1
+          tar -czf gen-android.tar.gz -C src-tauri/gen android
 
       - name: Upload generated Android project
         uses: actions/upload-artifact@v4
