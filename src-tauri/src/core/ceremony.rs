@@ -73,7 +73,9 @@ impl CeremonyManager {
                     CeremonyKind::Scheduled
                 },
             ));
-            inner.last_activation = Some(chrono::Local::now());
+            if !is_test {
+                inner.last_activation = Some(chrono::Local::now());
+            }
             ceremony_id
         };
         // 2. Setup flag animation listeners if conditions are met
