@@ -129,12 +129,25 @@ const useStyles = makeStyles({
     minWidth: 0,
   },
   dataRow: {
+    flexWrap: "wrap",
+    columnGap: tokens.spacingHorizontalM,
+    rowGap: tokens.spacingVerticalS,
+    "& > div": {
+      flex: "1 1 240px",
+      minWidth: "min(100%, 240px)",
+      marginRight: 0,
+    },
+    "& > button": {
+      flexGrow: 1,
+      flexShrink: 0,
+      maxWidth: "100%",
+    },
     "@media (max-width: 600px)": {
       flexDirection: "column",
       alignItems: "stretch",
-      gap: tokens.spacingVerticalS,
       "& > div": {
-        marginRight: 0,
+        flex: "0 1 auto",
+        minWidth: 0,
       },
       "& > button": {
         width: "100%",
