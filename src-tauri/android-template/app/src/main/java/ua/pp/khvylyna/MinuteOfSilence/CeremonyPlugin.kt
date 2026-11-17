@@ -23,6 +23,17 @@ class MuteArgs {
   var mute: Boolean = false
 }
 
+@InvokeArg
+class EnqueueAudioArgs {
+  lateinit var name: String
+  var volume: Float = 1f
+}
+
+@InvokeArg
+class AudioNameArgs {
+  lateinit var name: String
+}
+
 /**
  * Native half of the ceremony backend. The Rust side registers this class as
  * the `ceremony` plugin and calls its commands through the Tauri bridge.
@@ -38,6 +49,8 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
 
   // The ceremony does not react to focus changes: it must not be interrupted.
   private val focusListener = AudioManager.OnAudioFocusChangeListener { }
+
+  private val audioPlayer = CeremonyAudioPlayer(activity.applicationContext)
 
   /** The media stream volume as a percentage of its maximum. */
   @Command
@@ -146,5 +159,45 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
       audioManager.abandonAudioFocus(focusListener)
     }
     holdsFocus = false
+  }
+
+  /** Queues a bundled recording for playback. */
+  @Command
+  fun enqueueAudio(invoke: Invoke) {
+    try {
+      val args = invoke.parseArgs(EnqueueAudioArgs::class.java)
+      audioPlayer.enqueue(args.name, args.volume)
+      invoke.resolve()
+    } catch (e: Exception) {
+      invoke.reject("Failed to queue the recording: ${e.message}")
+    }
+  }
+
+  /** Whether the queue is empty and nothing is playing. */
+  @Command
+  fun isAudioIdle(invoke: Invoke) {
+    val result = JSObject()
+    result.put("idle", audioPlayer.isIdle())
+    invoke.resolve(result)
+  }
+
+  /** Stops the playback and drops the queue. */
+  @Command
+  fun stopAudio(invoke: Invoke) {
+    audioPlayer.stop()
+    invoke.resolve()
+  }
+
+  /** The length of a bundled recording. */
+  @Command
+  fun getAudioDuration(invoke: Invoke) {
+    try {
+      val args = invoke.parseArgs(AudioNameArgs::class.java)
+      val result = JSObject()
+      result.put("durationMs", audioPlayer.durationMs(args.name))
+      invoke.resolve(result)
+    } catch (e: Exception) {
+      invoke.reject("Failed to read the recording length: ${e.message}")
+    }
   }
 }
