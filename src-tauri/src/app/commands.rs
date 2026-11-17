@@ -249,10 +249,10 @@ pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
     let ceremony_id = {
         let state = app.state::<AppState>();
         let inner = state.lock();
-        if !inner.ceremony_active {
+        let Some(active) = inner.active_ceremony else {
             return Ok(());
-        }
-        inner.ceremony_id
+        };
+        active.id
     };
     let platform = crate::platform::get_platform();
     crate::core::CeremonyManager::finish_ceremony(app, platform, ceremony_id).await;
@@ -264,13 +264,16 @@ pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
 pub fn stop_test_ceremony(app: AppHandle) -> Result<()> {
     let state = app.state::<AppState>();
     let mut inner = state.lock();
-    if inner.ceremony_active && !inner.ceremony_finishing && inner.ceremony_is_test {
+    if let Some(active) = inner.active_ceremony.as_mut()
+        && active.kind == crate::state::CeremonyKind::Test
+        && active.phase != crate::state::CeremonyPhase::Finishing
+    {
         log::info!("Test ceremony stop requested");
         // The request names the ceremony it is meant for and is recorded before
         // the counter moves, so a stop that lands while the ceremony is still
         // being set up is not lost. The lock is held so that a ceremony started
         // in between cannot be caught by this stop.
-        inner.stop_requested_for = Some(inner.ceremony_id);
+        active.stop_requested = true;
         state.audio.stop();
     }
     Ok(())
@@ -443,7 +446,7 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
             log::info!("Update installed.");
             let should_restart = {
                 let mut inner = state.lock();
-                if inner.ceremony_active {
+                if inner.active_ceremony.is_some() {
                     inner.pending_restart = true;
                     false
                 } else {
