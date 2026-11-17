@@ -44,6 +44,9 @@ jobs:
       - name: Initialize Tauri Android
         run: npm run tauri -- android init --ci --skip-targets-install
 
+      - name: Apply Android app template
+        run: cp -R src-tauri/android-template/app/. src-tauri/gen/android/app/
+
       - name: Prepare Android signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.TAURI_ANDROID_KEYSTORE_BASE64 }}
@@ -61,7 +64,6 @@ jobs:
             echo "keystorePassword=$ANDROID_KEYSTORE_PASSWORD"
             echo "storeFile=$RUNNER_TEMP/minute-of-silence-release.keystore"
           } > keystore.properties
-          cp "$GITHUB_WORKSPACE/src-tauri/android-template/app/build.gradle.kts" app/build.gradle.kts
 
       - name: Validate Android signing credentials
         env:

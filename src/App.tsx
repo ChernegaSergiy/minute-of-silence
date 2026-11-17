@@ -116,7 +116,6 @@ const useStyles = makeStyles({
       display: "block",
       borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
       backgroundColor: tokens.colorNeutralBackground1,
-      paddingBottom: "env(safe-area-inset-bottom, 0px)",
     },
   },
   mobileNavList: {
