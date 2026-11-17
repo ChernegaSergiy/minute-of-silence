@@ -1,7 +1,8 @@
 pub mod bridge;
+mod media;
 mod volume;
 
-use crate::error::{AppError, Result};
+use crate::error::Result;
 
 pub struct AndroidPlatform;
 
@@ -14,12 +15,6 @@ pub fn system_autostart_enabled() -> Option<bool> {
 }
 
 pub fn apply_autostart_enabled(_app: &tauri::AppHandle, _enabled: bool) {}
-
-fn unsupported<T>() -> Result<T> {
-    Err(AppError::Platform(
-        "Android platform integration is not implemented yet".to_string(),
-    ))
-}
 
 #[async_trait::async_trait]
 impl super::Platform for AndroidPlatform {
@@ -40,10 +35,10 @@ impl super::Platform for AndroidPlatform {
     }
 
     async fn pause_media(&self) -> Result<Vec<String>> {
-        unsupported()
+        media::pause_media().await
     }
 
-    async fn resume_media(&self, _players: Vec<String>) -> Result<()> {
-        unsupported()
+    async fn resume_media(&self, players: Vec<String>) -> Result<()> {
+        media::resume_media(players).await
     }
 }

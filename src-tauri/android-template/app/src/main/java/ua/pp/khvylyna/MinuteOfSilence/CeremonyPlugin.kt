@@ -2,7 +2,10 @@ package ua.pp.khvylyna.MinuteOfSilence
 
 import android.app.Activity
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.os.Build
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -28,6 +31,13 @@ class MuteArgs {
 class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
   private val audioManager: AudioManager
     get() = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+  /** The focus held while other players are paused, API 26 and newer. */
+  private var focusRequest: AudioFocusRequest? = null
+  private var holdsFocus = false
+
+  // The ceremony does not react to focus changes: it must not be interrupted.
+  private val focusListener = AudioManager.OnAudioFocusChangeListener { }
 
   /** The media stream volume as a percentage of its maximum. */
   @Command
@@ -72,5 +82,69 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     } catch (e: Exception) {
       invoke.reject("Failed to change the mute state: ${e.message}")
     }
+  }
+
+  /**
+   * Pauses other players. Android has no call for that, so the ceremony takes
+   * the audio focus exclusively for a while. Well-behaved players pause on
+   * their own and resume when the focus is released.
+   */
+  @Command
+  fun pauseMedia(invoke: Invoke) {
+    val result = JSObject()
+    try {
+      result.put("granted", requestExclusiveFocus())
+      invoke.resolve(result)
+    } catch (e: Exception) {
+      invoke.reject("Failed to take the audio focus: ${e.message}")
+    }
+  }
+
+  /** Releases the audio focus so that the paused players can resume. */
+  @Command
+  fun resumeMedia(invoke: Invoke) {
+    try {
+      abandonFocus()
+      invoke.resolve()
+    } catch (e: Exception) {
+      invoke.reject("Failed to release the audio focus: ${e.message}")
+    }
+  }
+
+  private fun requestExclusiveFocus(): Boolean {
+    abandonFocus()
+    val granted: Int
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val attributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        .build()
+      val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+        .setAudioAttributes(attributes)
+        .setOnAudioFocusChangeListener(focusListener)
+        .build()
+      focusRequest = request
+      granted = audioManager.requestAudioFocus(request)
+    } else {
+      @Suppress("DEPRECATION")
+      granted = audioManager.requestAudioFocus(
+        focusListener,
+        AudioManager.STREAM_MUSIC,
+        AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+      )
+    }
+    holdsFocus = granted == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    return holdsFocus
+  }
+
+  private fun abandonFocus() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+      focusRequest = null
+    } else if (holdsFocus) {
+      @Suppress("DEPRECATION")
+      audioManager.abandonAudioFocus(focusListener)
+    }
+    holdsFocus = false
   }
 }
