@@ -48,6 +48,13 @@ const useStyles = makeStyles({
     display: "flex",
     justifyContent: "center",
     gap: tokens.spacingHorizontalM,
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > button": {
+        width: "100%",
+      },
+    },
   },
   aboutLicense: {
     fontSize: tokens.fontSizeBase100,
