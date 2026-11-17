@@ -52,13 +52,12 @@ jobs:
       - name: Configure Android release signing
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
         run: |
           cd src-tauri/gen/android
           {
             echo "keyAlias=$ANDROID_KEY_ALIAS"
-            echo "password=$ANDROID_KEY_PASSWORD"
+            echo "password=$ANDROID_KEYSTORE_PASSWORD"
             echo "keystorePassword=$ANDROID_KEYSTORE_PASSWORD"
             echo "storeFile=$RUNNER_TEMP/minute-of-silence-release.keystore"
           } > keystore.properties
@@ -67,14 +66,13 @@ jobs:
       - name: Validate Android signing credentials
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
         run: |
           keytool -importkeystore \
             -srckeystore "$RUNNER_TEMP/minute-of-silence-release.keystore" \
             -srcstorepass "$ANDROID_KEYSTORE_PASSWORD" \
             -srcalias "$ANDROID_KEY_ALIAS" \
-            -srckeypass "$ANDROID_KEY_PASSWORD" \
+            -srckeypass "$ANDROID_KEYSTORE_PASSWORD" \
             -destkeystore "$RUNNER_TEMP/android-signing-validation.p12" \
             -deststoretype PKCS12 \
             -deststorepass validation-only \

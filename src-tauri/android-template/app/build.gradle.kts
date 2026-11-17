@@ -32,7 +32,7 @@ android {
             val keystoreProperties = Properties()
             keystoreProperties.load(FileInputStream(keystorePropertiesFile))
             keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["password"] as String
+            keyPassword = keystoreProperties["keystorePassword"] as String
             storeFile = file(keystoreProperties["storeFile"] as String)
             storePassword = keystoreProperties["keystorePassword"] as String
         }
