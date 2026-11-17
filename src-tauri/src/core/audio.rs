@@ -297,6 +297,48 @@ impl AudioEngine {
     }
 }
 
+impl CeremonyAudioBackend for AudioEngine {
+    fn stop(&self) {
+        AudioEngine::stop(self);
+    }
+
+    fn stop_baseline(&self) -> u64 {
+        AudioEngine::stop_baseline(self)
+    }
+
+    fn get_duration(&self, filename: &str) -> Result<Duration> {
+        AudioEngine::get_duration(self, filename)
+    }
+
+    fn play_blocks(
+        &self,
+        blocks: &[PresetBlock],
+        volume: u8,
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+        start_counter: u64,
+    ) -> Result<()> {
+        AudioEngine::play_blocks(self, blocks, volume, voice, anthem_voice, start_counter)
+    }
+
+    fn estimate_duration(
+        &self,
+        blocks: &[PresetBlock],
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+    ) -> Result<Duration> {
+        AudioEngine::estimate_duration(self, blocks, voice, anthem_voice)
+    }
+
+    fn get_announcement_filename(&self, voice: AnnouncementVoice) -> String {
+        AudioEngine::get_announcement_filename(self, voice)
+    }
+
+    fn get_bell_filename(&self, voice: AnnouncementVoice) -> String {
+        AudioEngine::get_bell_filename(self, voice)
+    }
+}
+
 /// Turns a list of preset blocks into playback steps.
 ///
 /// Every file comes from the manifest of the one selected voice. Blocks the
