@@ -64,6 +64,23 @@ jobs:
           } > keystore.properties
           cp "$GITHUB_WORKSPACE/src-tauri/android-template/app/build.gradle.kts" app/build.gradle.kts
 
+      - name: Validate Android signing credentials
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          keytool -importkeystore \
+            -srckeystore "$RUNNER_TEMP/minute-of-silence-release.keystore" \
+            -srcstorepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -srcalias "$ANDROID_KEY_ALIAS" \
+            -srckeypass "$ANDROID_KEY_PASSWORD" \
+            -destkeystore "$RUNNER_TEMP/android-signing-validation.p12" \
+            -deststoretype PKCS12 \
+            -deststorepass validation-only \
+            -destkeypass validation-only \
+            -noprompt
+
       - name: Build APK
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
