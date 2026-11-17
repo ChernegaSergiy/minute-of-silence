@@ -60,7 +60,7 @@ jobs:
             echo "password=$ANDROID_KEY_PASSWORD"
             echo "storeFile=$RUNNER_TEMP/minute-of-silence-release.keystore"
           } > keystore.properties
-          git apply "$GITHUB_WORKSPACE/.github/android-release-signing.patch"
+          cp "$GITHUB_WORKSPACE/src-tauri/android-template/app/build.gradle.kts" app/build.gradle.kts
 
       - name: Build APK
         env:
