@@ -44,6 +44,11 @@ pub fn run() {
             }));
     }
 
+    #[cfg(target_os = "android")]
+    {
+        builder = builder.plugin(crate::platform::android::bridge::init());
+    }
+
     builder
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())

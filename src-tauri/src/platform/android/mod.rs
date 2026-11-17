@@ -1,3 +1,5 @@
+pub mod bridge;
+
 use crate::error::{AppError, Result};
 
 pub struct AndroidPlatform;
