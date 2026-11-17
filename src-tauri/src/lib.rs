@@ -77,6 +77,23 @@ pub fn run() {
                 settings.clone(),
             ));
 
+            // --- 2.0. Native schedule and autostart (Android) ---
+            // Off the setup thread: the calls wait for the answer of the native side.
+            #[cfg(target_os = "android")]
+            {
+                let app_handle = handle.clone();
+                let settings = settings.clone();
+                tauri::async_runtime::spawn_blocking(move || {
+                    if let Err(e) = crate::platform::android::schedule::configure(&settings) {
+                        log::warn!("Failed to set the wake-up alarm: {}", e);
+                    }
+                    crate::platform::apply_autostart_enabled(
+                        &app_handle,
+                        settings.autostart_enabled,
+                    );
+                });
+            }
+
             // --- 2.1. Store Change Listener ---
             {
                 let app_handle = handle.clone();

@@ -260,6 +260,19 @@ impl AppState {
             );
         }
 
+        #[cfg(target_os = "android")]
+        if old_settings.ceremony_enabled != new_settings.ceremony_enabled
+            || old_settings.weekdays_only != new_settings.weekdays_only
+            || old_settings.skip_date != new_settings.skip_date
+        {
+            let settings = new_settings.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(e) = crate::platform::android::schedule::configure(&settings) {
+                    log::warn!("Failed to update the wake-up alarm: {}", e);
+                }
+            });
+        }
+
         let ntp_server_changed = old_settings.ntp_server != new_settings.ntp_server;
         if ntp_server_changed {
             log::info!(
