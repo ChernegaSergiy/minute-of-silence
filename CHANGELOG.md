@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The metronome now starts exactly at 09:00 after the announcement or the bell. The ceremony starts one second earlier to account for the pause before the metronome.
+- A test ceremony no longer prevents the scheduled ceremony from running later on the same day.
 
 ## [0.12.0] - 2026-11-15
 
