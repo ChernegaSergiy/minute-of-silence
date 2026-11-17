@@ -2,6 +2,7 @@ import React,{useState,useEffect} from "react";
 import {createRoot} from "react-dom/client";
 import {FluentProvider,webLightTheme,webDarkTheme,Switch,Button,Card,CardHeader,Text,Caption1,Divider,Dropdown,Option,Slider,Field,Input,TabList,Tab,tokens} from "@fluentui/react-components";
 import {Settings20Regular,CalendarMonth20Regular,Info20Regular,DocumentBulletList20Regular,Clock20Regular,ClockDismiss20Regular,CalendarCancel20Regular,ArrowSync20Regular,ClipboardRegular,Delete20Regular,Edit20Regular,Play20Regular,Stop20Regular} from "@fluentui/react-icons";
+import {DatePicker,defaultDatePickerStrings} from "@fluentui/react-datepicker-compat";
 import uk from "../../src/locales/uk.json";
 const D={uk};
 const T=p=>p.split(".").reduce((o,k)=>o?.[k],D.uk)??p;
@@ -56,6 +57,13 @@ action={!off?<Button appearance={status.skip?"primary":"secondary"} onClick={()=
 <Card><div style={{display:"flex",flexDirection:"column",gap:4,fontSize:14}}><div>{T("status.last_ceremony")}: <strong>{status.last}</strong></div>
 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span>{T("status.ntp_sync")}: <strong>{status.ntp}</strong></span>
 <Button size="small" appearance="transparent" disabled={syncing} icon={<ArrowSync20Regular/>} onClick={()=>{setSy(true);setTimeout(()=>{setSy(false);setStatus({...status,ntp:new Date().toLocaleString("uk-UA")})},900)}}>{T("buttons.sync")}</Button></div></div></Card></>}
+function Dates(){const[list,setList]=useState([]),[date,setDate]=useState(null),[name,setName]=useState("");const P=T("personal_dates");
+const fmt=d=>d?d.toLocaleDateString("uk-UA"):"";
+return <><Card style={cardSt}><Text weight="semibold">{P.title}</Text>
+<Field label={P.date}><DatePicker value={date} onSelectDate={setDate} formatDate={fmt} strings={{...defaultDatePickerStrings,...D.uk.calendar}}/></Field>
+<Field label={P.label}><Input value={name} onChange={(_,d)=>setName(d.value)}/></Field>
+<Button appearance="primary" disabled={!date||!name} onClick={()=>{setList([...list,{date,name,id:Date.now()}]);setDate(null);setName("")}}>{T("buttons.add")}</Button></Card>
+<Card style={cardSt}><Text weight="semibold">{P.list_title}</Text>{list.length===0?<Caption1>{P.empty}</Caption1>:list.map(x=><div key={x.id} style={{display:"flex",alignItems:"center",gap:8}}><div style={{flex:1}}><Text weight="medium" block>{x.name}</Text><Caption1>{fmt(x.date)}</Caption1></div><Button appearance="subtle" icon={<Edit20Regular/>} aria-label={T("buttons.edit")}/><Button appearance="subtle" icon={<Delete20Regular/>} aria-label={T("buttons.delete")} onClick={()=>setList(list.filter(y=>y.id!==x.id))}/></div>)}</Card></>}
 const S0={ceremony:true,autostart:true,weekdays:false,sysTheme:true,theme:"dark",grace:2,sysTime:false,nearby:true,reminder:"5",overlay:true,flag:true,voice:"bohdan_hdal",bell:true,ann:true,body:"metronome",closing:"anthem",anthem:"default",volume:70,pause:true,resume:true,prio:false,unmute:true};
 function App(){const[tab,setTab]=useState("settings"),[s,setS]=useState(S0),[status,setStatus]=useState({skip:false,last:"—",ntp:"—"}),[saved,setSaved]=useState(S0),[ov,setOv]=useState(false);
 const mq=window.matchMedia("(prefers-color-scheme: dark)"),[sys,setSys]=useState(mq.matches);useEffect(()=>{const f=e=>setSys(e.matches);mq.addEventListener("change",f);return()=>mq.removeEventListener("change",f)},[]);
@@ -63,7 +71,7 @@ const dirty=JSON.stringify(s)!==JSON.stringify(saved),dark=s.sysTheme?sys:s.them
 const nav=[["settings",<Settings20Regular/>],["personal_dates",<CalendarMonth20Regular/>],["about",<Info20Regular/>],["changelog",<DocumentBulletList20Regular/>]];
 return <FluentProvider theme={dark?webDarkTheme:webLightTheme} style={{height:"100%",background:"transparent"}}><div className="phone" style={{background:tokens.colorNeutralBackground2,color:tokens.colorNeutralForeground1}}>
 <header style={{background:tokens.colorNeutralBackground1,padding:"14px 16px",borderBottom:`1px solid ${tokens.colorNeutralStroke2}`}}><Text size={500} weight="semibold">{T("app.title")}</Text></header>
-<main style={{display:"flex",flexDirection:"column",gap:12,flex:1,overflowY:"auto",padding:12}}>{tab==="settings"&&<SettingsTab {...{s,status,setStatus}} set={(k,v)=>setS({...s,[k]:v})}/>}</main>
+<main style={{display:"flex",flexDirection:"column",gap:12,flex:1,overflowY:"auto",padding:12}}>{tab==="settings"&&<SettingsTab {...{s,status,setStatus}} set={(k,v)=>setS({...s,[k]:v})}/>}{tab==="personal_dates"&&<Dates/>}</main>
 {tab==="settings"&&<div style={{display:"flex",gap:8,padding:"8px 12px",background:tokens.colorNeutralBackground1,borderTop:`1px solid ${tokens.colorNeutralStroke2}`}}><Button style={{flex:1}} icon={<Play20Regular/>} onClick={()=>setOv(true)}>{T("buttons.test")}</Button><Button style={{flex:1}} appearance="primary" disabled={!dirty} onClick={()=>setSaved(s)}>{dirty?T("buttons.save_dirty"):T("buttons.save")}</Button></div>}
 <nav style={{background:tokens.colorNeutralBackground1,borderTop:`1px solid ${tokens.colorNeutralStroke2}`,paddingBottom:"env(safe-area-inset-bottom,0px)"}}><TabList selectedValue={tab} onTabSelect={(_,d)=>setTab(d.value)} style={{display:"flex"}}>{nav.map(([k,i])=><Tab key={k} value={k} style={{flex:1,minWidth:0,flexDirection:"column",height:56,padding:"4px 0"}}>{i}<span style={{fontSize:9,letterSpacing:0,whiteSpace:"nowrap"}}>{T("tabs."+k)}</span></Tab>)}</TabList></nav>
 {ov&&<Overlay close={()=>setOv(false)}/>}</div></FluentProvider>}
