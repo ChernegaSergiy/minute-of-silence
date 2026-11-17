@@ -33,6 +33,15 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     alignItems: "flex-end",
     flexWrap: "wrap",
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > div": {
+        flex: "0 1 auto",
+        minWidth: 0,
+        width: "100%",
+      },
+    },
   },
   addDateField: {
     flex: "1 1 160px",
@@ -105,6 +114,15 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     alignItems: "flex-end",
     flexWrap: "wrap",
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > div": {
+        flex: "0 1 auto",
+        minWidth: 0,
+        width: "100%",
+      },
+    },
   },
   editDateField: {
     flex: "1 1 160px",
