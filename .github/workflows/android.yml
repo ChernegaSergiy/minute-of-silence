@@ -77,7 +77,8 @@ jobs:
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
-        run: npm run tauri -- android build --ci --target aarch64 --split-per-abi --apk -- --init-script "$RUNNER_TEMP/android-signing.init.gradle"
+          GRADLE_OPTS: -I${{ runner.temp }}/android-signing.init.gradle
+        run: npm run tauri -- android build --ci --target aarch64 --split-per-abi --apk
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
