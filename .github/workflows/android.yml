@@ -47,6 +47,9 @@ jobs:
       - name: Apply Android app template
         run: cp -R src-tauri/android-template/app/. src-tauri/gen/android/app/
 
+      - name: Declare ceremony permissions and components in the manifest
+        run: python3 src-tauri/android-template/patch-manifest.py src-tauri/gen/android/app/src/main/AndroidManifest.xml
+
       - name: Prepare Android signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.TAURI_ANDROID_KEYSTORE_BASE64 }}
