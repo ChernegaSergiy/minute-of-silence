@@ -23,6 +23,7 @@ struct UpdateAvailablePayload {
 }
 
 /// Application entry point — called from `main.rs`.
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
