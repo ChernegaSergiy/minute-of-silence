@@ -27,6 +27,9 @@ const useStyles = makeStyles({
   card: {
     marginBottom: tokens.spacingVerticalM,
   },
+  field: {
+    gridTemplateColumns: "minmax(0, 1fr)",
+  },
 
   addRow: {
     display: "flex",
@@ -254,7 +257,7 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
 
         <div className={styles.addRow}>
           <div className={styles.addDateField}>
-            <Field label={t("personal_dates.date")}>
+            <Field className={styles.field} label={t("personal_dates.date")}>
               <DatePicker
                 placeholder={t("personal_dates.date")}
                 value={newDate}
@@ -266,7 +269,7 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
           </div>
 
           <div className={styles.addLabelField}>
-            <Field label={t("personal_dates.label")}>
+            <Field className={styles.field} label={t("personal_dates.label")}>
               <Input
                 placeholder={t("personal_dates.label")}
                 value={newLabel}
@@ -390,7 +393,7 @@ function EditForm({
     <>
       <div className={styles.editRow}>
         <div className={styles.editDateField}>
-          <Field label={t("personal_dates.date")}>
+          <Field className={styles.field} label={t("personal_dates.date")}>
             <DatePicker
               value={date}
               onSelectDate={(d) => setDate(d ?? null)}
@@ -400,7 +403,7 @@ function EditForm({
           </Field>
         </div>
         <div className={styles.editLabelField}>
-          <Field label={t("personal_dates.label")}>
+          <Field className={styles.field} label={t("personal_dates.label")}>
             <Input
               value={label}
               onChange={(_, d) => setLabel(d.value)}
