@@ -16,7 +16,7 @@ class CeremonyAlarmReceiver : BroadcastReceiver() {
     wakeLock.acquire(WAKE_LOCK_TIMEOUT_MS)
 
     CeremonyNotifications.showWakeUp(context)
-    // A killed process comes back with the service, which keeps it alive afterwards.
+    // Keeps the process alive from here on, once the app is up.
     CeremonyService.start(context)
   }
 

@@ -1,4 +1,5 @@
 pub mod audio;
+mod autostart;
 pub mod bridge;
 mod media;
 pub mod schedule;
@@ -16,7 +17,11 @@ pub fn system_autostart_enabled() -> Option<bool> {
     None
 }
 
-pub fn apply_autostart_enabled(_app: &tauri::AppHandle, _enabled: bool) {}
+pub fn apply_autostart_enabled(_app: &tauri::AppHandle, enabled: bool) {
+    if let Err(e) = autostart::set_enabled(enabled) {
+        log::warn!("Failed to apply the autostart setting: {}", e);
+    }
+}
 
 #[async_trait::async_trait]
 impl super::Platform for AndroidPlatform {

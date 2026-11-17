@@ -30,6 +30,11 @@ class EnqueueAudioArgs {
 }
 
 @InvokeArg
+class AutostartArgs {
+  var enabled: Boolean = false
+}
+
+@InvokeArg
 class ScheduleArgs {
   var enabled: Boolean = false
   var weekdaysOnly: Boolean = false
@@ -227,6 +232,18 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
       invoke.resolve()
     } catch (e: Exception) {
       invoke.reject("Failed to set the wake-up alarm: ${e.message}")
+    }
+  }
+
+  /** Switches the alarm re-arming after a reboot on or off. */
+  @Command
+  fun setAutostart(invoke: Invoke) {
+    try {
+      val args = invoke.parseArgs(AutostartArgs::class.java)
+      BootReceiver.setEnabled(activity.applicationContext, args.enabled)
+      invoke.resolve()
+    } catch (e: Exception) {
+      invoke.reject("Failed to change the autostart: ${e.message}")
     }
   }
 }
