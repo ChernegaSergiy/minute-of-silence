@@ -84,13 +84,13 @@ const useStyles = makeStyles({
     padding: tokens.spacingVerticalL,
     ...shorthands.borderTop("1px", "solid", tokens.colorNeutralStroke2),
     "@media (max-width: 600px)": {
-      flexDirection: "column",
-      gap: tokens.spacingVerticalS,
+      gap: tokens.spacingHorizontalS,
     },
   },
   buttonBarButton: {
     "@media (max-width: 600px)": {
-      width: "100%",
+      flex: "1 1 0",
+      minWidth: 0,
     },
   },
   changelogSpinner: {
