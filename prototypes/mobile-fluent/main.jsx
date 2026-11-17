@@ -4,7 +4,9 @@ import {FluentProvider,webLightTheme,webDarkTheme,Switch,Button,Card,CardHeader,
 import {Settings20Regular,CalendarMonth20Regular,Info20Regular,DocumentBulletList20Regular,Clock20Regular,ClockDismiss20Regular,CalendarCancel20Regular,ArrowSync20Regular,ClipboardRegular,Delete20Regular,Edit20Regular,Play20Regular,Stop20Regular} from "@fluentui/react-icons";
 import {DatePicker,defaultDatePickerStrings} from "@fluentui/react-datepicker-compat";
 import uk from "../../src/locales/uk.json";
-const D={uk};
+import clRaw from "../../CHANGELOG.yaml?raw";
+import {parse} from "yaml";
+const D={uk,ch:uk.changelog,cl:parse(clRaw).slice(0,4)};
 const T=p=>p.split(".").reduce((o,k)=>o?.[k],D.uk)??p;
 const Sec=({k})=><Text size={100} weight="semibold" block style={{color:tokens.colorNeutralForeground3}}>{T("sections."+k)}</Text>;
 const Lbl=({k})=><div style={{flex:1,minWidth:0}}><Text weight="medium" block>{T(`controls.${k}.label`)}</Text><Caption1 style={{color:tokens.colorNeutralForeground3}}>{T(`controls.${k}.description`)}</Caption1></div>;
@@ -69,6 +71,7 @@ return <><Card style={cardSt}><Text weight="semibold" size={500}>{T("app.title")
 <Button icon={<ClipboardRegular/>} onClick={()=>f("l",A.copy_logs_copied)}>{m.l||A.copy_logs}</Button>
 <Button icon={<ArrowSync20Regular/>} onClick={()=>{f("u",A.check_updates_checking);setTimeout(()=>f("u",A.check_updates_up_to_date),900)}}>{m.u||A.check_updates}</Button></Card>
 <Card style={cardSt}><Caption1>{A.license}</Caption1><Text>{A.glory}</Text></Card></>}
+function Changelog(){return <>{D.cl.map(v=><Card key={v.version} style={cardSt}><Text weight="semibold">v{v.version} — {v.date}</Text>{[...new Set(v.entries.map(e=>e.category))].map(c=><div key={c}><Caption1 weight="semibold" block style={{color:tokens.colorBrandForeground1}}>{D.ch.categories[c]}</Caption1>{v.entries.filter(e=>e.category===c).map(e=><div key={e.key} style={{fontSize:13,lineHeight:"18px",margin:"4px 0"}}>• {D.ch[v.version]?.[e.key]??e.key}</div>)}</div>)}</Card>)}</>}
 const S0={ceremony:true,autostart:true,weekdays:false,sysTheme:true,theme:"dark",grace:2,sysTime:false,nearby:true,reminder:"5",overlay:true,flag:true,voice:"bohdan_hdal",bell:true,ann:true,body:"metronome",closing:"anthem",anthem:"default",volume:70,pause:true,resume:true,prio:false,unmute:true};
 function App(){const[tab,setTab]=useState("settings"),[s,setS]=useState(S0),[status,setStatus]=useState({skip:false,last:"—",ntp:"—"}),[saved,setSaved]=useState(S0),[ov,setOv]=useState(false);
 const mq=window.matchMedia("(prefers-color-scheme: dark)"),[sys,setSys]=useState(mq.matches);useEffect(()=>{const f=e=>setSys(e.matches);mq.addEventListener("change",f);return()=>mq.removeEventListener("change",f)},[]);
@@ -76,7 +79,7 @@ const dirty=JSON.stringify(s)!==JSON.stringify(saved),dark=s.sysTheme?sys:s.them
 const nav=[["settings",<Settings20Regular/>],["personal_dates",<CalendarMonth20Regular/>],["about",<Info20Regular/>],["changelog",<DocumentBulletList20Regular/>]];
 return <FluentProvider theme={dark?webDarkTheme:webLightTheme} style={{height:"100%",background:"transparent"}}><div className="phone" style={{background:tokens.colorNeutralBackground2,color:tokens.colorNeutralForeground1}}>
 <header style={{background:tokens.colorNeutralBackground1,padding:"14px 16px",borderBottom:`1px solid ${tokens.colorNeutralStroke2}`}}><Text size={500} weight="semibold">{T("app.title")}</Text></header>
-<main style={{display:"flex",flexDirection:"column",gap:12,flex:1,overflowY:"auto",padding:12}}>{tab==="settings"&&<SettingsTab {...{s,status,setStatus}} set={(k,v)=>setS({...s,[k]:v})}/>}{tab==="personal_dates"&&<Dates/>}{tab==="about"&&<About/>}</main>
+<main style={{display:"flex",flexDirection:"column",gap:12,flex:1,overflowY:"auto",padding:12}}>{tab==="settings"&&<SettingsTab {...{s,status,setStatus}} set={(k,v)=>setS({...s,[k]:v})}/>}{tab==="personal_dates"&&<Dates/>}{tab==="about"&&<About/>}{tab==="changelog"&&<Changelog/>}</main>
 {tab==="settings"&&<div style={{display:"flex",gap:8,padding:"8px 12px",background:tokens.colorNeutralBackground1,borderTop:`1px solid ${tokens.colorNeutralStroke2}`}}><Button style={{flex:1}} icon={<Play20Regular/>} onClick={()=>setOv(true)}>{T("buttons.test")}</Button><Button style={{flex:1}} appearance="primary" disabled={!dirty} onClick={()=>setSaved(s)}>{dirty?T("buttons.save_dirty"):T("buttons.save")}</Button></div>}
 <nav style={{background:tokens.colorNeutralBackground1,borderTop:`1px solid ${tokens.colorNeutralStroke2}`,paddingBottom:"env(safe-area-inset-bottom,0px)"}}><TabList selectedValue={tab} onTabSelect={(_,d)=>setTab(d.value)} style={{display:"flex"}}>{nav.map(([k,i])=><Tab key={k} value={k} style={{flex:1,minWidth:0,flexDirection:"column",height:56,padding:"4px 0"}}>{i}<span style={{fontSize:9,letterSpacing:0,whiteSpace:"nowrap"}}>{T("tabs."+k)}</span></Tab>)}</TabList></nav>
 {ov&&<Overlay close={()=>setOv(false)}/>}</div></FluentProvider>}
