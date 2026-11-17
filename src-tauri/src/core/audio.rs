@@ -87,6 +87,8 @@ impl AudioEngine {
     /// Stop any current playback by incrementing the counter.
     pub fn stop(&self) {
         self.stop_counter.fetch_add(1, Ordering::SeqCst);
+        #[cfg(target_os = "android")]
+        self.stop_native_player();
     }
 
     /// The current stop counter. Playback started with this value ends as soon
@@ -226,24 +228,95 @@ impl AudioEngine {
     }
 
     #[cfg(target_os = "android")]
-    pub fn get_duration(&self, _filename: &str) -> Result<Duration> {
-        Err(AppError::Platform(
-            "Android audio backend is not implemented yet".to_string(),
-        ))
+    pub fn get_duration(&self, filename: &str) -> Result<Duration> {
+        crate::platform::android::audio::duration(filename)
     }
 
+    /// Plays the given blocks one after another with the selected voices.
+    ///
+    /// The steps are the same as on desktop, the recordings play in the native
+    /// Android player. Playback ends early when a stop is requested after
+    /// `start_counter`.
     #[cfg(target_os = "android")]
     pub fn play_blocks(
         &self,
-        _blocks: &[PresetBlock],
-        _volume: u8,
-        _voice: AnnouncementVoice,
-        _anthem_voice: AnthemVoice,
-        _start_counter: u64,
+        blocks: &[PresetBlock],
+        volume: u8,
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+        start_counter: u64,
     ) -> Result<()> {
-        Err(AppError::Platform(
-            "Android audio backend is not implemented yet".to_string(),
-        ))
+        let result = self.play_steps(
+            blocks_to_steps(blocks, voice, anthem_voice),
+            volume as f32 / 100.0,
+            start_counter,
+        );
+        if result.is_err() {
+            self.stop_native_player();
+        }
+        result
+    }
+
+    #[cfg(target_os = "android")]
+    fn play_steps(&self, steps: Vec<Step>, gain: f32, start_counter: u64) -> Result<()> {
+        use crate::platform::android::audio as native;
+
+        for step in steps {
+            if self.is_stopped(start_counter) {
+                self.stop_native_player();
+                return Ok(());
+            }
+
+            match step {
+                Step::File(name) => native::enqueue(&name, gain)?,
+                Step::Pause(dur) => {
+                    if self.sleep_interruptible(dur, start_counter) {
+                        self.stop_native_player();
+                        return Ok(());
+                    }
+                }
+                Step::Wait => {
+                    if self.wait_idle_interruptible(start_counter)? {
+                        return Ok(());
+                    }
+                }
+                Step::Anthem(name) => {
+                    let _ = self.app_handle.emit("anthem-start", ());
+                    let stopped = native::enqueue(&name, gain)
+                        .and_then(|()| self.wait_idle_interruptible(start_counter));
+                    let _ = self.app_handle.emit("anthem-end", ());
+                    if stopped? {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        self.wait_idle_interruptible(start_counter)?;
+        Ok(())
+    }
+
+    /// Waits until the native player is idle. Returns true when a stop was
+    /// requested meanwhile, after stopping the player.
+    #[cfg(target_os = "android")]
+    fn wait_idle_interruptible(&self, start_counter: u64) -> Result<bool> {
+        loop {
+            if self.is_stopped(start_counter) {
+                self.stop_native_player();
+                return Ok(true);
+            }
+            if crate::platform::android::audio::is_idle()? {
+                return Ok(false);
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    #[cfg(target_os = "android")]
+    fn stop_native_player(&self) {
+        if let Err(e) = crate::platform::android::audio::stop() {
+            log::warn!("Failed to stop the native player: {}", e);
+        }
     }
 
     /// Estimate total duration of the blocks by summing file durations and explicit pauses.
