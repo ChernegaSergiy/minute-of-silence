@@ -83,6 +83,15 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     padding: tokens.spacingVerticalL,
     ...shorthands.borderTop("1px", "solid", tokens.colorNeutralStroke2),
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      gap: tokens.spacingVerticalS,
+    },
+  },
+  buttonBarButton: {
+    "@media (max-width: 600px)": {
+      width: "100%",
+    },
   },
   changelogSpinner: {
     display: "flex",
@@ -492,6 +501,7 @@ export default function App() {
           {selectedNav === "settings" && (
             <div className={styles.buttonBar}>
               <Button
+                className={styles.buttonBarButton}
                 icon={testRunning ? <Stop20Regular /> : <Play20Regular />}
                 appearance="secondary"
                 onClick={testRunning ? stopTestCeremony : triggerCeremonyNow}
@@ -500,6 +510,7 @@ export default function App() {
                 {testRunning ? t("buttons.stop") : t("buttons.test")}
               </Button>
               <Button
+                className={styles.buttonBarButton}
                 icon={<Save20Regular />}
                 appearance="primary"
                 disabled={!hydrated || !isDirty}
