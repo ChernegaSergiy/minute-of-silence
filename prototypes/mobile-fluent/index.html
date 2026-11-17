@@ -17,6 +17,8 @@
   .nav-icon { display: grid; place-items: center; height: 20px; }
   .nav-icon svg { width: 20px; height: 20px; }
   .nav-label { font-size: 9px !important; font-weight: 400 !important; line-height: 12px !important; letter-spacing: 0; white-space: nowrap; }
+  .spin-icon { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   @media (min-width: 500px) { .phone { width: 390px; height: min(780px, 96dvh); border-radius: 36px; border: 10px solid #111; } }
 </style>
 </head>
