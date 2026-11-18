@@ -79,6 +79,14 @@ export async function openNotificationSettings(): Promise<void> {
   return invoke<void>("open_notification_settings");
 }
 
+export async function isCeremonyOverlayLaunch(): Promise<boolean> {
+  return invoke<boolean>("is_ceremony_overlay_launch");
+}
+
+export async function finishCeremonyOverlayLaunch(): Promise<void> {
+  return invoke<void>("finish_ceremony_overlay_launch");
+}
+
 export async function openAboutLink(url: string): Promise<void> {
   return invoke<void>("open_about_link", { url });
 }

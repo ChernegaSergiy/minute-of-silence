@@ -4,6 +4,7 @@ pub mod bridge;
 pub mod custom_tabs;
 mod media;
 pub mod notification_actions;
+pub mod overlay_launch;
 pub mod permission;
 pub mod schedule;
 mod volume;

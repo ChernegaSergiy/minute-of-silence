@@ -183,6 +183,32 @@ pub async fn open_notification_settings() -> Result<()> {
     }
 }
 
+/// Returns whether Android opened the app for the full-screen ceremony overlay.
+#[tauri::command]
+pub async fn is_ceremony_overlay_launch() -> Result<bool> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::overlay_launch::is_overlay_launch().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(false)
+    }
+}
+
+/// Closes the Android activity after its full-screen ceremony overlay ends.
+#[tauri::command]
+pub async fn finish_ceremony_overlay_launch() -> Result<()> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::overlay_launch::finish_overlay_launch().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(())
+    }
+}
+
 /// Open an About-page link in an Android Custom Tab, or the platform browser.
 #[tauri::command]
 pub async fn open_about_link(_app: AppHandle, url: String) -> Result<()> {
