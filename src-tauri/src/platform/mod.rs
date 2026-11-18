@@ -9,8 +9,6 @@ pub mod android;
 #[cfg(target_os = "macos")]
 pub mod macos;
 
-#[cfg(target_os = "android")]
-use android as sys;
 #[cfg(target_os = "linux")]
 use linux as sys;
 #[cfg(target_os = "macos")]
@@ -23,9 +21,7 @@ use serde::{Deserialize, Serialize};
 
 // Re-exports from system-specific modules
 #[cfg(target_os = "android")]
-pub use android::is_dark_mode;
-#[cfg(target_os = "android")]
-pub use android::{apply_autostart_enabled, system_autostart_enabled};
+pub use android::apply_autostart_enabled;
 #[cfg(desktop)]
 pub use sys::autostart::{apply_autostart_enabled, system_autostart_enabled};
 #[cfg(desktop)]
