@@ -47,6 +47,7 @@ class ScheduleArgs {
   var enabled: Boolean = false
   var weekdaysOnly: Boolean = false
   var skipDate: String? = null
+  var showVisualOverlay: Boolean = false
 }
 
 @InvokeArg
@@ -248,7 +249,8 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
         activity.applicationContext,
         args.enabled,
         args.weekdaysOnly,
-        args.skipDate
+        args.skipDate,
+        args.showVisualOverlay
       )
       if (args.enabled) {
         CeremonyService.start(activity.applicationContext)

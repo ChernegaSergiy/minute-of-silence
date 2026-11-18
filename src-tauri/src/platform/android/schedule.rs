@@ -15,6 +15,7 @@ pub fn configure(settings: &Settings) -> Result<()> {
             "enabled": settings.ceremony_enabled,
             "weekdaysOnly": settings.weekdays_only,
             "skipDate": settings.skip_date.map(|date| date.format("%Y-%m-%d").to_string()),
+            "showVisualOverlay": settings.show_visual_overlay,
         }),
     )
 }

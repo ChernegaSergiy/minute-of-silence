@@ -18,16 +18,28 @@ object CeremonySchedule {
   private const val KEY_ENABLED = "enabled"
   private const val KEY_WEEKDAYS_ONLY = "weekdaysOnly"
   private const val KEY_SKIP_DATE = "skipDate"
+  private const val KEY_SHOW_VISUAL_OVERLAY = "showVisualOverlay"
 
   /** Stores the schedule and sets the alarm for the next ceremony. */
-  fun configure(context: Context, enabled: Boolean, weekdaysOnly: Boolean, skipDate: String?) {
+  fun configure(
+    context: Context,
+    enabled: Boolean,
+    weekdaysOnly: Boolean,
+    skipDate: String?,
+    showVisualOverlay: Boolean
+  ) {
     preferences(context).edit()
       .putBoolean(KEY_ENABLED, enabled)
       .putBoolean(KEY_WEEKDAYS_ONLY, weekdaysOnly)
       .putString(KEY_SKIP_DATE, skipDate)
+      .putBoolean(KEY_SHOW_VISUAL_OVERLAY, showVisualOverlay)
       .apply()
     schedule(context)
   }
+
+  /** Whether the wake-up notification may open the app over the lock screen. */
+  fun shouldShowVisualOverlay(context: Context): Boolean =
+    preferences(context).getBoolean(KEY_SHOW_VISUAL_OVERLAY, false)
 
   /** Sets the alarm for the next wake-up, or removes it when the ceremony is off. */
   fun schedule(context: Context) {

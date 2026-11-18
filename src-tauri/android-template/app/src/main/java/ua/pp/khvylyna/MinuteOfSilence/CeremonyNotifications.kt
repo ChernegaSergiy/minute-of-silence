@@ -24,7 +24,7 @@ object CeremonyNotifications {
    */
   fun showWakeUp(context: Context) {
     ensureChannel(context)
-    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_stat_ceremony)
       .setContentTitle(context.getString(R.string.ceremony_notification_title))
       .setContentText(context.getString(R.string.ceremony_notification_start))
@@ -33,9 +33,10 @@ object CeremonyNotifications {
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .setAutoCancel(true)
       .setContentIntent(openApp(context))
-      .setFullScreenIntent(openApp(context), true)
-      .build()
-    manager(context).notify(WAKE_NOTIFICATION_ID, notification)
+    if (CeremonySchedule.shouldShowVisualOverlay(context)) {
+      builder.setFullScreenIntent(openApp(context), true)
+    }
+    manager(context).notify(WAKE_NOTIFICATION_ID, builder.build())
   }
 
   /** The quiet ongoing notification of the foreground service. */
