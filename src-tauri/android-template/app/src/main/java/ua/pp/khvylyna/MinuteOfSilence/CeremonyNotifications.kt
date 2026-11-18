@@ -24,7 +24,7 @@ object CeremonyNotifications {
   fun showWakeUp(context: Context) {
     ensureChannel(context)
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.ic_stat_ceremony)
       .setContentTitle(context.getString(R.string.ceremony_notification_title))
       .setContentText(context.getString(R.string.ceremony_notification_start))
       .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -41,7 +41,7 @@ object CeremonyNotifications {
   fun buildServiceNotification(context: Context): Notification {
     ensureChannel(context)
     return NotificationCompat.Builder(context, CHANNEL_ID)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.ic_stat_ceremony)
       .setContentTitle(context.getString(R.string.ceremony_notification_title))
       .setContentText(context.getString(R.string.ceremony_notification_scheduled))
       .setOngoing(true)
