@@ -1,7 +1,6 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
 import android.app.Activity
-import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import app.tauri.annotation.Command
@@ -28,14 +27,10 @@ class CustomTabsPlugin(private val activity: Activity) : Plugin(activity) {
 
       activity.runOnUiThread {
         try {
-          try {
-            CustomTabsIntent.Builder()
-              .setShowTitle(true)
-              .build()
-              .launchUrl(activity, uri)
-          } catch (_: Exception) {
-            activity.startActivity(Intent(Intent.ACTION_VIEW, uri))
-          }
+          CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+            .launchUrl(activity, uri)
           invoke.resolve()
         } catch (error: Exception) {
           invoke.reject("Failed to open the link: ${error.message}")
