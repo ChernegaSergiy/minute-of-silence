@@ -266,10 +266,25 @@ impl AppState {
             || old_settings.skip_date != new_settings.skip_date
         {
             let settings = new_settings.clone();
-            tauri::async_runtime::spawn_blocking(move || {
-                if let Err(e) = crate::platform::android::schedule::configure(&settings) {
-                    log::warn!("Failed to update the wake-up alarm: {}", e);
+            let ceremony_turned_on =
+                !old_settings.ceremony_enabled && new_settings.ceremony_enabled;
+            tauri::async_runtime::spawn(async move {
+                // Ask first, so that the notification of the service is allowed to show.
+                if ceremony_turned_on {
+                    match crate::platform::android::permission::request_notifications().await {
+                        Ok(true) => {}
+                        Ok(false) => log::warn!(
+                            "Notifications are not allowed, the wake-up notification stays hidden"
+                        ),
+                        Err(e) => log::warn!("Failed to ask for notifications: {}", e),
+                    }
                 }
+                let _ = tauri::async_runtime::spawn_blocking(move || {
+                    if let Err(e) = crate::platform::android::schedule::configure(&settings) {
+                        log::warn!("Failed to update the wake-up alarm: {}", e);
+                    }
+                })
+                .await;
             });
         }
 
