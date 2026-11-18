@@ -44,6 +44,11 @@
       "label": "Ceremony at 09:00",
       "description": "Automatically activates memorial events every day at 9 AM."
     },
+    "notifications_blocked": {
+      "title": "Notifications are turned off",
+      "description": "Without notifications the ceremony may not start on time while the app is closed.",
+      "action": "Open settings"
+    },
     "autostart": {
       "label": "Autostart on system boot",
       "description": "Allows the program to start automatically with the system."
