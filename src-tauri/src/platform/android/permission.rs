@@ -15,10 +15,14 @@ struct PermissionResponse {
 ///
 /// Waits for the answer to the system dialog and returns whether the
 /// permission is granted. It returns at once when the permission is already
-/// granted or the Android version does not ask for it.
-pub async fn request_notifications() -> Result<bool> {
-    let response: PermissionResponse =
-        bridge::call_async("requestNotificationPermission", json!({})).await?;
+/// granted or the Android version does not ask for it. With `only_once` the
+/// dialog shows only if the app never asked before, otherwise it answers false.
+pub async fn request_notifications(only_once: bool) -> Result<bool> {
+    let response: PermissionResponse = bridge::call_async(
+        "requestNotificationPermission",
+        json!({ "onlyOnce": only_once }),
+    )
+    .await?;
     Ok(response.granted)
 }
 

@@ -49,11 +49,18 @@ class ScheduleArgs {
 }
 
 @InvokeArg
+class NotificationRequestArgs {
+  var onlyOnce: Boolean = false
+}
+
+@InvokeArg
 class AudioNameArgs {
   lateinit var name: String
 }
 
 private const val NOTIFICATIONS_ALIAS = "notifications"
+private const val PERMISSION_PREFS = "ceremony_permissions"
+private const val KEY_NOTIFICATIONS_ASKED = "notificationsAsked"
 
 /**
  * Native half of the ceremony backend. The Rust side registers this class as
@@ -263,16 +270,25 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
   /**
    * Asks the user to allow notifications, which Android 13 and newer require.
    * Without them the wake-up notification and the one of the service stay
-   * hidden. Answers whether the permission is granted.
+   * hidden. With `onlyOnce` it asks only if the app never asked before. Answers
+   * whether the permission is granted.
    */
   @Command
   fun requestNotificationPermission(invoke: Invoke) {
+    val args = invoke.parseArgs(NotificationRequestArgs::class.java)
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
       getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.GRANTED
     ) {
       resolveNotificationPermission(invoke, true)
       return
     }
+
+    val prefs = activity.getSharedPreferences(PERMISSION_PREFS, Context.MODE_PRIVATE)
+    if (args.onlyOnce && prefs.getBoolean(KEY_NOTIFICATIONS_ASKED, false)) {
+      resolveNotificationPermission(invoke, false)
+      return
+    }
+    prefs.edit().putBoolean(KEY_NOTIFICATIONS_ASKED, true).apply()
     requestPermissionForAlias(NOTIFICATIONS_ALIAS, invoke, "notificationPermissionResult")
   }
 

@@ -271,7 +271,7 @@ impl AppState {
             tauri::async_runtime::spawn(async move {
                 // Ask first, so that the notification of the service is allowed to show.
                 if ceremony_turned_on {
-                    match crate::platform::android::permission::request_notifications().await {
+                    match crate::platform::android::permission::request_notifications(false).await {
                         Ok(true) => {}
                         Ok(false) => log::warn!(
                             "Notifications are not allowed, the wake-up notification stays hidden"
