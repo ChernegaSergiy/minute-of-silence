@@ -5,7 +5,7 @@
  * in `src-tauri/src/app/commands.rs`.
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { addPluginListener, invoke, type PluginListener } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type {
@@ -85,6 +85,10 @@ export async function isCeremonyOverlayLaunch(): Promise<boolean> {
 
 export async function finishCeremonyOverlayLaunch(): Promise<void> {
   return invoke<void>("finish_ceremony_overlay_launch");
+}
+
+export function onCeremonyOverlayLaunch(handler: () => void): Promise<PluginListener> {
+  return addPluginListener("ceremony", "ceremony-overlay-launch", handler);
 }
 
 export async function openAboutLink(url: string): Promise<void> {

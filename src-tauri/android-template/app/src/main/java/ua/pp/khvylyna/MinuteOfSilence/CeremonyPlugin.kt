@@ -91,6 +91,12 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
 
   private val audioPlayer = CeremonyAudioPlayer(activity.applicationContext)
 
+  override fun onNewIntent(intent: Intent) {
+    if (intent.getBooleanExtra(CeremonyNotifications.EXTRA_CEREMONY_OVERLAY_LAUNCH, false)) {
+      trigger("ceremony-overlay-launch", JSObject())
+    }
+  }
+
   /** The media stream volume as a percentage of its maximum. */
   @Command
   fun getVolume(invoke: Invoke) {
