@@ -7,6 +7,8 @@ use std::{
 };
 
 use tauri::{AppHandle, Emitter, Manager, State};
+#[cfg(not(target_os = "android"))]
+use tauri_plugin_shell::ShellExt;
 
 use crate::{
     Result,
@@ -178,6 +180,30 @@ pub async fn open_notification_settings() -> Result<()> {
     #[cfg(not(target_os = "android"))]
     {
         Ok(())
+    }
+}
+
+/// Open an About-page link in Android's in-app WebView, or the platform browser.
+#[tauri::command]
+pub async fn open_about_link(_app: AppHandle, url: String) -> Result<()> {
+    let parsed_url = tauri::Url::parse(&url)
+        .map_err(|error| crate::AppError::Platform(format!("Invalid link: {error}")))?;
+    if parsed_url.scheme() != "https" || parsed_url.host_str().is_none() {
+        return Err(crate::AppError::Platform(
+            "Only secure web links can be opened".to_string(),
+        ));
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::link_viewer::open(parsed_url.as_str()).await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        #[allow(deprecated)]
+        _app.shell()
+            .open(parsed_url.to_string(), None)
+            .map_err(|error| crate::AppError::Platform(error.to_string()))
     }
 }
 
