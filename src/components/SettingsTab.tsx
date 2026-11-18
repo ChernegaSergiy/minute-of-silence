@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   Caption1,
@@ -6,6 +6,10 @@ import {
   CardHeader,
   Divider,
   Dropdown,
+  MessageBar,
+  MessageBarActions,
+  MessageBarBody,
+  MessageBarTitle,
   Option,
   Slider,
   Switch,
@@ -26,12 +30,20 @@ import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import type {
   AnnouncementVoice,
   AnthemVoice,
+  NotificationPermission,
   PersonalDate,
   Settings,
   StatusSnapshot,
   VoiceCapabilities,
 } from "../types";
-import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
+import {
+  exportSettings,
+  getNotificationPermission,
+  importSettings,
+  openNotificationSettings,
+  skipNext,
+  unskipNext,
+} from "../utils/api";
 import { t } from "../utils/i18n";
 import {
   blocksToSlots,
@@ -89,6 +101,12 @@ interface SettingsTabProps {
 }
 
 const useStyles = makeStyles({
+  notificationsHint: {
+    marginBottom: tokens.spacingVerticalM,
+  },
+  notificationsHintTitle: {
+    display: "block",
+  },
   scheduleCard: {
     marginBottom: tokens.spacingVerticalM,
   },
@@ -263,6 +281,30 @@ export default function SettingsTab({
     const nextVoice = voices.find((v) => v.voice === next);
     onUpdateSetting("blocks", slotsToBlocks(normalizeSlots(slots, nextVoice)));
   };
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>("unsupported");
+
+  // The permission changes outside of the app, in the system dialog or settings,
+  // so it is read again whenever the app comes back to the foreground.
+  useEffect(() => {
+    let active = true;
+    const refresh = () => {
+      getNotificationPermission()
+        .then((permission) => {
+          if (active) setNotificationPermission(permission);
+        })
+        .catch((err) => console.error("Failed to read the notification permission:", err));
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [settings.ceremonyEnabled]);
+
   const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
   const [importState, setImportState] = useState<"idle" | "success" | "error" | "empty">("idle");
   const [exporting, setExporting] = useState(false);
@@ -362,6 +404,28 @@ export default function SettingsTab({
           }
         />
       </Card>
+
+      {settings.ceremonyEnabled && notificationPermission === "denied" && (
+        <MessageBar className={styles.notificationsHint} intent="warning">
+          <MessageBarBody>
+            <MessageBarTitle className={styles.notificationsHintTitle}>
+              {t("controls.notifications_blocked.title")}
+            </MessageBarTitle>
+            {t("controls.notifications_blocked.description")}
+          </MessageBarBody>
+          <MessageBarActions>
+            <Button
+              onClick={() =>
+                openNotificationSettings().catch((err) =>
+                  console.error("Failed to open the notification settings:", err),
+                )
+              }
+            >
+              {t("controls.notifications_blocked.action")}
+            </Button>
+          </MessageBarActions>
+        </MessageBar>
+      )}
 
       <Card className={styles.card}>
         <Text size={100} weight="semibold" block>
