@@ -8,9 +8,9 @@ use serde_json::json;
 use std::sync::{Arc, Mutex};
 #[cfg(desktop)]
 use tauri::WebviewWindowBuilder;
-use tauri::{AppHandle, Emitter, Manager};
 #[cfg(desktop)]
-use tauri::{EventId, Listener};
+use tauri::{AppHandle, EventId, Listener};
+use tauri::{Emitter, Manager};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
