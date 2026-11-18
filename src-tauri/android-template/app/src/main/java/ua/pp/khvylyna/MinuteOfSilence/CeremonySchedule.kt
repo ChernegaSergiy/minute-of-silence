@@ -55,6 +55,16 @@ object CeremonySchedule {
   fun isEnabled(context: Context): Boolean =
     preferences(context).getBoolean(KEY_ENABLED, false)
 
+  /** Whether the next eligible ceremony is marked as skipped. */
+  fun isNextSkipped(context: Context): Boolean {
+    val prefs = preferences(context)
+    return CeremonyNotificationState.isNextSkipped(
+      System.currentTimeMillis(),
+      prefs.getBoolean(KEY_WEEKDAYS_ONLY, false),
+      prefs.getString(KEY_SKIP_DATE, null)
+    )
+  }
+
   private fun alarmIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
     context,
     0,

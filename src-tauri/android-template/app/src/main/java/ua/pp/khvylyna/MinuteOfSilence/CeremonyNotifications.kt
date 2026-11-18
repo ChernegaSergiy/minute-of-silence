@@ -40,10 +40,15 @@ object CeremonyNotifications {
   /** The quiet ongoing notification of the foreground service. */
   fun buildServiceNotification(context: Context): Notification {
     ensureChannel(context)
+    val text = if (CeremonySchedule.isNextSkipped(context)) {
+      R.string.ceremony_notification_skipped
+    } else {
+      R.string.ceremony_notification_scheduled
+    }
     return NotificationCompat.Builder(context, CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_stat_ceremony)
       .setContentTitle(context.getString(R.string.ceremony_notification_title))
-      .setContentText(context.getString(R.string.ceremony_notification_scheduled))
+      .setContentText(context.getString(text))
       .setOngoing(true)
       .setOnlyAlertOnce(true)
       .setPriority(NotificationCompat.PRIORITY_LOW)
