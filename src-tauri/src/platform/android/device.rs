@@ -11,6 +11,7 @@ struct Device {
     jvm: JavaVM,
     host: GlobalRef,
     data_dir: PathBuf,
+    language: String,
 }
 
 static DEVICE: OnceLock<Device> = OnceLock::new();
@@ -19,13 +20,16 @@ fn connect(
     env: &mut JNIEnv<'_>,
     host: &JObject<'_>,
     directory: &JString<'_>,
+    language: &JString<'_>,
 ) -> jni::errors::Result<()> {
     if DEVICE.get().is_none() {
         let directory: String = env.get_string(directory)?.into();
+        let language: String = env.get_string(language)?.into();
         let _ = DEVICE.set(Device {
             jvm: env.get_java_vm()?,
             host: env.new_global_ref(host)?,
             data_dir: PathBuf::from(directory),
+            language,
         });
     }
     Ok(())
@@ -36,14 +40,19 @@ extern "system" fn Java_ua_pp_khvylyna_MinuteOfSilence_CeremonyDevice_connectNat
     mut env: JNIEnv<'_>,
     host: JObject<'_>,
     directory: JString<'_>,
+    language: JString<'_>,
 ) {
-    if let Err(error) = connect(&mut env, &host, &directory) {
+    if let Err(error) = connect(&mut env, &host, &directory, &language) {
         let _ = env.throw_new("java/lang/IllegalStateException", error.to_string());
     }
 }
 
 pub(super) fn data_dir() -> Option<&'static Path> {
     DEVICE.get().map(|device| device.data_dir.as_path())
+}
+
+pub(super) fn language() -> Option<&'static str> {
+    DEVICE.get().map(|device| device.language.as_str())
 }
 
 /// Invokes a native operation on the application-scoped Android host.

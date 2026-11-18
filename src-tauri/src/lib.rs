@@ -184,8 +184,11 @@ pub fn run() {
             }
 
             // --- 4. Core Services ---
-            let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
-            tauri::async_runtime::spawn(core::scheduler::run(runtime));
+            #[cfg(not(target_os = "android"))]
+            {
+                let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
+                tauri::async_runtime::spawn(core::scheduler::run(runtime));
+            }
 
             // --- 5. Auto Update Check ---
             #[cfg(desktop)]

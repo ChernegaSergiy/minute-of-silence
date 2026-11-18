@@ -12,6 +12,30 @@ pub use khvylyna_core::{
 
 use crate::error::{AppError, Result};
 
+#[cfg(any(target_os = "android", test))]
+fn decode_store_settings(raw: &str) -> Result<Settings> {
+    #[derive(serde::Deserialize)]
+    struct Store {
+        settings: Option<Settings>,
+    }
+
+    let mut settings = serde_json::from_str::<Store>(raw)?
+        .settings
+        .unwrap_or_default();
+    settings.migrate();
+    Ok(settings)
+}
+
+/// Reads the Tauri store for Android's service before any Activity exists.
+#[cfg(target_os = "android")]
+pub(crate) fn read_store_settings(path: &std::path::Path) -> Result<Settings> {
+    match std::fs::read_to_string(path) {
+        Ok(raw) => decode_store_settings(&raw),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Settings::default()),
+        Err(error) => Err(error.into()),
+    }
+}
+
 /// Extension trait providing disk and Tauri store persistence for `Settings`.
 pub trait SettingsExt {
     /// Load settings from disk, falling back to defaults on any error.
@@ -108,5 +132,37 @@ impl SettingsExt for Settings {
         dir.push("minute-of-silence");
         dir.push("settings.json");
         Ok(dir)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn background_settings_preserve_schedule_and_migrate_legacy_audio() {
+        let raw = r#"{
+            "settings": {
+                "version": 2,
+                "ceremonyEnabled": false,
+                "weekdaysOnly": true,
+                "skipDate": "2026-11-19",
+                "preset": "voice_metronome"
+            },
+            "personal_dates": []
+        }"#;
+        let settings = decode_store_settings(raw).expect("stored settings");
+        assert!(!settings.ceremony_enabled);
+        assert!(settings.weekdays_only);
+        assert_eq!(
+            settings.skip_date,
+            chrono::NaiveDate::from_ymd_opt(2026, 11, 19)
+        );
+        assert_eq!(settings.blocks, AudioPreset::VoiceMetronome.blocks());
+    }
+
+    #[test]
+    fn background_settings_do_not_treat_invalid_data_as_defaults() {
+        assert!(decode_store_settings(r#"{"settings":{"ceremonyEnabled":"no"}}"#).is_err());
     }
 }

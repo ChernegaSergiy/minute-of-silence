@@ -33,10 +33,11 @@ class CeremonyDevice private constructor(private val context: Context) {
   var activeOverlayId: String? = null
     private set
 
-  private external fun connectNative(dataDir: String)
+  private external fun connectNative(dataDir: String, language: String)
+  external fun startSchedulerNative()
 
   init {
-    connectNative(context.dataDir.absolutePath)
+    connectNative(context.dataDir.absolutePath, context.resources.configuration.locales[0].language)
   }
 
   fun attach(activity: MainActivity) {

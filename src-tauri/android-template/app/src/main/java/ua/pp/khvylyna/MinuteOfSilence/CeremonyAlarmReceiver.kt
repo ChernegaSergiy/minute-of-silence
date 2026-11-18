@@ -15,7 +15,6 @@ class CeremonyAlarmReceiver : BroadcastReceiver() {
     val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
     wakeLock.acquire(WAKE_LOCK_TIMEOUT_MS)
 
-    // Keeps the process alive from here on, once the app is up.
     CeremonyService.start(context)
   }
 

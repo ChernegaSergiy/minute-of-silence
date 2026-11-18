@@ -15,9 +15,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 
 /**
- * Keeps the app process alive while the ceremony is switched on, so that the
- * scheduler keeps running and the ceremony can start and play with the screen
- * off.
+ * Starts and keeps the ceremony scheduler running without an Activity.
  */
 class CeremonyService : Service() {
   private val handler = Handler(Looper.getMainLooper())
@@ -60,6 +58,7 @@ class CeremonyService : Service() {
     } else {
       startForeground(CeremonyNotifications.SERVICE_NOTIFICATION_ID, notification)
     }
+    CeremonyDevice.install(this).startSchedulerNative()
     scheduleNotificationUpdate()
     handleNotificationAction(intent)
     return START_STICKY
