@@ -83,14 +83,25 @@ pub fn run() {
             {
                 let app_handle = handle.clone();
                 let settings = settings.clone();
-                tauri::async_runtime::spawn_blocking(move || {
-                    if let Err(e) = crate::platform::android::schedule::configure(&settings) {
-                        log::warn!("Failed to set the wake-up alarm: {}", e);
+                tauri::async_runtime::spawn(async move {
+                    // The ceremony is on by default, so the switch may never be turned on
+                    // by the user. Ask for notifications once, at the first launch.
+                    if settings.ceremony_enabled
+                        && let Err(e) =
+                            crate::platform::android::permission::request_notifications(true).await
+                    {
+                        log::warn!("Failed to ask for notifications: {}", e);
                     }
-                    crate::platform::apply_autostart_enabled(
-                        &app_handle,
-                        settings.autostart_enabled,
-                    );
+                    let _ = tauri::async_runtime::spawn_blocking(move || {
+                        if let Err(e) = crate::platform::android::schedule::configure(&settings) {
+                            log::warn!("Failed to set the wake-up alarm: {}", e);
+                        }
+                        crate::platform::apply_autostart_enabled(
+                            &app_handle,
+                            settings.autostart_enabled,
+                        );
+                    })
+                    .await;
                 });
             }
 
