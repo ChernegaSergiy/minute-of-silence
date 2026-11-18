@@ -1,7 +1,7 @@
 pub mod audio;
 mod autostart;
 pub mod bridge;
-pub mod link_viewer;
+pub mod custom_tabs;
 mod media;
 pub mod notification_actions;
 pub mod permission;

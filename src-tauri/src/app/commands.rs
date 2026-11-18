@@ -183,7 +183,7 @@ pub async fn open_notification_settings() -> Result<()> {
     }
 }
 
-/// Open an About-page link in Android's in-app WebView, or the platform browser.
+/// Open an About-page link in an Android Custom Tab, or the platform browser.
 #[tauri::command]
 pub async fn open_about_link(_app: AppHandle, url: String) -> Result<()> {
     let parsed_url = tauri::Url::parse(&url)
@@ -196,7 +196,7 @@ pub async fn open_about_link(_app: AppHandle, url: String) -> Result<()> {
 
     #[cfg(target_os = "android")]
     {
-        crate::platform::android::link_viewer::open(parsed_url.as_str()).await
+        crate::platform::android::custom_tabs::open(parsed_url.as_str()).await
     }
     #[cfg(not(target_os = "android"))]
     {

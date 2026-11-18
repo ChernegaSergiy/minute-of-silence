@@ -49,7 +49,7 @@ pub fn run() {
     {
         builder = builder
             .plugin(crate::platform::android::bridge::init())
-            .plugin(crate::platform::android::link_viewer::init());
+            .plugin(crate::platform::android::custom_tabs::init());
     }
 
     builder
