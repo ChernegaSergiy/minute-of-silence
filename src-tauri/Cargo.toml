@@ -48,6 +48,9 @@ libloading = "0.8"
 tauri-plugin-clipboard-manager = "2.4"
 khvylyna-core = { path = "../crates/khvylyna-core" }
 
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+
 [target.'cfg(not(target_os = "android"))'.dependencies]
 rodio = { version = "0.23", default-features = false, features = ["playback", "symphonia-ogg", "symphonia-vorbis"] }
 symphonia = { version = "0.6", default-features = false, features = ["ogg", "vorbis"] }

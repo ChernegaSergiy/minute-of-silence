@@ -13,6 +13,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 #[cfg(not(target_os = "android"))]
 use tauri::Manager;
+#[cfg(not(target_os = "android"))]
 use tauri::{AppHandle, Emitter};
 
 use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
@@ -47,6 +48,7 @@ pub trait CeremonyAudioBackend: Send + Sync + std::fmt::Debug {
 /// This acts as a class responsible for all audio operations.
 #[derive(Debug)]
 pub struct AudioEngine {
+    #[cfg(not(target_os = "android"))]
     app_handle: AppHandle,
     stop_counter: AtomicU64,
 }
@@ -81,8 +83,9 @@ enum Step {
 }
 
 impl AudioEngine {
-    pub fn new(app_handle: AppHandle) -> Self {
+    pub fn new(#[cfg(not(target_os = "android"))] app_handle: AppHandle) -> Self {
         Self {
+            #[cfg(not(target_os = "android"))]
             app_handle,
             stop_counter: AtomicU64::new(0),
         }
@@ -285,10 +288,8 @@ impl AudioEngine {
                     }
                 }
                 Step::Anthem(name) => {
-                    let _ = self.app_handle.emit("anthem-start", ());
                     let stopped = native::enqueue(&name, gain)
                         .and_then(|()| self.wait_idle_interruptible(start_counter));
-                    let _ = self.app_handle.emit("anthem-end", ());
                     if stopped? {
                         return Ok(());
                     }

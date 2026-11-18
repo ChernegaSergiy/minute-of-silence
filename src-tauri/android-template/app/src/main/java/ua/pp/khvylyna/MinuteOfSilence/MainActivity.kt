@@ -31,6 +31,7 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    CeremonyDevice.install(this)
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
 

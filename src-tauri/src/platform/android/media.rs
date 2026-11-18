@@ -1,6 +1,6 @@
 //! Pausing and resuming other players through the audio focus.
 
-use super::bridge;
+use super::device;
 use crate::error::Result;
 use serde::Deserialize;
 use serde_json::json;
@@ -18,7 +18,7 @@ struct PauseResponse {
 /// The returned list is empty when Android refused the focus, which tells the
 /// ceremony that there is nothing to resume.
 pub async fn pause_media() -> Result<Vec<String>> {
-    let response: PauseResponse = bridge::call_async("pauseMedia", json!({})).await?;
+    let response: PauseResponse = device::call("pauseMedia", json!({}))?;
     if response.granted {
         Ok(vec![FOCUS_MARKER.to_string()])
     } else {
@@ -32,5 +32,5 @@ pub async fn resume_media(players: Vec<String>) -> Result<()> {
     if players.is_empty() {
         return Ok(());
     }
-    bridge::call_async("resumeMedia", json!({})).await
+    device::call("resumeMedia", json!({}))
 }

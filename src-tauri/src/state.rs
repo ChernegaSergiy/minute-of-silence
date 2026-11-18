@@ -61,7 +61,10 @@ pub struct CeremonyRuntime {
 }
 
 impl CeremonyRuntime {
-    pub(crate) fn new(settings: Settings, app: AppHandle) -> Self {
+    pub(crate) fn new(
+        settings: Settings,
+        #[cfg(not(target_os = "android"))] app: AppHandle,
+    ) -> Self {
         let ntp_service = NtpService::new(settings.ntp_server.clone());
         Self {
             inner: Mutex::new(Inner {
@@ -70,7 +73,10 @@ impl CeremonyRuntime {
             }),
             app: Mutex::new(None),
             ntp_service,
-            audio: Arc::new(AudioEngine::new(app)),
+            audio: Arc::new(AudioEngine::new(
+                #[cfg(not(target_os = "android"))]
+                app,
+            )),
         }
     }
 
@@ -150,7 +156,11 @@ impl AppState {
     }
 
     pub fn new_with_settings(app_handle: AppHandle, settings: Settings) -> Self {
-        let runtime = Arc::new(CeremonyRuntime::new(settings, app_handle.clone()));
+        let runtime = Arc::new(CeremonyRuntime::new(
+            settings,
+            #[cfg(not(target_os = "android"))]
+            app_handle.clone(),
+        ));
         Self {
             runtime,
             settings_mutex: Mutex::new(()),
