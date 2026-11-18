@@ -12,7 +12,7 @@ description: |
   Синхронізується через NTP, вмикає звук та призупиняє інші медіаплеєри
   для вшанування пам'яті полеглих захисників та жертв війни.
 
-license: Proprietary
+license: proprietary
 contact: https://github.com/ChernegaSergiy/minute-of-silence/issues
 issues: https://github.com/ChernegaSergiy/minute-of-silence/issues
 website: https://khvylyna.pp.ua/
