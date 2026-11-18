@@ -2,7 +2,7 @@ diff --git a/src-tauri/gen/android/app/src/main/AndroidManifest.xml b/src-tauri/
 index 7e6d830..995ce7b 100644
 --- a/src-tauri/gen/android/app/src/main/AndroidManifest.xml
 +++ b/src-tauri/gen/android/app/src/main/AndroidManifest.xml
-@@ -8,9 +8,21 @@
+@@ -8,9 +8,19 @@
 +    <!-- minute-of-silence-ceremony:permissions -->
 +    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 +    <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -19,12 +19,10 @@ index 7e6d830..995ce7b 100644
          android:theme="@style/Theme.minute_of_silence"
          android:usesCleartextTraffic="${usesCleartextTraffic}">
          <activity
-+            android:showWhenLocked="true"
-+            android:turnScreenOn="true"
              android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
              android:launchMode="singleTask"
              android:label="@string/main_activity_title"
-@@ -33,5 +45,28 @@
+@@ -33,5 +43,28 @@
              android:name="android.support.FILE_PROVIDER_PATHS"
              android:resource="@xml/file_paths" />
          </provider>

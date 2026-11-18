@@ -10,22 +10,18 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 
-/** Notifications the ceremony needs: the wake-up one and the one of the service. */
+/** Notifications for the running ceremony and its foreground service. */
 object CeremonyNotifications {
   const val CHANNEL_ID = "ceremony"
   const val SERVICE_CHANNEL_ID = "ceremony_service"
-  const val WAKE_NOTIFICATION_ID = 1
   const val SERVICE_NOTIFICATION_ID = 2
-  const val EXTRA_CEREMONY_OVERLAY_LAUNCH = "ceremony_overlay_launch"
+  const val EXTRA_OVERLAY_ID = "ceremony_overlay_id"
+  private const val OVERLAY_NOTIFICATION_ID = 1
 
-  /**
-   * Posts a notification with a full-screen intent that opens the app. When the
-   * screen is off or locked Android starts the activity right away, otherwise
-   * the notification pops up and a tap opens the app.
-   */
-  fun showWakeUp(context: Context) {
+  /** Posts a full-screen notification when the ceremony actually starts. */
+  fun showCeremonyOverlay(context: Context, ceremonyId: String) {
     ensureChannel(context)
-    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_stat_ceremony)
       .setContentTitle(context.getString(R.string.ceremony_notification_title))
       .setContentText(context.getString(R.string.ceremony_notification_start))
@@ -34,12 +30,9 @@ object CeremonyNotifications {
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .setAutoCancel(true)
       .setContentIntent(openApp(context))
-    if (CeremonySchedule.shouldShowVisualOverlay(context)) {
-      if (!CeremonySchedule.isNextSkipped(context)) {
-        builder.setFullScreenIntent(openApp(context, true), true)
-      }
-    }
-    manager(context).notify(WAKE_NOTIFICATION_ID, builder.build())
+      .setFullScreenIntent(openApp(context, ceremonyId), true)
+      .build()
+    manager(context).notify(OVERLAY_NOTIFICATION_ID, notification)
   }
 
   /** The quiet ongoing notification of the foreground service. */
@@ -95,17 +88,21 @@ object CeremonyNotifications {
     }
   }
 
-  private fun openApp(context: Context, overlayLaunch: Boolean = false): PendingIntent {
+  private fun openApp(context: Context, ceremonyId: String? = null): PendingIntent {
     val intent = Intent(context, MainActivity::class.java).apply {
       flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-      if (overlayLaunch) putExtra(EXTRA_CEREMONY_OVERLAY_LAUNCH, true)
+      if (ceremonyId != null) putExtra(EXTRA_OVERLAY_ID, ceremonyId)
     }
     return PendingIntent.getActivity(
       context,
-      if (overlayLaunch) 1 else 0,
+      if (ceremonyId == null) 0 else 1,
       intent,
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
+  }
+
+  fun finishCeremonyOverlay(context: Context) {
+    manager(context).cancel(OVERLAY_NOTIFICATION_ID)
   }
 
   private fun ensureChannel(context: Context) {

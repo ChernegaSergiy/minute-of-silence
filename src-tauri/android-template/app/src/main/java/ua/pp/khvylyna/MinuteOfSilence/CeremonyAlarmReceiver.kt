@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
 
-/** Receives the wake-up alarm, keeps the device awake and opens the app. */
+/** Receives the wake-up alarm and keeps the CPU awake without opening a window. */
 class CeremonyAlarmReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     // The next alarm first, so that a failure below cannot cost the days after.
@@ -15,7 +15,6 @@ class CeremonyAlarmReceiver : BroadcastReceiver() {
     val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
     wakeLock.acquire(WAKE_LOCK_TIMEOUT_MS)
 
-    CeremonyNotifications.showWakeUp(context)
     // Keeps the process alive from here on, once the app is up.
     CeremonyService.start(context)
   }

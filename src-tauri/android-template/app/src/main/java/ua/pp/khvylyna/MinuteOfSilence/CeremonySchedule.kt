@@ -9,37 +9,29 @@ import android.os.Build
 /**
  * Wakes the device shortly before the ceremony.
  *
- * The Rust scheduler still decides whether the ceremony runs. The alarm only
- * brings the app up in time, so it may wake the app on a day the ceremony is
- * skipped but it must never miss a day the ceremony runs.
+ * The alarm keeps the CPU awake without bringing the UI to the foreground.
+ * The Rust scheduler still decides whether and when the ceremony runs.
  */
 object CeremonySchedule {
   private const val PREFS = "ceremony_schedule"
   private const val KEY_ENABLED = "enabled"
   private const val KEY_WEEKDAYS_ONLY = "weekdaysOnly"
   private const val KEY_SKIP_DATE = "skipDate"
-  private const val KEY_SHOW_VISUAL_OVERLAY = "showVisualOverlay"
 
   /** Stores the schedule and sets the alarm for the next ceremony. */
   fun configure(
     context: Context,
     enabled: Boolean,
     weekdaysOnly: Boolean,
-    skipDate: String?,
-    showVisualOverlay: Boolean
+    skipDate: String?
   ) {
     preferences(context).edit()
       .putBoolean(KEY_ENABLED, enabled)
       .putBoolean(KEY_WEEKDAYS_ONLY, weekdaysOnly)
       .putString(KEY_SKIP_DATE, skipDate)
-      .putBoolean(KEY_SHOW_VISUAL_OVERLAY, showVisualOverlay)
       .apply()
     schedule(context)
   }
-
-  /** Whether the wake-up notification may open the app over the lock screen. */
-  fun shouldShowVisualOverlay(context: Context): Boolean =
-    preferences(context).getBoolean(KEY_SHOW_VISUAL_OVERLAY, false)
 
   /** Sets the alarm for the next wake-up, or removes it when the ceremony is off. */
   fun schedule(context: Context) {

@@ -47,7 +47,11 @@ class ScheduleArgs {
   var enabled: Boolean = false
   var weekdaysOnly: Boolean = false
   var skipDate: String? = null
-  var showVisualOverlay: Boolean = false
+}
+
+@InvokeArg
+class CeremonyOverlayArgs {
+  lateinit var ceremonyId: String
 }
 
 @InvokeArg
@@ -90,12 +94,6 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
   private val focusListener = AudioManager.OnAudioFocusChangeListener { }
 
   private val audioPlayer = CeremonyAudioPlayer(activity.applicationContext)
-
-  override fun onNewIntent(intent: Intent) {
-    if (intent.getBooleanExtra(CeremonyNotifications.EXTRA_CEREMONY_OVERLAY_LAUNCH, false)) {
-      trigger("ceremony-overlay-launch", JSObject())
-    }
-  }
 
   /** The media stream volume as a percentage of its maximum. */
   @Command
@@ -255,8 +253,7 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
         activity.applicationContext,
         args.enabled,
         args.weekdaysOnly,
-        args.skipDate,
-        args.showVisualOverlay
+        args.skipDate
       )
       if (args.enabled) {
         CeremonyService.start(activity.applicationContext)
@@ -269,24 +266,32 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     }
   }
 
-  /** Whether the activity was opened by the ceremony's full-screen notification. */
   @Command
-  fun isCeremonyOverlayLaunch(invoke: Invoke) {
-    val result = JSObject()
-    result.put(
-      "launchedForCeremonyOverlay",
-      activity.intent.getBooleanExtra(CeremonyNotifications.EXTRA_CEREMONY_OVERLAY_LAUNCH, false)
-    )
-    invoke.resolve(result)
+  fun showCeremonyOverlay(invoke: Invoke) {
+    withCeremonyOverlay(invoke, MainActivity::requestCeremonyOverlay)
   }
 
-  /** Closes the activity after a full-screen ceremony overlay ends. */
   @Command
-  fun finishCeremonyOverlayLaunch(invoke: Invoke) {
-    if (activity.intent.getBooleanExtra(CeremonyNotifications.EXTRA_CEREMONY_OVERLAY_LAUNCH, false)) {
-      activity.finish()
+  fun markCeremonyOverlayReady(invoke: Invoke) {
+    withCeremonyOverlay(invoke, MainActivity::markCeremonyOverlayReady)
+  }
+
+  @Command
+  fun endCeremonyOverlay(invoke: Invoke) {
+    withCeremonyOverlay(invoke, MainActivity::endCeremonyOverlay)
+  }
+
+  private fun withCeremonyOverlay(invoke: Invoke, action: MainActivity.(String) -> Unit) {
+    val ceremonyId = invoke.parseArgs(CeremonyOverlayArgs::class.java).ceremonyId
+    val mainActivity = activity as? MainActivity ?: return invoke.reject("Main activity unavailable")
+    mainActivity.runOnUiThread {
+      try {
+        mainActivity.action(ceremonyId)
+        invoke.resolve()
+      } catch (error: Exception) {
+        invoke.reject("Failed to update the ceremony overlay: ${error.message}")
+      }
     }
-    invoke.resolve()
   }
 
   /** Connects notification actions to the Rust settings owner. */

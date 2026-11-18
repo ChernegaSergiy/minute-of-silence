@@ -21,6 +21,7 @@ interface OverlayProps {
   personalDates?: PersonalDate[];
   settings?: Settings;
   isTest?: boolean;
+  onReady?: () => void;
 }
 
 const candleUrl = "/img/candle_circle.png";
@@ -83,6 +84,9 @@ const useStyles = makeStyles({
   innerVisible: {
     transform: "scale(1)",
     opacity: 1,
+  },
+  instant: {
+    transition: "none",
   },
   mediaWrapper: {
     position: "relative",
@@ -316,14 +320,17 @@ export default function Overlay({
   personalDates = [],
   settings,
   isTest = false,
+  onReady,
 }: OverlayProps) {
   const styles = useStyles();
   const ringCanvasRef = useRef<HTMLCanvasElement>(null);
+  const candleRef = useRef<HTMLImageElement>(null);
   const lastSavedNearbyIdRef = useRef<string | null>(null);
 
   // Manage mounting delay for smooth transitions
   const [shouldRender, setShouldRender] = useState(show);
   const [visible, setVisible] = useState(false);
+  const showImmediately = show && !!onReady;
 
   useEffect(() => {
     if (show) {
@@ -338,6 +345,19 @@ export default function Overlay({
   }, [show]);
 
   useApngPlayer(ringCanvasRef, ringUrl, durationSeconds, shouldRender);
+
+  useEffect(() => {
+    if (!show || !onReady || !candleRef.current) return;
+    let cancelled = false;
+    candleRef.current.decode()
+      .then(() => {
+        if (!cancelled) onReady();
+      })
+      .catch((error) => console.warn("Failed to load the ceremony candle:", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [show, onReady]);
 
   // Get active personal dates matching today
   const activeDates = useMemo(() => {
@@ -414,14 +434,23 @@ export default function Overlay({
 
   const currentCommemorationName = displayDates[currentNameIndex]?.label || "";
 
-  if (!shouldRender) return null;
+  if (!shouldRender && !showImmediately) return null;
 
   return (
     <FluentProvider theme={webDarkTheme}>
-      <div className={mergeClasses(styles.container, visible && styles.containerVisible)}>
-        <div className={mergeClasses(styles.inner, visible && styles.innerVisible)}>
+      <div className={mergeClasses(
+        styles.container,
+        (visible || showImmediately) && styles.containerVisible,
+        showImmediately && styles.instant
+      )}>
+        <div className={mergeClasses(
+          styles.inner,
+          (visible || showImmediately) && styles.innerVisible,
+          showImmediately && styles.instant
+        )}>
           <div className={styles.mediaWrapper}>
             <img
+              ref={candleRef}
               src={candleUrl}
               alt=""
               aria-hidden="true"

@@ -146,7 +146,23 @@ impl CeremonyManager {
                 }
             };
 
-        let payload = json!({ "duration_ms": duration_ms, "is_test": is_test });
+        let payload = json!({
+            "duration_ms": duration_ms,
+            "is_test": is_test,
+            "ceremony_id": cfg!(target_os = "android").then_some(ceremony_id),
+        });
+        #[cfg(target_os = "android")]
+        if !is_test {
+            let app = self.app.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(error) =
+                    crate::platform::android::overlay_launch::show_overlay(&app, ceremony_id).await
+                {
+                    log::warn!("Failed to request the Android ceremony overlay: {error}");
+                }
+            });
+        }
+
         let _ = self.app.emit("ceremony-start", payload);
 
         // 3. Pause players
@@ -258,6 +274,12 @@ impl CeremonyManager {
             )
         };
         Self::remove_anthem_listeners(&app);
+
+        #[cfg(target_os = "android")]
+        if let Err(error) = crate::platform::android::overlay_launch::end_overlay(ceremony_id).await
+        {
+            log::warn!("Failed to dismiss the Android ceremony overlay: {error}");
+        }
 
         // Restore volume and mute
         if volume_priority {

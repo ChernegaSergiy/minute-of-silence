@@ -183,28 +183,16 @@ pub async fn open_notification_settings() -> Result<()> {
     }
 }
 
-/// Returns whether Android opened the app for the full-screen ceremony overlay.
+/// Lets Android reveal a rendered ceremony overlay over the lock screen.
 #[tauri::command]
-pub async fn is_ceremony_overlay_launch() -> Result<bool> {
+pub async fn mark_ceremony_overlay_ready(app: AppHandle, ceremony_id: u64) -> Result<()> {
     #[cfg(target_os = "android")]
     {
-        crate::platform::android::overlay_launch::is_overlay_launch().await
+        crate::platform::android::overlay_launch::mark_ready(&app, ceremony_id).await
     }
     #[cfg(not(target_os = "android"))]
     {
-        Ok(false)
-    }
-}
-
-/// Closes the Android activity after its full-screen ceremony overlay ends.
-#[tauri::command]
-pub async fn finish_ceremony_overlay_launch() -> Result<()> {
-    #[cfg(target_os = "android")]
-    {
-        crate::platform::android::overlay_launch::finish_overlay_launch().await
-    }
-    #[cfg(not(target_os = "android"))]
-    {
+        let _ = (app, ceremony_id);
         Ok(())
     }
 }

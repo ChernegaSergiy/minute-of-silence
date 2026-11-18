@@ -5,7 +5,7 @@
  * in `src-tauri/src/app/commands.rs`.
  */
 
-import { addPluginListener, invoke, type PluginListener } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type {
@@ -79,16 +79,8 @@ export async function openNotificationSettings(): Promise<void> {
   return invoke<void>("open_notification_settings");
 }
 
-export async function isCeremonyOverlayLaunch(): Promise<boolean> {
-  return invoke<boolean>("is_ceremony_overlay_launch");
-}
-
-export async function finishCeremonyOverlayLaunch(): Promise<void> {
-  return invoke<void>("finish_ceremony_overlay_launch");
-}
-
-export function onCeremonyOverlayLaunch(handler: () => void): Promise<PluginListener> {
-  return addPluginListener("ceremony", "ceremony-overlay-launch", handler);
+export async function markCeremonyOverlayReady(ceremonyId: number): Promise<void> {
+  return invoke<void>("mark_ceremony_overlay_ready", { ceremonyId });
 }
 
 export async function openAboutLink(url: string): Promise<void> {
@@ -128,7 +120,7 @@ export async function getLogContents(): Promise<string> {
 export const CEREMONY_START_EVENT = "ceremony-start";
 export const CEREMONY_END_EVENT = "ceremony-end";
 
-export type CeremonyStartPayload = { duration_ms?: number; is_test?: boolean };
+export type CeremonyStartPayload = { duration_ms?: number; is_test?: boolean; ceremony_id?: number | null };
 
 export function onCeremonyStart(callback: (payload: CeremonyStartPayload) => void): Promise<UnlistenFn> {
   return listen(CEREMONY_START_EVENT, (e) => callback((e.payload as unknown) as CeremonyStartPayload));

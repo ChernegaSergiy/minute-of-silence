@@ -29,9 +29,7 @@ import {
   bringWindowToFront,
   getInitialState,
   getStatus,
-  isCeremonyOverlayLaunch,
-  finishCeremonyOverlayLaunch,
-  onCeremonyOverlayLaunch,
+  markCeremonyOverlayReady,
   onCeremonyEnd,
   onCeremonyStart,
   saveSettings,
@@ -107,11 +105,6 @@ const useStyles = makeStyles({
     alignItems: "center",
     height: "100%",
   },
-  overlayLaunchSurface: {
-    position: "fixed",
-    inset: 0,
-    backgroundColor: "rgb(8, 8, 8)",
-  },
   desktopNav: {
     display: "block",
     "@media (max-width: 600px)": {
@@ -177,7 +170,7 @@ export default function App() {
   const [version, setVersion] = useState("...");
   const [voices, setVoices] = useState<VoiceCapabilities[]>([]);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [overlayOnlyLaunch, setOverlayOnlyLaunch] = useState(false);
+  const [overlayCeremonyId, setOverlayCeremonyId] = useState<number>();
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
@@ -199,6 +192,13 @@ export default function App() {
 
   const effectiveDark = (settings?.useSystemTheme ?? true) ? prefersDark : settings?.uiTheme === "dark";
 
+  const handleOverlayReady = useCallback(() => {
+    if (overlayCeremonyId === undefined) return;
+    markCeremonyOverlayReady(overlayCeremonyId).catch((error) =>
+      console.warn("Failed to report ceremony overlay readiness:", error)
+    );
+  }, [overlayCeremonyId]);
+
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
@@ -209,12 +209,6 @@ export default function App() {
         .catch((error) => console.warn("Failed to set localized window title:", error));
 
       // 1. Atomic startup hydration: fetch all initial state in a single IPC call
-      try {
-        setOverlayOnlyLaunch(await isCeremonyOverlayLaunch());
-      } catch (error) {
-        console.warn("Failed to read ceremony overlay launch state:", error);
-      }
-
       try {
         const init = await getInitialState();
         if (!hasImportedRef.current) {
@@ -247,39 +241,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    let unregister: (() => Promise<void>) | undefined;
-
-    onCeremonyOverlayLaunch(() => {
-      setOverlayOnlyLaunch(true);
-      getStatus()
-        .then((nextStatus) => {
-          if (!cancelled) setStatus(nextStatus);
-        })
-        .catch((error: unknown) => {
-          console.warn("Failed to refresh status for ceremony overlay:", error);
-        });
-    })
-      .then((listener) => {
-        if (cancelled) {
-          void listener.unregister();
-          return;
-        }
-        unregister = () => listener.unregister();
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          console.warn("Failed to listen for ceremony overlay launch:", error);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      if (unregister) void unregister();
-    };
-  }, []);
-
-  useEffect(() => {
     const refresh = async () => {
       try {
         const nextStatus = await getStatus();
@@ -294,11 +255,20 @@ export default function App() {
     (async () => {
       unlisteners.push(
         await onCeremonyStart((payload) => {
-          setTestRunning(payload?.is_test ?? false);
+          const isTest = payload?.is_test ?? false;
+          setTestRunning(isTest);
+          setShowOverlay(true);
+          setCeremonyDurationMs(payload?.duration_ms);
+          setIsTestCeremony(isTest);
+          setOverlayCeremonyId(isTest ? undefined : payload?.ceremony_id ?? undefined);
           refresh();
         }),
         await onCeremonyEnd(() => {
           setTestRunning(false);
+          setShowOverlay(false);
+          setCeremonyDurationMs(undefined);
+          setIsTestCeremony(false);
+          setOverlayCeremonyId(undefined);
           refresh();
         }),
         await listen("ntp-synced", refresh),
@@ -325,62 +295,10 @@ export default function App() {
     return () => unlisteners.forEach((u) => u());
   }, []);
 
+  const overlayVisible = !!settings?.showVisualOverlay && (showOverlay || status.ceremonyActive);
   useEffect(() => {
-    if (!settings?.showVisualOverlay) {
-      setShowOverlay(false);
-      return;
-    }
-
-    let cancelled = false;
-    const unlisteners: (() => void)[] = [];
-
-    (async () => {
-      unlisteners.push(
-        await onCeremonyStart(async (payload) => {
-          if (cancelled) return;
-          setShowOverlay(true);
-          setCeremonyDurationMs(payload?.duration_ms);
-          setIsTestCeremony(payload?.is_test ?? false);
-          try {
-            await bringWindowToFront();
-          } catch {
-            // ignore focus errors
-          }
-        }),
-        await onCeremonyEnd(() => {
-          if (!cancelled) {
-            setShowOverlay(false);
-            setCeremonyDurationMs(undefined);
-            setIsTestCeremony(false);
-            if (overlayOnlyLaunch) {
-              finishCeremonyOverlayLaunch().catch((error) =>
-                console.warn("Failed to close ceremony overlay activity:", error)
-              );
-            }
-          }
-        })
-      );
-
-      if (!cancelled && status.ceremonyActive) {
-        setShowOverlay(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      unlisteners.forEach((u) => u());
-    };
-  }, [settings?.showVisualOverlay, status.ceremonyActive, overlayOnlyLaunch]);
-
-  useEffect(() => {
-    if (!overlayOnlyLaunch || status.ceremonyActive || showOverlay) return;
-    const timeout = setTimeout(() => {
-      finishCeremonyOverlayLaunch()
-        .catch((error) => console.warn("Failed to close inactive ceremony overlay activity:", error))
-        .finally(() => setOverlayOnlyLaunch(false));
-    }, ((settings?.lateStartGraceMinutes ?? 1) + 1) * 60_000);
-    return () => clearTimeout(timeout);
-  }, [overlayOnlyLaunch, settings?.lateStartGraceMinutes, showOverlay, status.ceremonyActive]);
+    if (overlayVisible) void bringWindowToFront().catch(() => {});
+  }, [overlayVisible]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -460,29 +378,8 @@ export default function App() {
         theme={prefersDark ? webDarkTheme : webLightTheme}
         style={{ height: "100%" }}
       >
-        <div className={overlayOnlyLaunch ? styles.overlayLaunchSurface : styles.loadingContainer}>
-          {!overlayOnlyLaunch && <Spinner size="medium" />}
-        </div>
-      </FluentProvider>
-    );
-  }
-
-  if (overlayOnlyLaunch) {
-    return (
-      <FluentProvider
-        theme={effectiveDark ? webDarkTheme : webLightTheme}
-        style={{ height: "100%" }}
-      >
-        <div className={styles.overlayLaunchSurface}>
-          {settings?.showVisualOverlay && showOverlay && (
-            <Overlay
-              show
-              durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
-              personalDates={personalDates}
-              settings={settings}
-              isTest={isTestCeremony}
-            />
-          )}
+        <div className={styles.loadingContainer}>
+          <Spinner size="medium" />
         </div>
       </FluentProvider>
     );
@@ -647,11 +544,12 @@ export default function App() {
       </FluentProvider>
 
       <Overlay
-        show={showOverlay}
+        show={overlayVisible}
         durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
         personalDates={personalDates}
         settings={settings}
-        isTest={isTestCeremony}
+        isTest={isTestCeremony || status.ceremonyIsTest}
+        onReady={overlayCeremonyId === undefined ? undefined : handleOverlayReady}
       />
     </>
   );
