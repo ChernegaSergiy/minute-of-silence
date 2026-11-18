@@ -16,6 +16,10 @@ object CeremonyNotificationActions {
     if (handler === callback) handler = null
   }
 
+  /** Whether a running Rust backend has registered the action channel. */
+  @Synchronized
+  fun isAvailable(): Boolean = handler != null
+
   /** Returns false when the action is unknown or the backend is unavailable. */
   fun dispatch(action: String, targetDate: String): Boolean {
     if (action != "skip" && action != "restore") return false

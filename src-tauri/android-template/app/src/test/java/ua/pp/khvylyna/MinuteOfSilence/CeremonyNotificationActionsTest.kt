@@ -8,6 +8,18 @@ import org.junit.Test
 /** Verifies forwarding without storing a second copy of the skip setting. */
 class CeremonyNotificationActionsTest {
   @Test
+  fun actionsAreAvailableOnlyWhileTheBackendIsAttached() {
+    val callback: (String, String) -> Unit = { _, _ -> }
+    CeremonyNotificationActions.attach(callback)
+    try {
+      assertTrue(CeremonyNotificationActions.isAvailable())
+    } finally {
+      CeremonyNotificationActions.detach(callback)
+    }
+    assertFalse(CeremonyNotificationActions.isAvailable())
+  }
+
+  @Test
   fun forwardsTheActionAndItsDisplayedDate() {
     val received = mutableListOf<Pair<String, String>>()
     val callback: (String, String) -> Unit = { action, date -> received.add(action to date) }
