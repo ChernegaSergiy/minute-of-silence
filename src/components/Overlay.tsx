@@ -335,7 +335,7 @@ export default function Overlay({
     <FluentProvider theme={webDarkTheme}>
       <div className={mergeClasses(styles.container, visible && styles.containerVisible)}>
         <div className={mergeClasses(styles.inner, visible && styles.innerVisible)}>
-          <Title1 className={styles.title}>{t("overlay.title")}</Title1>
+          <Title1 align="center" className={styles.title}>{t("overlay.title")}</Title1>
           
           <div className={styles.mediaWrapper}>
             <img
@@ -354,7 +354,7 @@ export default function Overlay({
           </div>
           
           <div className={styles.subtitleContainer}>
-            <Subtitle1 className={styles.subtitle}>
+            <Subtitle1 align="center" className={styles.subtitle}>
               {isExactDate
                 ? t("overlay.personal_subtitle")
                 : nearbyDate
