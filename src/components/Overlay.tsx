@@ -59,10 +59,26 @@ const useStyles = makeStyles({
     flexDirection: "column",
     alignItems: "center",
     ...shorthands.gap("48px"), // Balanced Fluent UI spacing
+    maxWidth: "100%",
     zIndex: 2,
     transform: "scale(0.96)",
     opacity: 0,
     transition: "transform 1400ms cubic-bezier(0.16, 1, 0.3, 1), opacity 1200ms ease-in-out",
+    "@media (orientation: landscape) and (max-height: 440px) and (min-height: 221px) and (min-width: 480px)": {
+      flexDirection: "row",
+      alignItems: "center",
+      width: "calc(100vw - 32px)",
+      gap: "clamp(16px, 4vw, 48px)",
+    },
+    "@media (orientation: portrait) and (max-height: 520px)": {
+      gap: "clamp(16px, 4vh, 32px)",
+    },
+    "@media (max-height: 220px)": {
+      gap: 0,
+    },
+    "@media (orientation: landscape) and (max-width: 479px) and (max-height: 440px)": {
+      gap: 0,
+    },
   },
   innerVisible: {
     transform: "scale(1)",
@@ -72,6 +88,46 @@ const useStyles = makeStyles({
     position: "relative",
     width: `${RING_SIZE}px`,
     height: `${RING_SIZE}px`,
+    order: 2,
+    flexShrink: 0,
+    "@media (orientation: landscape) and (max-height: 440px) and (min-height: 221px) and (min-width: 480px)": {
+      order: 1,
+      width: "min(260px, 42dvh, 38vw)",
+      height: "min(260px, 42dvh, 38vw)",
+    },
+    "@media (orientation: portrait) and (max-height: 520px)": {
+      width: "min(260px, 48dvh, 72vw)",
+      height: "min(260px, 48dvh, 72vw)",
+    },
+    "@media (max-height: 220px)": {
+      order: 0,
+      width: "min(260px, 75dvh, 75vw)",
+      height: "min(260px, 75dvh, 75vw)",
+    },
+    "@media (orientation: landscape) and (max-width: 479px) and (max-height: 440px)": {
+      order: 0,
+      width: "min(260px, 75dvh, 75vw)",
+      height: "min(260px, 75dvh, 75vw)",
+    },
+  },
+  copy: {
+    display: "contents",
+    "@media (orientation: landscape) and (max-height: 440px) and (min-height: 221px) and (min-width: 480px)": {
+      display: "flex",
+      flex: "1 1 0",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 0,
+      maxHeight: "calc(100dvh - 32px)",
+      order: 2,
+    },
+    "@media (max-height: 220px)": {
+      display: "none",
+    },
+    "@media (orientation: landscape) and (max-width: 479px) and (max-height: 440px)": {
+      display: "none",
+    },
   },
   canvas: {
     position: "absolute",
@@ -95,6 +151,17 @@ const useStyles = makeStyles({
     fontWeight: tokens.fontWeightSemibold,
     fontSize: "24px",
     margin: 0,
+    order: 1,
+    overflowWrap: "anywhere",
+    "@media (orientation: landscape) and (max-height: 440px) and (min-height: 221px) and (min-width: 480px)": {
+      width: "100%",
+      fontSize: "clamp(16px, 3.4dvh, 24px)",
+      letterSpacing: "clamp(0.08em, 1.2vw, 0.3em)",
+    },
+    "@media (orientation: portrait) and (max-height: 520px)": {
+      fontSize: "clamp(17px, 5vw, 22px)",
+      letterSpacing: "clamp(0.1em, 3vw, 0.3em)",
+    },
   },
   subtitle: {
     color: tokens.colorNeutralForeground4,
@@ -102,12 +169,26 @@ const useStyles = makeStyles({
     letterSpacing: "0.5em",
     fontSize: "13px",
     margin: 0,
+    "@media (orientation: landscape) and (max-height: 440px) and (min-height: 221px) and (min-width: 480px)": {
+      fontSize: "clamp(10px, 1.8dvh, 13px)",
+      letterSpacing: "clamp(0.08em, 0.9vw, 0.5em)",
+      overflowWrap: "anywhere",
+    },
+    "@media (orientation: portrait) and (max-height: 520px)": {
+      fontSize: "clamp(10px, 3vw, 13px)",
+      letterSpacing: "clamp(0.1em, 3vw, 0.5em)",
+    },
   },
   subtitleContainer: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     ...shorthands.gap("8px"),
+    order: 3,
+    maxWidth: "100%",
+    "@media (orientation: landscape) and (max-height: 440px) and (min-height: 221px) and (min-width: 480px)": {
+      width: "100%",
+    },
   },
   personalName: {
     color: tokens.colorNeutralForeground1,
@@ -121,11 +202,15 @@ const useStyles = makeStyles({
     opacity: 0,
     transform: "translateY(4px)",
     transition: "opacity 500ms ease-in-out, transform 500ms cubic-bezier(0.25, 1, 0.5, 1)",
+    "@media (orientation: landscape) and (max-height: 440px) and (min-height: 221px) and (min-width: 480px)": {
+      maxWidth: "100%",
+      overflowWrap: "anywhere",
+    },
   },
   personalNameVisible: {
     opacity: 1,
     transform: "translateY(0)",
-  }
+  },
 });
 
 interface ApngInfo {
@@ -335,8 +420,6 @@ export default function Overlay({
     <FluentProvider theme={webDarkTheme}>
       <div className={mergeClasses(styles.container, visible && styles.containerVisible)}>
         <div className={mergeClasses(styles.inner, visible && styles.innerVisible)}>
-          <Title1 align="center" className={styles.title}>{t("overlay.title")}</Title1>
-          
           <div className={styles.mediaWrapper}>
             <img
               src={candleUrl}
@@ -352,25 +435,27 @@ export default function Overlay({
               aria-hidden="true"
             />
           </div>
-          
-          <div className={styles.subtitleContainer}>
-            <Subtitle1 align="center" className={styles.subtitle}>
-              {isExactDate
-                ? t("overlay.personal_subtitle")
-                : nearbyDate
-                ? t("overlay.nearby_subtitle")
-                : t("overlay.subtitle")}
-            </Subtitle1>
-            {hasActiveDates && currentCommemorationName && (
-              <div
-                className={mergeClasses(
-                  styles.personalName,
-                  nameFadeState && styles.personalNameVisible
-                )}
-              >
-                {currentCommemorationName}
-              </div>
-            )}
+          <div className={styles.copy}>
+            <Title1 align="center" className={styles.title}>{t("overlay.title")}</Title1>
+            <div className={styles.subtitleContainer}>
+              <Subtitle1 align="center" className={styles.subtitle}>
+                {isExactDate
+                  ? t("overlay.personal_subtitle")
+                  : nearbyDate
+                  ? t("overlay.nearby_subtitle")
+                  : t("overlay.subtitle")}
+              </Subtitle1>
+              {hasActiveDates && currentCommemorationName && (
+                <div
+                  className={mergeClasses(
+                    styles.personalName,
+                    nameFadeState && styles.personalNameVisible
+                  )}
+                >
+                  {currentCommemorationName}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
