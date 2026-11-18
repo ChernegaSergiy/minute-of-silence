@@ -168,6 +168,19 @@ pub async fn notification_permission_status() -> Result<crate::platform::Notific
     }
 }
 
+/// Open the system notification settings of the app. Only Android has them.
+#[tauri::command]
+pub async fn open_notification_settings() -> Result<()> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::open_settings().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(())
+    }
+}
+
 /// Sync the persisted autostart setting with the actual platform state.
 #[tauri::command]
 pub fn sync_autostart_from_system(state: State<'_, AppState>) -> Result<()> {

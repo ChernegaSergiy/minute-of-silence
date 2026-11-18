@@ -33,3 +33,8 @@ pub async fn status() -> Result<NotificationPermission> {
         bridge::call_async("getNotificationPermission", json!({})).await?;
     Ok(response.state)
 }
+
+/// Opens the system notification settings of the app.
+pub async fn open_settings() -> Result<()> {
+    bridge::call_async("openNotificationSettings", json!({})).await
+}

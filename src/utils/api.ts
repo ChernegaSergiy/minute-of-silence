@@ -75,6 +75,10 @@ export async function getNotificationPermission(): Promise<NotificationPermissio
   return invoke<NotificationPermission>("notification_permission_status");
 }
 
+export async function openNotificationSettings(): Promise<void> {
+  return invoke<void>("open_notification_settings");
+}
+
 // Skip / unskip
 
 export async function skipNext(): Promise<void> {

@@ -227,6 +227,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             app::commands::sync_autostart_from_system,
             app::commands::notification_permission_status,
+            app::commands::open_notification_settings,
             app::commands::get_status,
             app::commands::sync_ntp_now,
             app::commands::skip_next,

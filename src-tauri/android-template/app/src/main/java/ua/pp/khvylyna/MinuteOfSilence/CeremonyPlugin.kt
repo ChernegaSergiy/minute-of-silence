@@ -3,10 +3,13 @@ package ua.pp.khvylyna.MinuteOfSilence
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
+import android.provider.Settings
 import app.tauri.annotation.Command
 import app.tauri.PermissionState
 import app.tauri.annotation.InvokeArg
@@ -303,5 +306,26 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     val result = JSObject()
     result.put("state", state)
     invoke.resolve(result)
+  }
+
+  /**
+   * Opens the system notification settings of the app. The permission dialog
+   * no longer shows after it was refused for good, so this is the way back.
+   */
+  @Command
+  fun openNotificationSettings(invoke: Invoke) {
+    try {
+      val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+          .putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName)
+      } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+          .setData(Uri.fromParts("package", activity.packageName, null))
+      }
+      activity.startActivity(intent)
+      invoke.resolve()
+    } catch (e: Exception) {
+      invoke.reject("Failed to open the notification settings: ${e.message}")
+    }
   }
 }
