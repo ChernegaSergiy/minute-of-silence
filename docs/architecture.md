@@ -32,8 +32,12 @@ graph TD
 ### Why Tauri instead of Electron?
 Tauri's Rust backend gives us direct access to Win32, Linux, and macOS system APIs without an extra IPC layer, and the resulting binary is ~5 MB vs ~150 MB for an equivalent Electron app.
 
-### Shared state via `Arc<Mutex<Inner>>`
-The scheduler runs as a long-lived `tokio` task on the async runtime.  Tauri commands run on the Tauri thread pool.  A single `Arc<Mutex<Inner>>` wrapped in the `AppState` newtype is the simplest correct approach for this scale.
+### Shared ceremony runtime
+The scheduler runs as a long-lived Tokio task. It and the Tauri commands share a `CeremonyRuntime`, which holds settings, the current run, and the NTP and audio engines. The settings store remains owned by `AppState`.
+
+On Android, the preparation alarm starts `CeremonyService`, which starts the same Rust scheduler over JNI even when there is no Activity. The runtime reads the persisted Tauri settings and uses the application-scoped Android audio host. The Android Activity attaches to the running runtime instead of creating another scheduler. A scheduled run records its start on disk so restarting the process does not replay it that day.
+
+The service can request a lock-screen overlay only after the scheduled ceremony starts. If Android opens the Activity, it hydrates from the active run and reveals the drawn overlay; playback does not wait for a window or for notification permission.
 
 ### Targeted media pausing instead of system-wide key emulation
 Earlier designs simulated media key events (such as `VK_MEDIA_PLAY_PAUSE`), but this was prone to toggling state on already-paused players or failing under certain window focus conditions. Now, the app uses native platform APIs to query active media sessions and pause/resume them selectively:
