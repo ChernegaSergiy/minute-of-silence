@@ -79,6 +79,10 @@ export async function openNotificationSettings(): Promise<void> {
   return invoke<void>("open_notification_settings");
 }
 
+export async function openAboutLink(url: string): Promise<void> {
+  return invoke<void>("open_about_link", { url });
+}
+
 // Skip / unskip
 
 export async function skipNext(): Promise<void> {
