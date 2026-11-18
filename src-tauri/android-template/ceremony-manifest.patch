@@ -24,7 +24,7 @@ index 7e6d830..995ce7b 100644
              android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
              android:launchMode="singleTask"
              android:label="@string/main_activity_title"
-@@ -33,5 +45,32 @@
+@@ -33,5 +45,27 @@
              android:name="android.support.FILE_PROVIDER_PATHS"
              android:resource="@xml/file_paths" />
          </provider>
@@ -51,9 +51,5 @@ index 7e6d830..995ce7b 100644
 +                android:value="daily-memorial-ceremony" />
 +        </service>
 +
-+        <activity
-+            android:name=".LinkViewerActivity"
-+            android:exported="false"
-+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
      </application>
  </manifest>

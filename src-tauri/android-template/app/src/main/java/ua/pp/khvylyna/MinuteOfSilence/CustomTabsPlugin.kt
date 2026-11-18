@@ -3,6 +3,7 @@ package ua.pp.khvylyna.MinuteOfSilence
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -15,7 +16,7 @@ class OpenLinkArgs {
 }
 
 @TauriPlugin
-class LinkViewerPlugin(private val activity: Activity) : Plugin(activity) {
+class CustomTabsPlugin(private val activity: Activity) : Plugin(activity) {
   @Command
   fun openLink(invoke: Invoke) {
     try {
@@ -27,13 +28,17 @@ class LinkViewerPlugin(private val activity: Activity) : Plugin(activity) {
 
       activity.runOnUiThread {
         try {
-          activity.startActivity(
-            Intent(activity, LinkViewerActivity::class.java)
-              .putExtra(LinkViewerActivity.EXTRA_URL, uri.toString())
-          )
+          try {
+            CustomTabsIntent.Builder()
+              .setShowTitle(true)
+              .build()
+              .launchUrl(activity, uri)
+          } catch (_: Exception) {
+            activity.startActivity(Intent(Intent.ACTION_VIEW, uri))
+          }
           invoke.resolve()
         } catch (error: Exception) {
-          invoke.reject("Failed to open the in-app web view: ${error.message}")
+          invoke.reject("Failed to open the link: ${error.message}")
         }
       }
     } catch (error: Exception) {
