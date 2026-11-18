@@ -1,4 +1,5 @@
 use crate::core::audio::CeremonyAudioBackend;
+#[cfg(desktop)]
 use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
 use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase};
