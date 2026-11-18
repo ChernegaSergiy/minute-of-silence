@@ -137,10 +137,20 @@ impl CeremonyManager {
                 }
             };
 
+        {
+            let mut inner = self.runtime.lock();
+            if let Some(active) = inner
+                .active_ceremony
+                .as_mut()
+                .filter(|run| run.id == ceremony_id)
+            {
+                active.duration_ms = Some(duration_ms);
+            }
+        }
         let payload = json!({
             "duration_ms": duration_ms,
             "is_test": is_test,
-            "ceremony_id": cfg!(target_os = "android").then_some(ceremony_id),
+            "ceremony_id": cfg!(target_os = "android").then(|| ceremony_id.to_string()),
         });
         #[cfg(target_os = "android")]
         if !is_test && let Some(app) = self.runtime.app() {

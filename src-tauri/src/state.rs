@@ -38,6 +38,7 @@ pub struct ActiveCeremony {
     pub kind: CeremonyKind,
     pub phase: CeremonyPhase,
     pub stop_requested: bool,
+    pub duration_ms: Option<u64>,
 }
 
 impl ActiveCeremony {
@@ -47,6 +48,7 @@ impl ActiveCeremony {
             kind,
             phase: CeremonyPhase::SettingUp,
             stop_requested: false,
+            duration_ms: None,
         }
     }
 }
@@ -359,8 +361,13 @@ impl AppState {
 }
 
 impl AppState {
+    /// Returns the current ceremony and time status together.
     pub fn get_snapshot(&self) -> StatusSnapshot {
         let inner = self.lock();
+        self.snapshot_from(&inner)
+    }
+
+    pub(crate) fn snapshot_from(&self, inner: &Inner) -> StatusSnapshot {
         let skip_target = next_skip_date(Local::now(), inner.settings.weekdays_only);
 
         let ntp_status = if inner.settings.system_time_only {

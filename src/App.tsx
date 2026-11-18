@@ -170,7 +170,7 @@ export default function App() {
   const [version, setVersion] = useState("...");
   const [voices, setVoices] = useState<VoiceCapabilities[]>([]);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [overlayCeremonyId, setOverlayCeremonyId] = useState<number>();
+  const [overlayCeremonyId, setOverlayCeremonyId] = useState<string>();
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
@@ -218,6 +218,10 @@ export default function App() {
         }
         setPersonalDates(init.personalDates);
         setStatus(init.status);
+        if (init.status.ceremonyActive && init.activeOverlay) {
+          setOverlayCeremonyId(init.activeOverlay.ceremonyId);
+          setCeremonyDurationMs(init.activeOverlay.durationMs);
+        }
         setTestRunning(init.status.ceremonyIsTest);
         setVersion(init.version);
         setVoices(init.voices);

@@ -31,15 +31,31 @@ pub fn get_initial_state(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<khvylyna_core::AppInitialState> {
-    let settings = state.lock().settings.clone();
     let personal_dates = get_personal_dates(app.clone())?;
-    let status = state.get_snapshot();
+    let (settings, status, active_overlay) = {
+        let inner = state.lock();
+        let overlay = inner.active_ceremony.and_then(|active| {
+            if !cfg!(target_os = "android")
+                || !inner.settings.show_visual_overlay
+                || active.kind != crate::state::CeremonyKind::Scheduled
+                || active.phase == crate::state::CeremonyPhase::Finishing
+            {
+                return None;
+            }
+            Some(khvylyna_core::ActiveOverlaySnapshot {
+                ceremony_id: active.id.to_string(),
+                duration_ms: u32::try_from(active.duration_ms?).ok()?,
+            })
+        });
+        (inner.settings.clone(), state.snapshot_from(&inner), overlay)
+    };
     let version = app.package_info().version.to_string();
 
     Ok(khvylyna_core::AppInitialState {
         settings,
         personal_dates,
         status,
+        active_overlay,
         version,
         voices: crate::core::voices::voice_capabilities(),
     })
@@ -185,9 +201,12 @@ pub async fn open_notification_settings() -> Result<()> {
 
 /// Lets Android reveal a rendered ceremony overlay over the lock screen.
 #[tauri::command]
-pub async fn mark_ceremony_overlay_ready(app: AppHandle, ceremony_id: u64) -> Result<()> {
+pub async fn mark_ceremony_overlay_ready(app: AppHandle, ceremony_id: String) -> Result<()> {
     #[cfg(target_os = "android")]
     {
+        let ceremony_id = ceremony_id
+            .parse()
+            .map_err(|_| crate::AppError::Platform("Invalid ceremony ID".into()))?;
         crate::platform::android::overlay_launch::mark_ready(&app, ceremony_id).await
     }
     #[cfg(not(target_os = "android"))]
