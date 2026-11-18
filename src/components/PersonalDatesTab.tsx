@@ -58,7 +58,6 @@ const useStyles = makeStyles({
     flexGrow: 1,
     flexShrink: 0,
     alignSelf: "flex-end",
-    marginBottom: "1px",
     "@media (max-width: 600px)": {
       width: "100%",
     },
