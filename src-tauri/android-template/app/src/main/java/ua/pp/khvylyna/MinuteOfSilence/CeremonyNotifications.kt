@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 
@@ -40,12 +41,14 @@ object CeremonyNotifications {
   /** The quiet ongoing notification of the foreground service. */
   fun buildServiceNotification(context: Context): Notification {
     ensureChannel(context)
-    val text = if (CeremonySchedule.isNextSkipped(context)) {
+    val now = System.currentTimeMillis()
+    val skipped = CeremonySchedule.isNextSkipped(context, now)
+    val text = if (skipped) {
       R.string.ceremony_notification_skipped
     } else {
       R.string.ceremony_notification_scheduled
     }
-    return NotificationCompat.Builder(context, CHANNEL_ID)
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_stat_ceremony)
       .setContentTitle(context.getString(R.string.ceremony_notification_title))
       .setContentText(context.getString(text))
@@ -53,7 +56,39 @@ object CeremonyNotifications {
       .setOnlyAlertOnce(true)
       .setPriority(NotificationCompat.PRIORITY_LOW)
       .setContentIntent(openApp(context))
-      .build()
+    if (CeremonyNotificationActions.isAvailable()) {
+      val label = if (skipped) {
+        R.string.ceremony_notification_restore
+      } else {
+        R.string.ceremony_notification_skip
+      }
+      builder.addAction(
+        0,
+        context.getString(label),
+        changeSkip(context, skipped, CeremonySchedule.notificationTargetDate(context, now))
+      )
+    }
+    return builder.build()
+  }
+
+  private fun changeSkip(context: Context, skipped: Boolean, targetDate: String): PendingIntent {
+    val action = if (skipped) CeremonyService.ACTION_RESTORE else CeremonyService.ACTION_SKIP
+    val intent = Intent(context, CeremonyService::class.java).apply {
+      this.action = action
+      data = Uri.Builder()
+        .scheme("ceremony")
+        .authority(context.packageName)
+        .appendPath(action)
+        .appendPath(targetDate)
+        .build()
+      putExtra(CeremonyService.EXTRA_TARGET_DATE, targetDate)
+    }
+    val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      PendingIntent.getForegroundService(context, 0, intent, flags)
+    } else {
+      PendingIntent.getService(context, 0, intent, flags)
+    }
   }
 
   private fun openApp(context: Context): PendingIntent {

@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import androidx.core.content.ContextCompat
 
 /**
@@ -45,6 +46,10 @@ class CeremonyService : Service() {
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    if (!CeremonySchedule.isEnabled(this)) {
+      stopSelf(startId)
+      return START_NOT_STICKY
+    }
     val notification = CeremonyNotifications.buildServiceNotification(this)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
       startForeground(
@@ -56,6 +61,7 @@ class CeremonyService : Service() {
       startForeground(CeremonyNotifications.SERVICE_NOTIFICATION_ID, notification)
     }
     scheduleNotificationUpdate()
+    handleNotificationAction(intent)
     return START_STICKY
   }
 
@@ -80,7 +86,32 @@ class CeremonyService : Service() {
     handler.postDelayed(refreshNotification, delay.coerceAtLeast(1L))
   }
 
+  private fun handleNotificationAction(intent: Intent?) {
+    val actionIntent = intent ?: return
+    val action = when (actionIntent.action) {
+      ACTION_SKIP -> "skip"
+      ACTION_RESTORE -> "restore"
+      else -> return
+    }
+    val targetDate = actionIntent.getStringExtra(EXTRA_TARGET_DATE)
+    if (targetDate == null) {
+      Log.w("CeremonyService", "Notification action has no target date")
+      return
+    }
+    try {
+      if (!CeremonyNotificationActions.dispatch(action, targetDate)) {
+        Log.w("CeremonyService", "Notification action backend is unavailable")
+      }
+    } catch (error: Exception) {
+      Log.w("CeremonyService", "Failed to dispatch notification action", error)
+    }
+  }
+
   companion object {
+    const val ACTION_SKIP = "ua.pp.khvylyna.MinuteOfSilence.action.SKIP_CEREMONY"
+    const val ACTION_RESTORE = "ua.pp.khvylyna.MinuteOfSilence.action.RESTORE_CEREMONY"
+    const val EXTRA_TARGET_DATE = "targetDate"
+
     /** Starts the service. Call it while the app is in the foreground or from the alarm. */
     fun start(context: Context) {
       ContextCompat.startForegroundService(context, Intent(context, CeremonyService::class.java))
