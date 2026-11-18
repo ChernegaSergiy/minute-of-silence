@@ -56,14 +56,21 @@ object CeremonySchedule {
     preferences(context).getBoolean(KEY_ENABLED, false)
 
   /** Whether the next eligible ceremony is marked as skipped. */
-  fun isNextSkipped(context: Context): Boolean {
+  fun isNextSkipped(context: Context, now: Long = System.currentTimeMillis()): Boolean {
     val prefs = preferences(context)
     return CeremonyNotificationState.isNextSkipped(
-      System.currentTimeMillis(),
+      now,
       prefs.getBoolean(KEY_WEEKDAYS_ONLY, false),
       prefs.getString(KEY_SKIP_DATE, null)
     )
   }
+
+  /** The date to include in a notification action, even when that ceremony is skipped. */
+  fun notificationTargetDate(context: Context, now: Long = System.currentTimeMillis()): String =
+    CeremonyNotificationState.nextCeremonyDate(
+      now,
+      preferences(context).getBoolean(KEY_WEEKDAYS_ONLY, false)
+    )
 
   /** The next time the notification must re-evaluate the skip status. */
   fun nextNotificationUpdateMillis(context: Context): Long =
