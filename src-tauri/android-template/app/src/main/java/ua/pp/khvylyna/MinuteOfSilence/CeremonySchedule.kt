@@ -5,8 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import java.util.Calendar
-import java.util.Locale
 
 /**
  * Wakes the device shortly before the ceremony.
@@ -20,11 +18,6 @@ object CeremonySchedule {
   private const val KEY_ENABLED = "enabled"
   private const val KEY_WEEKDAYS_ONLY = "weekdaysOnly"
   private const val KEY_SKIP_DATE = "skipDate"
-
-  private const val CEREMONY_HOUR = 9
-
-  /** The app wakes a minute early to start and sync the time before 09:00. */
-  const val WAKE_LEAD_MS = 60_000L
 
   /** Stores the schedule and sets the alarm for the next ceremony. */
   fun configure(context: Context, enabled: Boolean, weekdaysOnly: Boolean, skipDate: String?) {
@@ -45,7 +38,7 @@ object CeremonySchedule {
     val prefs = preferences(context)
     if (!prefs.getBoolean(KEY_ENABLED, false)) return
 
-    val wakeAt = nextWakeMillis(
+    val wakeAt = CeremonyWakeTime.nextWakeMillis(
       System.currentTimeMillis(),
       prefs.getBoolean(KEY_WEEKDAYS_ONLY, false),
       prefs.getString(KEY_SKIP_DATE, null)
@@ -61,40 +54,6 @@ object CeremonySchedule {
   /** Whether a ceremony is switched on in the stored schedule. */
   fun isEnabled(context: Context): Boolean =
     preferences(context).getBoolean(KEY_ENABLED, false)
-
-  /**
-   * The next moment to wake the app, in epoch milliseconds, or null when no
-   * ceremony is due within the next days.
-   */
-  fun nextWakeMillis(now: Long, weekdaysOnly: Boolean, skipDate: String?): Long? {
-    for (offset in 0..8) {
-      val day = Calendar.getInstance().apply {
-        timeInMillis = now
-        add(Calendar.DAY_OF_YEAR, offset)
-        set(Calendar.HOUR_OF_DAY, CEREMONY_HOUR)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-      }
-      val wakeAt = day.timeInMillis - WAKE_LEAD_MS
-      if (wakeAt <= now) continue
-
-      val dayOfWeek = day.get(Calendar.DAY_OF_WEEK)
-      if (weekdaysOnly && (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY)) continue
-      if (skipDate != null && isoDate(day) == skipDate) continue
-
-      return wakeAt
-    }
-    return null
-  }
-
-  private fun isoDate(day: Calendar): String = String.format(
-    Locale.ROOT,
-    "%04d-%02d-%02d",
-    day.get(Calendar.YEAR),
-    day.get(Calendar.MONTH) + 1,
-    day.get(Calendar.DAY_OF_MONTH)
-  )
 
   private fun alarmIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
     context,
