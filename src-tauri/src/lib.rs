@@ -13,6 +13,7 @@ pub use core::settings::{AudioPreset, CONFIG_SCHEMA_VERSION, Settings, SettingsE
 pub use error::{AppError, Result};
 pub use state::AppState;
 
+#[cfg(desktop)]
 #[derive(serde::Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UpdateAvailablePayload {
