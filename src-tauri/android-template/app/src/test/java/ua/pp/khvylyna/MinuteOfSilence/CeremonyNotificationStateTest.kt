@@ -18,6 +18,44 @@ class CeremonyNotificationStateTest {
     }.timeInMillis
 
   @Test
+  fun actionTargetsTodayUntilNineAndTomorrowAfterwards() {
+    assertEquals("2026-11-18", CeremonyNotificationState.nextCeremonyDate(at(2026, 11, 18, 8, 59, 59), false, kyiv))
+    assertEquals("2026-11-19", CeremonyNotificationState.nextCeremonyDate(at(2026, 11, 18, 9), false, kyiv))
+    assertEquals("2026-11-19", CeremonyNotificationState.nextCeremonyDate(at(2026, 11, 18, 9, 0, 1), false, kyiv))
+  }
+
+  @Test
+  fun actionTargetsRespectTheWeekdaysSetting() {
+    val now = at(2026, 11, 20, 10)
+    assertEquals("2026-11-21", CeremonyNotificationState.nextCeremonyDate(now, false, kyiv))
+    assertEquals("2026-11-23", CeremonyNotificationState.nextCeremonyDate(now, true, kyiv))
+    assertEquals("2026-11-23", CeremonyNotificationState.nextCeremonyDate(at(2026, 11, 22, 6), true, kyiv))
+  }
+
+  @Test
+  fun actionTargetsArePaddedAcrossMonthAndYearBoundaries() {
+    assertEquals("2027-01-01", CeremonyNotificationState.nextCeremonyDate(at(2026, 12, 31, 23), false, kyiv))
+    assertEquals("2026-03-05", CeremonyNotificationState.nextCeremonyDate(at(2026, 3, 4, 20), false, kyiv))
+  }
+
+  @Test
+  fun actionTargetsUseTheLocalTimeZone() {
+    val now = at(2026, 11, 18, 9)
+    assertEquals("2026-11-19", CeremonyNotificationState.nextCeremonyDate(now, false, kyiv))
+    assertEquals("2026-11-18", CeremonyNotificationState.nextCeremonyDate(now, false, TimeZone.getTimeZone("UTC")))
+  }
+
+  @Test
+  fun actionTargetsAndSkipStatusReferToTheSameDateAcrossClockChanges() {
+    for ((month, day) in listOf(3 to 29, 10 to 25)) {
+      val now = at(2026, month, day, 8, 59, 59)
+      val target = CeremonyNotificationState.nextCeremonyDate(now, false, kyiv)
+      assertTrue(CeremonyNotificationState.isNextSkipped(now, false, target, kyiv))
+      assertFalse(CeremonyNotificationState.isNextSkipped(at(2026, month, day, 9), false, target, kyiv))
+    }
+  }
+
+  @Test
   fun reflectsSkippingAndRestoringTheNextCeremony() {
     val now = at(2026, 11, 18, 6)
     assertFalse(CeremonyNotificationState.isNextSkipped(now, false, null, kyiv))
