@@ -47,7 +47,9 @@ pub fn run() {
 
     #[cfg(target_os = "android")]
     {
-        builder = builder.plugin(crate::platform::android::bridge::init());
+        builder = builder
+            .plugin(crate::platform::android::bridge::init())
+            .plugin(crate::platform::android::link_viewer::init());
     }
 
     builder
