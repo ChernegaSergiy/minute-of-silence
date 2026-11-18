@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Android notification permission request and an in-app warning with a shortcut to system settings when notifications are blocked.
 - Ukrainian and English Android app names, adaptive launcher icons with themed icon support, and a dedicated upright trident icon for notifications.
 
+### Changed
+- Disable browser tap highlighting and selection of non-editable interface text on touch devices, while preserving text selection in input fields.
+
 ### Fixed
 - Prevent personal date form controls from overflowing their containers and overlapping adjacent fields or the Add button in narrow windows.
 - Expand the Add button to the full row width when it wraps below the personal date fields.
