@@ -207,7 +207,8 @@ pub async fn mark_ceremony_overlay_ready(app: AppHandle, ceremony_id: String) ->
         let ceremony_id = ceremony_id
             .parse()
             .map_err(|_| crate::AppError::Platform("Invalid ceremony ID".into()))?;
-        crate::platform::android::overlay_launch::mark_ready(&app, ceremony_id).await
+        let state = app.state::<AppState>();
+        crate::platform::android::overlay_launch::mark_ready(&state.runtime, ceremony_id).await
     }
     #[cfg(not(target_os = "android"))]
     {

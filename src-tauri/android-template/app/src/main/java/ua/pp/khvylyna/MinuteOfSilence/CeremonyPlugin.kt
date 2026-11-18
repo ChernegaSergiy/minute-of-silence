@@ -31,11 +31,6 @@ class ScheduleArgs {
 }
 
 @InvokeArg
-class CeremonyOverlayArgs {
-  lateinit var ceremonyId: String
-}
-
-@InvokeArg
 class NotificationRequestArgs {
   var onlyOnce: Boolean = false
 }
@@ -78,34 +73,6 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
       invoke.resolve()
     } catch (e: Exception) {
       invoke.reject("Failed to set the wake-up alarm: ${e.message}")
-    }
-  }
-
-  @Command
-  fun showCeremonyOverlay(invoke: Invoke) {
-    withCeremonyOverlay(invoke, MainActivity::requestCeremonyOverlay)
-  }
-
-  @Command
-  fun markCeremonyOverlayReady(invoke: Invoke) {
-    withCeremonyOverlay(invoke, MainActivity::markCeremonyOverlayReady)
-  }
-
-  @Command
-  fun endCeremonyOverlay(invoke: Invoke) {
-    withCeremonyOverlay(invoke, MainActivity::endCeremonyOverlay)
-  }
-
-  private fun withCeremonyOverlay(invoke: Invoke, action: MainActivity.(String) -> Unit) {
-    val ceremonyId = invoke.parseArgs(CeremonyOverlayArgs::class.java).ceremonyId
-    val mainActivity = activity as? MainActivity ?: return invoke.reject("Main activity unavailable")
-    mainActivity.runOnUiThread {
-      try {
-        mainActivity.action(ceremonyId)
-        invoke.resolve()
-      } catch (error: Exception) {
-        invoke.reject("Failed to update the ceremony overlay: ${error.message}")
-      }
     }
   }
 

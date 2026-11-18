@@ -14,13 +14,13 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
   private var ceremonyWebView: WebView? = null
-  private var requestedOverlayId: String? = null
+  private lateinit var ceremonyDevice: CeremonyDevice
   private var readyOverlayId: String? = null
 
   override fun onNewIntent(intent: Intent) {
     setIntent(intent)
     super.onNewIntent(intent)
-    if (intent.getStringExtra(CeremonyNotifications.EXTRA_OVERLAY_ID) != requestedOverlayId) {
+    if (intent.getStringExtra(CeremonyNotifications.EXTRA_OVERLAY_ID) != ceremonyDevice.activeOverlayId) {
       setLockScreenOverlayVisible(false)
     }
     showReadyOverlay()
@@ -31,7 +31,8 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    CeremonyDevice.install(this)
+    ceremonyDevice = CeremonyDevice.install(this)
+    ceremonyDevice.attach(this)
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
 
@@ -50,11 +51,9 @@ class MainActivity : TauriActivity() {
     ViewCompat.requestApplyInsets(content)
   }
 
-  fun requestCeremonyOverlay(ceremonyId: String) {
-    if (!isKeyguardLocked()) return
-    requestedOverlayId = ceremonyId
-    ceremonyWebView?.settings?.offscreenPreRaster = true
-    CeremonyNotifications.showCeremonyOverlay(this, ceremonyId)
+  override fun onDestroy() {
+    ceremonyDevice.detach(this)
+    super.onDestroy()
   }
 
   fun markCeremonyOverlayReady(ceremonyId: String) {
@@ -64,16 +63,14 @@ class MainActivity : TauriActivity() {
 
   fun endCeremonyOverlay(ceremonyId: String) {
     if (readyOverlayId == ceremonyId) readyOverlayId = null
-    if (requestedOverlayId != ceremonyId) return
-    requestedOverlayId = null
+    if (intent.getStringExtra(CeremonyNotifications.EXTRA_OVERLAY_ID) != ceremonyId) return
     intent.removeExtra(CeremonyNotifications.EXTRA_OVERLAY_ID)
     setLockScreenOverlayVisible(false)
     ceremonyWebView?.settings?.offscreenPreRaster = false
-    CeremonyNotifications.finishCeremonyOverlay(this)
   }
 
   private fun canRevealOverlay(ceremonyId: String): Boolean =
-    requestedOverlayId == ceremonyId &&
+    ceremonyDevice.activeOverlayId == ceremonyId &&
       readyOverlayId == ceremonyId &&
       intent.getStringExtra(CeremonyNotifications.EXTRA_OVERLAY_ID) == ceremonyId &&
       isKeyguardLocked()
@@ -82,9 +79,11 @@ class MainActivity : TauriActivity() {
     getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
 
   private fun showReadyOverlay() {
-    val ceremonyId = requestedOverlayId ?: return
+    val ceremonyId = ceremonyDevice.activeOverlayId ?: return
     if (!canRevealOverlay(ceremonyId)) return
-    ceremonyWebView?.postVisualStateCallback(0L, object : WebView.VisualStateCallback() {
+    val webView = ceremonyWebView ?: return
+    webView.settings.offscreenPreRaster = true
+    webView.postVisualStateCallback(0L, object : WebView.VisualStateCallback() {
       override fun onComplete(requestId: Long) {
         if (canRevealOverlay(ceremonyId)) setLockScreenOverlayVisible(true)
       }

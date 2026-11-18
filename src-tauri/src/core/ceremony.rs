@@ -153,10 +153,12 @@ impl CeremonyManager {
             "ceremony_id": cfg!(target_os = "android").then(|| ceremony_id.to_string()),
         });
         #[cfg(target_os = "android")]
-        if !is_test && let Some(app) = self.runtime.app() {
+        if !is_test {
+            let runtime = Arc::clone(&self.runtime);
             tauri::async_runtime::spawn(async move {
                 if let Err(error) =
-                    crate::platform::android::overlay_launch::show_overlay(&app, ceremony_id).await
+                    crate::platform::android::overlay_launch::show_overlay(&runtime, ceremony_id)
+                        .await
                 {
                     log::warn!("Failed to request the Android ceremony overlay: {error}");
                 }
