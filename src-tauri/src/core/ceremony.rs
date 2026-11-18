@@ -56,6 +56,7 @@ impl CeremonyManager {
         };
 
         // 1. Mark active
+        let started = (!is_test).then(chrono::Local::now);
         let ceremony_id = {
             let mut inner = self.runtime.lock();
             if inner.active_ceremony.is_some() {
@@ -72,11 +73,15 @@ impl CeremonyManager {
                     CeremonyKind::Scheduled
                 },
             ));
-            if !is_test {
-                inner.last_activation = Some(chrono::Local::now());
+            if started.is_some() {
+                inner.last_activation = started;
             }
             ceremony_id
         };
+        #[cfg(target_os = "android")]
+        if let Some(started) = started {
+            crate::platform::android::headless::remember_start(started);
+        }
         // 2. Setup flag animation listeners if conditions are met
         #[cfg(desktop)]
         let should_show_flag = {

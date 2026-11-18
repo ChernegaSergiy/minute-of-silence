@@ -4,20 +4,28 @@ use crate::error::{AppError, Result};
 use jni::objects::{GlobalRef, JObject, JString, JValue};
 use jni::{JNIEnv, JavaVM};
 use serde::{Serialize, de::DeserializeOwned};
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 struct Device {
     jvm: JavaVM,
     host: GlobalRef,
+    data_dir: PathBuf,
 }
 
 static DEVICE: OnceLock<Device> = OnceLock::new();
 
-fn connect(env: &mut JNIEnv<'_>, host: &JObject<'_>) -> jni::errors::Result<()> {
+fn connect(
+    env: &mut JNIEnv<'_>,
+    host: &JObject<'_>,
+    directory: &JString<'_>,
+) -> jni::errors::Result<()> {
     if DEVICE.get().is_none() {
+        let directory: String = env.get_string(directory)?.into();
         let _ = DEVICE.set(Device {
             jvm: env.get_java_vm()?,
             host: env.new_global_ref(host)?,
+            data_dir: PathBuf::from(directory),
         });
     }
     Ok(())
@@ -27,10 +35,15 @@ fn connect(env: &mut JNIEnv<'_>, host: &JObject<'_>) -> jni::errors::Result<()> 
 extern "system" fn Java_ua_pp_khvylyna_MinuteOfSilence_CeremonyDevice_connectNative(
     mut env: JNIEnv<'_>,
     host: JObject<'_>,
+    directory: JString<'_>,
 ) {
-    if let Err(error) = connect(&mut env, &host) {
+    if let Err(error) = connect(&mut env, &host, &directory) {
         let _ = env.throw_new("java/lang/IllegalStateException", error.to_string());
     }
+}
+
+pub(super) fn data_dir() -> Option<&'static Path> {
+    DEVICE.get().map(|device| device.data_dir.as_path())
 }
 
 /// Invokes a native operation on the application-scoped Android host.

@@ -33,10 +33,10 @@ class CeremonyDevice private constructor(private val context: Context) {
   var activeOverlayId: String? = null
     private set
 
-  private external fun connectNative()
+  private external fun connectNative(dataDir: String)
 
   init {
-    connectNative()
+    connectNative(context.dataDir.absolutePath)
   }
 
   fun attach(activity: MainActivity) {

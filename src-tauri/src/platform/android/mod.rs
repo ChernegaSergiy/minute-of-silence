@@ -3,6 +3,7 @@ mod autostart;
 pub mod bridge;
 pub mod custom_tabs;
 pub mod device;
+pub mod headless;
 mod media;
 pub mod notification_actions;
 pub mod overlay_launch;

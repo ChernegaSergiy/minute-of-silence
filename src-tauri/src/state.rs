@@ -158,11 +158,10 @@ impl AppState {
     }
 
     pub fn new_with_settings(app_handle: AppHandle, settings: Settings) -> Self {
-        let runtime = Arc::new(CeremonyRuntime::new(
-            settings,
-            #[cfg(not(target_os = "android"))]
-            app_handle.clone(),
-        ));
+        #[cfg(target_os = "android")]
+        let runtime = crate::platform::android::headless::runtime(settings);
+        #[cfg(not(target_os = "android"))]
+        let runtime = Arc::new(CeremonyRuntime::new(settings, app_handle.clone()));
         Self {
             runtime,
             settings_mutex: Mutex::new(()),
