@@ -83,7 +83,10 @@ impl CeremonyScheduler {
         }
 
         // Initial NTP sync
+        #[cfg(not(target_os = "android"))]
         Self::sync_ntp(&self.runtime).await;
+        #[cfg(target_os = "android")]
+        self.sync_ntp_in_background();
 
         // Track the date for which we already sent a reminder,
         // so we don't fire it again on the same day even after restart.
@@ -97,7 +100,10 @@ impl CeremonyScheduler {
             // Periodic NTP sync (every hour)
             let now_local = Local::now();
             if now_local.minute() == 0 && now_local.second() == 0 {
+                #[cfg(not(target_os = "android"))]
                 Self::sync_ntp(&self.runtime).await;
+                #[cfg(target_os = "android")]
+                self.sync_ntp_in_background();
             }
 
             let now = self.get_synchronized_now();
@@ -246,6 +252,12 @@ impl CeremonyScheduler {
             Ok(_) => log::info!("Reminder notification sent ({} min before)", mins_before),
             Err(e) => log::warn!("Failed to send reminder notification: {e}"),
         }
+    }
+
+    #[cfg(target_os = "android")]
+    fn sync_ntp_in_background(&self) {
+        let runtime = Arc::clone(&self.runtime);
+        tauri::async_runtime::spawn(async move { Self::sync_ntp(&runtime).await });
     }
 
     async fn sync_ntp(runtime: &CeremonyRuntime) {
