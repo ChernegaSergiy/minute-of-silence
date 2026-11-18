@@ -2,6 +2,7 @@ pub mod audio;
 mod autostart;
 pub mod bridge;
 mod media;
+pub mod permission;
 pub mod schedule;
 mod volume;
 

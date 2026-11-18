@@ -1,5 +1,6 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.media.AudioAttributes
@@ -7,7 +8,10 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import app.tauri.annotation.Command
+import app.tauri.PermissionState
 import app.tauri.annotation.InvokeArg
+import app.tauri.annotation.Permission
+import app.tauri.annotation.PermissionCallback
 import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
 import app.tauri.plugin.JSObject
@@ -46,11 +50,17 @@ class AudioNameArgs {
   lateinit var name: String
 }
 
+private const val NOTIFICATIONS_ALIAS = "notifications"
+
 /**
  * Native half of the ceremony backend. The Rust side registers this class as
  * the `ceremony` plugin and calls its commands through the Tauri bridge.
  */
-@TauriPlugin
+@TauriPlugin(
+  permissions = [
+    Permission(strings = [Manifest.permission.POST_NOTIFICATIONS], alias = NOTIFICATIONS_ALIAS)
+  ]
+)
 class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
   private val audioManager: AudioManager
     get() = activity.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -245,5 +255,33 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     } catch (e: Exception) {
       invoke.reject("Failed to change the autostart: ${e.message}")
     }
+  }
+
+  /**
+   * Asks the user to allow notifications, which Android 13 and newer require.
+   * Without them the wake-up notification and the one of the service stay
+   * hidden. Answers whether the permission is granted.
+   */
+  @Command
+  fun requestNotificationPermission(invoke: Invoke) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+      getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.GRANTED
+    ) {
+      resolveNotificationPermission(invoke, true)
+      return
+    }
+    requestPermissionForAlias(NOTIFICATIONS_ALIAS, invoke, "notificationPermissionResult")
+  }
+
+  @PermissionCallback
+  private fun notificationPermissionResult(invoke: Invoke) {
+    val granted = getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.GRANTED
+    resolveNotificationPermission(invoke, granted)
+  }
+
+  private fun resolveNotificationPermission(invoke: Invoke, granted: Boolean) {
+    val result = JSObject()
+    result.put("granted", granted)
+    invoke.resolve(result)
   }
 }
