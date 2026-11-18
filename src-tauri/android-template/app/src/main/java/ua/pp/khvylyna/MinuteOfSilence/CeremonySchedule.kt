@@ -65,6 +65,13 @@ object CeremonySchedule {
     )
   }
 
+  /** The next time the notification must re-evaluate the skip status. */
+  fun nextNotificationUpdateMillis(context: Context): Long =
+    CeremonyNotificationState.nextCeremonyMillis(
+      System.currentTimeMillis(),
+      preferences(context).getBoolean(KEY_WEEKDAYS_ONLY, false)
+    )
+
   private fun alarmIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
     context,
     0,
