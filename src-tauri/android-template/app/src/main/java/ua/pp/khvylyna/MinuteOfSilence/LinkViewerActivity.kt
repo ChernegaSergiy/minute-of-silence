@@ -5,10 +5,10 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
+import android.net.http.SslError
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
-import android.webkit.SslError
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
