@@ -1,8 +1,3 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "plugins": {
-    "notification": {
-      "icon": "ic_stat_ceremony"
-    }
-  }
+  "$schema": "https://schema.tauri.app/config/2"
 }
