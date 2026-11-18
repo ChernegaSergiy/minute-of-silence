@@ -29,6 +29,9 @@ import {
   bringWindowToFront,
   getInitialState,
   getStatus,
+  isCeremonyOverlayLaunch,
+  finishCeremonyOverlayLaunch,
+  onCeremonyOverlayLaunch,
   onCeremonyEnd,
   onCeremonyStart,
   saveSettings,
@@ -104,6 +107,11 @@ const useStyles = makeStyles({
     alignItems: "center",
     height: "100%",
   },
+  overlayLaunchSurface: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgb(8, 8, 8)",
+  },
   desktopNav: {
     display: "block",
     "@media (max-width: 600px)": {
@@ -169,6 +177,7 @@ export default function App() {
   const [version, setVersion] = useState("...");
   const [voices, setVoices] = useState<VoiceCapabilities[]>([]);
   const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayOnlyLaunch, setOverlayOnlyLaunch] = useState(false);
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
@@ -201,6 +210,12 @@ export default function App() {
 
       // 1. Atomic startup hydration: fetch all initial state in a single IPC call
       try {
+        setOverlayOnlyLaunch(await isCeremonyOverlayLaunch());
+      } catch (error) {
+        console.warn("Failed to read ceremony overlay launch state:", error);
+      }
+
+      try {
         const init = await getInitialState();
         if (!hasImportedRef.current) {
           setSettings(init.settings);
@@ -229,6 +244,39 @@ export default function App() {
         // ignore background update check errors
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let unregister: (() => Promise<void>) | undefined;
+
+    onCeremonyOverlayLaunch(() => {
+      setOverlayOnlyLaunch(true);
+      getStatus()
+        .then((nextStatus) => {
+          if (!cancelled) setStatus(nextStatus);
+        })
+        .catch((error: unknown) => {
+          console.warn("Failed to refresh status for ceremony overlay:", error);
+        });
+    })
+      .then((listener) => {
+        if (cancelled) {
+          void listener.unregister();
+          return;
+        }
+        unregister = () => listener.unregister();
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          console.warn("Failed to listen for ceremony overlay launch:", error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (unregister) void unregister();
+    };
   }, []);
 
   useEffect(() => {
@@ -304,6 +352,11 @@ export default function App() {
             setShowOverlay(false);
             setCeremonyDurationMs(undefined);
             setIsTestCeremony(false);
+            if (overlayOnlyLaunch) {
+              finishCeremonyOverlayLaunch().catch((error) =>
+                console.warn("Failed to close ceremony overlay activity:", error)
+              );
+            }
           }
         })
       );
@@ -317,7 +370,17 @@ export default function App() {
       cancelled = true;
       unlisteners.forEach((u) => u());
     };
-  }, [settings?.showVisualOverlay, status.ceremonyActive]);
+  }, [settings?.showVisualOverlay, status.ceremonyActive, overlayOnlyLaunch]);
+
+  useEffect(() => {
+    if (!overlayOnlyLaunch || status.ceremonyActive || showOverlay) return;
+    const timeout = setTimeout(() => {
+      finishCeremonyOverlayLaunch()
+        .catch((error) => console.warn("Failed to close inactive ceremony overlay activity:", error))
+        .finally(() => setOverlayOnlyLaunch(false));
+    }, ((settings?.lateStartGraceMinutes ?? 1) + 1) * 60_000);
+    return () => clearTimeout(timeout);
+  }, [overlayOnlyLaunch, settings?.lateStartGraceMinutes, showOverlay, status.ceremonyActive]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -397,8 +460,29 @@ export default function App() {
         theme={prefersDark ? webDarkTheme : webLightTheme}
         style={{ height: "100%" }}
       >
-        <div className={styles.loadingContainer}>
-          <Spinner size="medium" />
+        <div className={overlayOnlyLaunch ? styles.overlayLaunchSurface : styles.loadingContainer}>
+          {!overlayOnlyLaunch && <Spinner size="medium" />}
+        </div>
+      </FluentProvider>
+    );
+  }
+
+  if (overlayOnlyLaunch) {
+    return (
+      <FluentProvider
+        theme={effectiveDark ? webDarkTheme : webLightTheme}
+        style={{ height: "100%" }}
+      >
+        <div className={styles.overlayLaunchSurface}>
+          {settings?.showVisualOverlay && showOverlay && (
+            <Overlay
+              show
+              durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
+              personalDates={personalDates}
+              settings={settings}
+              isTest={isTestCeremony}
+            />
+          )}
         </div>
       </FluentProvider>
     );
