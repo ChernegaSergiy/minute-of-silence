@@ -1,5 +1,7 @@
 pub mod apng;
 pub mod commands;
+#[cfg(test)]
+pub(crate) mod notification_actions;
 #[cfg(desktop)]
 pub mod tray;
 
