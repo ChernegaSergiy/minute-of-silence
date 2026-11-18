@@ -79,3 +79,7 @@ jobs:
         with:
           name: minute-of-silence-android-apks
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+
+      - name: Run Android unit tests
+        run: ./gradlew :app:testUniversalDebugUnitTest
+        working-directory: src-tauri/gen/android
