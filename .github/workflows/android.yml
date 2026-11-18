@@ -48,7 +48,7 @@ jobs:
         run: cp -R src-tauri/android-template/app/. src-tauri/gen/android/app/
 
       - name: Declare ceremony permissions and components in the manifest
-        run: python3 src-tauri/android-template/patch-manifest.py src-tauri/gen/android/app/src/main/AndroidManifest.xml
+        run: git apply src-tauri/android-template/ceremony-manifest.patch
 
       - name: Prepare Android signing keystore
         env:
