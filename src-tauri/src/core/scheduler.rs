@@ -4,26 +4,27 @@ use chrono::{Datelike, FixedOffset, Local, NaiveDate, NaiveTime, Offset, TimeZon
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Listener, Manager};
+#[cfg(target_os = "windows")]
+use tauri::Listener;
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
-use crate::core::audio::{CeremonyAudioBackend, lead_in_pause};
+use crate::core::audio::lead_in_pause;
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
 use crate::core::voices::effective_blocks;
-use crate::state::AppState;
+use crate::state::{AppState, CeremonyRuntime};
 
 /// Scheduler for the daily ceremony.
 pub struct CeremonyScheduler {
-    app: AppHandle,
-    audio: Arc<dyn CeremonyAudioBackend>,
+    runtime: Arc<CeremonyRuntime>,
     voice_durations: HashMap<AnnouncementVoice, Duration>,
     bell_durations: HashMap<AnnouncementVoice, Duration>,
 }
 
 impl CeremonyScheduler {
-    pub fn new(app: AppHandle) -> Self {
-        let audio = app.state::<AppState>().audio.clone();
+    pub(crate) fn new(runtime: Arc<CeremonyRuntime>) -> Self {
+        let audio = Arc::clone(&runtime.audio);
         let mut voice_durations = HashMap::new();
         let mut bell_durations = HashMap::new();
         for voice in [
@@ -54,8 +55,7 @@ impl CeremonyScheduler {
             );
         }
         Self {
-            app,
-            audio,
+            runtime,
             voice_durations,
             bell_durations,
         }
@@ -72,23 +72,17 @@ impl CeremonyScheduler {
     pub async fn run(&self) {
         log::info!("Scheduler loop started");
 
-        // Listen for resume-from-sleep event (Windows)
-        let state = self.app.state::<AppState>();
-        let ntp_service = state.ntp_service.clone();
-        let app_emit_handle = self.app.clone();
-
-        self.app.listen("resume-from-sleep", move |_| {
-            log::info!("Resume-from-sleep event received, forcing NTP sync...");
-            let ntp = ntp_service.clone();
-            let app = app_emit_handle.clone();
-            tauri::async_runtime::spawn(async move {
-                let _ = ntp.sync().await;
-                let _ = app.emit("ntp-synced", ());
+        #[cfg(target_os = "windows")]
+        if let Some(app) = self.runtime.app() {
+            let runtime = Arc::clone(&self.runtime);
+            app.listen("resume-from-sleep", move |_| {
+                let runtime = Arc::clone(&runtime);
+                tauri::async_runtime::spawn(async move { Self::sync_ntp(&runtime).await });
             });
-        });
+        }
 
         // Initial NTP sync
-        self.sync_ntp().await;
+        Self::sync_ntp(&self.runtime).await;
 
         // Track the date for which we already sent a reminder,
         // so we don't fire it again on the same day even after restart.
@@ -102,7 +96,7 @@ impl CeremonyScheduler {
             // Periodic NTP sync (every hour)
             let now_local = Local::now();
             if now_local.minute() == 0 && now_local.second() == 0 {
-                self.sync_ntp().await;
+                Self::sync_ntp(&self.runtime).await;
             }
 
             let now = self.get_synchronized_now();
@@ -111,8 +105,7 @@ impl CeremonyScheduler {
 
             // Reminder notification
             let reminder_info = {
-                let state = self.app.state::<AppState>();
-                let inner = state.lock();
+                let inner = self.runtime.lock();
                 let mins = inner.settings.reminder_minutes_before;
 
                 if !inner.settings.reminder_enabled
@@ -148,8 +141,7 @@ impl CeremonyScheduler {
 
             // Ceremony trigger
             let should_trigger = {
-                let state = self.app.state::<AppState>();
-                let inner = state.lock();
+                let inner = self.runtime.lock();
 
                 if !inner.settings.ceremony_enabled
                     || (inner.settings.weekdays_only && today.weekday().number_from_monday() > 5)
@@ -236,14 +228,12 @@ impl CeremonyScheduler {
             return;
         }
 
-        // Standard path for non-MSIX Windows and Linux
-        let result = self
-            .app
-            .notification()
-            .builder()
-            .title(title)
-            .body(body)
-            .show();
+        let result = {
+            let Some(app) = self.runtime.app() else {
+                return;
+            };
+            app.notification().builder().title(title).body(body).show()
+        };
 
         match result {
             Ok(_) => log::info!("Reminder notification sent ({} min before)", mins_before),
@@ -251,18 +241,18 @@ impl CeremonyScheduler {
         }
     }
 
-    async fn sync_ntp(&self) {
-        let state = self.app.state::<AppState>();
-
-        if state.lock().settings.system_time_only {
-            state.ntp_service.clear_cache();
+    async fn sync_ntp(runtime: &CeremonyRuntime) {
+        if runtime.lock().settings.system_time_only {
+            runtime.ntp_service.clear_cache();
             return;
         }
 
         log::info!("Attempting NTP synchronization...");
-        let _ = state.ntp_service.sync().await;
+        let _ = runtime.ntp_service.sync().await;
         // Notify frontend (it will call get_status and use NtpService's state)
-        let _ = self.app.emit("ntp-synced", ());
+        if let Some(app) = runtime.app() {
+            let _ = app.emit("ntp-synced", ());
+        }
     }
 
     fn is_within_window(&self, now: NaiveTime, target: NaiveTime, grace_minutes: u8) -> bool {
@@ -298,8 +288,7 @@ impl CeremonyScheduler {
     fn get_synchronized_now(&self) -> chrono::DateTime<FixedOffset> {
         let utc_now = Utc::now();
 
-        let state = self.app.state::<AppState>();
-        let ntp_offset = state.ntp_service.get_offset();
+        let ntp_offset = self.runtime.ntp_service.get_offset();
         let corrected_utc = if let Some(offset_ms) = ntp_offset {
             utc_now + chrono::Duration::milliseconds(offset_ms)
         } else {
@@ -328,19 +317,22 @@ impl CeremonyScheduler {
 
     pub async fn trigger_ceremony(&self, is_test: bool) {
         let platform = crate::platform::get_platform();
-        let manager = CeremonyManager::new(self.app.clone(), platform, Arc::clone(&self.audio));
+        let manager = CeremonyManager::new(Arc::clone(&self.runtime), platform);
         manager.run_ceremony(is_test).await;
     }
 }
 
-pub async fn run(app: AppHandle) {
-    let scheduler = CeremonyScheduler::new(app);
+pub(crate) async fn run(runtime: Arc<CeremonyRuntime>) {
+    let scheduler = CeremonyScheduler::new(runtime);
     scheduler.run().await;
 }
 
 pub async fn trigger_now(app: AppHandle, is_test: bool) {
-    let scheduler = CeremonyScheduler::new(app);
-    scheduler.trigger_ceremony(is_test).await;
+    let runtime = Arc::clone(&app.state::<AppState>().runtime);
+    let platform = crate::platform::get_platform();
+    CeremonyManager::new(runtime, platform)
+        .run_ceremony(is_test)
+        .await;
 }
 
 #[cfg(test)]

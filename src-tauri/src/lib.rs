@@ -75,10 +75,9 @@ pub fn run() {
 
             // --- 2. State Management ---
             let settings = Settings::load_from_store(handle);
-            app.manage(AppState::new_with_settings(
-                handle.clone(),
-                settings.clone(),
-            ));
+            let state = AppState::new_with_settings(handle.clone(), settings.clone());
+            state.runtime.attach_app(handle.clone());
+            app.manage(state);
 
             // --- 2.0. Native schedule and autostart (Android) ---
             // Off the setup thread: the calls wait for the answer of the native side.
@@ -185,10 +184,8 @@ pub fn run() {
             }
 
             // --- 4. Core Services ---
-            let app_handle = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                core::scheduler::run(app_handle).await;
-            });
+            let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
+            tauri::async_runtime::spawn(core::scheduler::run(runtime));
 
             // --- 5. Auto Update Check ---
             #[cfg(desktop)]

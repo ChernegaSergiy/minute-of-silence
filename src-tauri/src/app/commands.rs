@@ -323,7 +323,8 @@ pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
         active.id
     };
     let platform = crate::platform::get_platform();
-    crate::core::CeremonyManager::finish_ceremony(app, platform, ceremony_id).await;
+    let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
+    crate::core::CeremonyManager::finish_ceremony(runtime, platform, ceremony_id).await;
     Ok(())
 }
 

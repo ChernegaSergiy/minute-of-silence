@@ -1,41 +1,34 @@
-use crate::core::audio::CeremonyAudioBackend;
 #[cfg(desktop)]
 use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
-use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase};
+use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase, CeremonyRuntime};
 #[cfg(desktop)]
 use rust_i18n::t;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
 #[cfg(desktop)]
 use tauri::WebviewWindowBuilder;
-use tauri::{AppHandle, Emitter, EventId, Listener, Manager};
+use tauri::{AppHandle, Emitter, Manager};
+#[cfg(desktop)]
+use tauri::{EventId, Listener};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
 static PAUSED_PLAYERS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// One-shot anthem listeners of the running ceremony, removed when it finishes.
+#[cfg(desktop)]
 static ANTHEM_LISTENERS: Mutex<Vec<EventId>> = Mutex::new(Vec::new());
 
 /// Orchestrator for the ceremony.
 /// This class manages the sequence of events during the ceremony.
 pub struct CeremonyManager {
-    app: AppHandle,
+    runtime: Arc<CeremonyRuntime>,
     platform: Box<dyn Platform>,
-    audio: Arc<dyn CeremonyAudioBackend>,
 }
 
 impl CeremonyManager {
-    pub fn new(
-        app: AppHandle,
-        platform: Box<dyn Platform>,
-        audio: Arc<dyn CeremonyAudioBackend>,
-    ) -> Self {
-        Self {
-            app,
-            platform,
-            audio,
-        }
+    pub(crate) fn new(runtime: Arc<CeremonyRuntime>, platform: Box<dyn Platform>) -> Self {
+        Self { runtime, platform }
     }
 
     pub async fn run_ceremony(&self, is_test: bool) {
@@ -49,8 +42,7 @@ impl CeremonyManager {
             announcement_voice,
             anthem_voice,
         ) = {
-            let state = self.app.state::<AppState>();
-            let inner = state.lock();
+            let inner = self.runtime.lock();
             (
                 inner.settings.pause_other_players,
                 inner.settings.resume_after_ceremony,
@@ -65,8 +57,7 @@ impl CeremonyManager {
 
         // 1. Mark active
         let ceremony_id = {
-            let state = self.app.state::<AppState>();
-            let mut inner = state.lock();
+            let mut inner = self.runtime.lock();
             if inner.active_ceremony.is_some() {
                 log::info!("Ceremony trigger ignored: a ceremony is already running");
                 return;
@@ -89,16 +80,15 @@ impl CeremonyManager {
         // 2. Setup flag animation listeners if conditions are met
         #[cfg(desktop)]
         let should_show_flag = {
-            let state = self.app.state::<AppState>();
-            let inner = state.lock();
+            let inner = self.runtime.lock();
             inner.settings.show_flag_animation
                 && inner.settings.show_visual_overlay
                 && blocks.contains(&PresetBlock::Anthem)
         };
         #[cfg(desktop)]
-        if should_show_flag {
-            let app_clone = self.app.clone();
-            let start_listener = self.app.once("anthem-start", move |_| {
+        if should_show_flag && let Some(app) = self.runtime.app() {
+            let app_clone = app.clone();
+            let start_listener = app.once("anthem-start", move |_| {
                 let app = app_clone.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Err(e) = WebviewWindowBuilder::new(
@@ -118,8 +108,8 @@ impl CeremonyManager {
                 });
             });
 
-            let app_clone2 = self.app.clone();
-            let end_listener = self.app.once("anthem-end", move |_| {
+            let app_clone2 = app.clone();
+            let end_listener = app.once("anthem-end", move |_| {
                 let app = app_clone2.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Some(window) = app.get_webview_window("flag-animation") {
@@ -136,6 +126,7 @@ impl CeremonyManager {
         // 3. Notify UI with estimated duration (ms)
         let duration_ms: u64 =
             match self
+                .runtime
                 .audio
                 .estimate_duration(&blocks, announcement_voice, anthem_voice)
             {
@@ -152,8 +143,7 @@ impl CeremonyManager {
             "ceremony_id": cfg!(target_os = "android").then_some(ceremony_id),
         });
         #[cfg(target_os = "android")]
-        if !is_test {
-            let app = self.app.clone();
+        if !is_test && let Some(app) = self.runtime.app() {
             tauri::async_runtime::spawn(async move {
                 if let Err(error) =
                     crate::platform::android::overlay_launch::show_overlay(&app, ceremony_id).await
@@ -163,7 +153,9 @@ impl CeremonyManager {
             });
         }
 
-        let _ = self.app.emit("ceremony-start", payload);
+        if let Some(app) = self.runtime.app() {
+            let _ = app.emit("ceremony-start", payload);
+        }
 
         // 3. Pause players
         if should_pause_players {
@@ -198,14 +190,13 @@ impl CeremonyManager {
         }
 
         // 6. Play Audio (Stop previous first)
-        self.audio.stop();
-        let stop_baseline = self.audio.stop_baseline();
+        self.runtime.audio.stop();
+        let stop_baseline = self.runtime.audio.stop_baseline();
         // A stop pressed while the ceremony was still being set up is replayed here.
         // The baseline is taken first, so a stop that arrives after this check
         // still ends the playback through the counter.
         let stop_requested = {
-            let state = self.app.state::<AppState>();
-            let mut inner = state.lock();
+            let mut inner = self.runtime.lock();
             let Some(active) = inner.active_ceremony.as_mut() else {
                 return;
             };
@@ -218,14 +209,13 @@ impl CeremonyManager {
             requested
         };
 
-        let audio_engine = Arc::clone(&self.audio);
-        let app_handle = self.app.clone();
+        let runtime = Arc::clone(&self.runtime);
         let platform_handle = crate::platform::get_platform();
 
         std::thread::spawn(move || {
             if stop_requested {
                 log::info!("Ceremony stopped before playback started");
-            } else if let Err(e) = audio_engine.play_blocks(
+            } else if let Err(e) = runtime.audio.play_blocks(
                 &blocks,
                 target_volume,
                 announcement_voice,
@@ -237,7 +227,7 @@ impl CeremonyManager {
 
             // 7. Finish
             tauri::async_runtime::spawn(async move {
-                CeremonyManager::finish_ceremony(app_handle, platform_handle, ceremony_id).await;
+                CeremonyManager::finish_ceremony(runtime, platform_handle, ceremony_id).await;
             });
         });
     }
@@ -245,6 +235,7 @@ impl CeremonyManager {
     /// Drop the one-shot anthem listeners that did not fire, for example when
     /// the ceremony was stopped before the anthem. Removing a listener that
     /// already fired does nothing.
+    #[cfg(desktop)]
     fn remove_anthem_listeners(app: &AppHandle) {
         let listeners = match ANTHEM_LISTENERS.lock() {
             Ok(mut lock) => std::mem::take(&mut *lock),
@@ -255,10 +246,13 @@ impl CeremonyManager {
         }
     }
 
-    pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>, ceremony_id: u64) {
+    pub(crate) async fn finish_ceremony(
+        runtime: Arc<CeremonyRuntime>,
+        platform: Box<dyn Platform>,
+        ceremony_id: u64,
+    ) {
         let (volume_priority, auto_unmute, should_resume, pending_restart) = {
-            let state = app.state::<AppState>();
-            let mut inner = state.lock();
+            let mut inner = runtime.lock();
             let Some(active) = inner.active_ceremony.as_mut() else {
                 return;
             };
@@ -273,7 +267,11 @@ impl CeremonyManager {
                 inner.pending_restart,
             )
         };
-        Self::remove_anthem_listeners(&app);
+        let app = runtime.app();
+        #[cfg(desktop)]
+        if let Some(app) = &app {
+            Self::remove_anthem_listeners(app);
+        }
 
         #[cfg(target_os = "android")]
         if let Err(error) = crate::platform::android::overlay_launch::end_overlay(ceremony_id).await
@@ -310,7 +308,7 @@ impl CeremonyManager {
         }
 
         // Clear skip_date after successful ceremony
-        {
+        if let Some(app) = &app {
             let state = app.state::<AppState>();
             if state.lock().settings.skip_date.is_some() {
                 if let Err(e) = state.update_settings(|s| {
@@ -322,8 +320,7 @@ impl CeremonyManager {
         }
 
         {
-            let state = app.state::<AppState>();
-            let mut inner = state.lock();
+            let mut inner = runtime.lock();
             if inner
                 .active_ceremony
                 .is_some_and(|ceremony| ceremony.id == ceremony_id)
@@ -332,11 +329,12 @@ impl CeremonyManager {
             }
         }
 
-        let _ = app.emit("ceremony-end", ());
-
-        if pending_restart {
-            log::info!("Executing deferred app restart after ceremony.");
-            app.restart();
+        if let Some(app) = app {
+            let _ = app.emit("ceremony-end", ());
+            if pending_restart {
+                log::info!("Executing deferred app restart after ceremony.");
+                app.restart();
+            }
         }
     }
 }
