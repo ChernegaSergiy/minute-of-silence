@@ -17,6 +17,7 @@ import app.tauri.annotation.Permission
 import app.tauri.annotation.PermissionCallback
 import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
+import app.tauri.plugin.Channel
 import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
 
@@ -56,6 +57,11 @@ class NotificationRequestArgs {
 @InvokeArg
 class AudioNameArgs {
   lateinit var name: String
+}
+
+@InvokeArg
+class NotificationActionHandlerArgs {
+  lateinit var handler: Channel
 }
 
 private const val NOTIFICATIONS_ALIAS = "notifications"
@@ -253,6 +259,20 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     } catch (e: Exception) {
       invoke.reject("Failed to set the wake-up alarm: ${e.message}")
     }
+  }
+
+  /** Connects notification actions to the Rust settings owner. */
+  @Command
+  fun registerNotificationActionHandler(invoke: Invoke) {
+    val args = invoke.parseArgs(NotificationActionHandlerArgs::class.java)
+    val callback: (String, String) -> Unit = { action, targetDate ->
+      val payload = JSObject()
+      payload.put("action", action)
+      payload.put("targetDate", targetDate)
+      args.handler.sendObject(payload)
+    }
+    CeremonyNotificationActions.attach(callback)
+    invoke.resolve()
   }
 
   /** Switches the alarm re-arming after a reboot on or off. */
