@@ -1,6 +1,6 @@
 pub mod apng;
 pub mod commands;
-#[cfg(test)]
+#[cfg(any(target_os = "android", test))]
 pub(crate) mod notification_actions;
 #[cfg(desktop)]
 pub mod tray;

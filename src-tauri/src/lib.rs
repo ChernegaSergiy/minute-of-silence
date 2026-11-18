@@ -84,6 +84,12 @@ pub fn run() {
                 let app_handle = handle.clone();
                 let settings = settings.clone();
                 tauri::async_runtime::spawn(async move {
+                    if let Err(error) =
+                        crate::platform::android::notification_actions::register(app_handle.clone())
+                            .await
+                    {
+                        log::warn!("Failed to register notification actions: {error}");
+                    }
                     // The ceremony is on by default, so the switch may never be turned on
                     // by the user. Ask for notifications once, at the first launch.
                     if settings.ceremony_enabled
