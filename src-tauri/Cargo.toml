@@ -44,7 +44,6 @@ tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 png = "0.18.1"
 base64 = "0.23"
-libloading = "0.8"
 tauri-plugin-clipboard-manager = "2.4"
 khvylyna-core = { path = "../crates/khvylyna-core" }
 
@@ -82,6 +81,9 @@ alsa = "0.11"
 zbus = "5.16"
 cpal = { version = "0.18", features = ["jack"], default-features = false }
 glib = "0.21"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libloading = "0.8"
 
 
 [profile.release]
