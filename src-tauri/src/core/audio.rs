@@ -11,11 +11,15 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, Manager};
+#[cfg(not(target_os = "android"))]
+use tauri::Manager;
+use tauri::{AppHandle, Emitter};
 
 use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
 use crate::core::voices::{VoiceAssets, effective_blocks};
-use crate::error::{AppError, Result};
+#[cfg(not(target_os = "android"))]
+use crate::error::AppError;
+use crate::error::Result;
 
 pub trait CeremonyAudioBackend: Send + Sync + std::fmt::Debug {
     fn stop(&self);
