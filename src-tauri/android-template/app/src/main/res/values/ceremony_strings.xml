@@ -4,5 +4,6 @@
     <string name="ceremony_notification_title">Хвилина мовчання</string>
     <string name="ceremony_notification_start">Чергова хвилина мовчання розпочинається</string>
     <string name="ceremony_notification_scheduled">Наступна церемонія о 09:00</string>
+    <string name="ceremony_notification_skipped">Наступну церемонію буде пропущено</string>
     <string name="ceremony_channel_name">Хвилина мовчання</string>
 </resources>

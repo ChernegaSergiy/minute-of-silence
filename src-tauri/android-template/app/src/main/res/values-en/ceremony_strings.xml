@@ -3,5 +3,6 @@
     <string name="ceremony_notification_title">Minute of Silence</string>
     <string name="ceremony_notification_start">A new minute of silence is beginning</string>
     <string name="ceremony_notification_scheduled">Next ceremony at 09:00</string>
+    <string name="ceremony_notification_skipped">The next ceremony will be skipped</string>
     <string name="ceremony_channel_name">Minute of Silence</string>
 </resources>
