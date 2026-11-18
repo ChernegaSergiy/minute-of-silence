@@ -284,4 +284,24 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     result.put("granted", granted)
     invoke.resolve(result)
   }
+
+  /**
+   * The state of the notification permission: `granted`, `prompt` when the
+   * system dialog can still be shown, or `denied` when it was refused for good.
+   */
+  @Command
+  fun getNotificationPermission(invoke: Invoke) {
+    val state = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+      "granted"
+    } else {
+      when (getPermissionState(NOTIFICATIONS_ALIAS)) {
+        PermissionState.GRANTED -> "granted"
+        PermissionState.DENIED -> "denied"
+        else -> "prompt"
+      }
+    }
+    val result = JSObject()
+    result.put("state", state)
+    invoke.resolve(result)
+  }
 }

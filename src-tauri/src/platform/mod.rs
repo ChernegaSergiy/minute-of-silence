@@ -19,6 +19,7 @@ use macos as sys;
 use windows as sys;
 
 use crate::error::Result;
+use serde::{Deserialize, Serialize};
 
 // Re-exports from system-specific modules
 #[cfg(target_os = "android")]
@@ -103,4 +104,19 @@ pub fn get_platform() -> Box<dyn Platform> {
     return Box::new(macos::MacosPlatform);
     #[cfg(target_os = "android")]
     return Box::new(android::AndroidPlatform);
+}
+
+/// State of the notification permission, as the frontend sees it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub enum NotificationPermission {
+    /// Notifications are allowed.
+    Granted,
+    /// The system dialog can still be shown.
+    Prompt,
+    /// The user refused for good, only the system settings can change it.
+    Denied,
+    /// The platform does not ask for this permission.
+    Unsupported,
 }

@@ -2,6 +2,7 @@
 
 use super::bridge;
 use crate::error::Result;
+use crate::platform::NotificationPermission;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -19,4 +20,16 @@ pub async fn request_notifications() -> Result<bool> {
     let response: PermissionResponse =
         bridge::call_async("requestNotificationPermission", json!({})).await?;
     Ok(response.granted)
+}
+
+#[derive(Deserialize)]
+struct StateResponse {
+    state: NotificationPermission,
+}
+
+/// Returns the state of the notification permission without asking.
+pub async fn status() -> Result<NotificationPermission> {
+    let response: StateResponse =
+        bridge::call_async("getNotificationPermission", json!({})).await?;
+    Ok(response.state)
 }

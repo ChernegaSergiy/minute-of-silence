@@ -8,7 +8,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { AppInitialState, ExportBundle, PersonalDate, Settings, StatusSnapshot } from "../types";
+import type {
+  AppInitialState,
+  ExportBundle,
+  NotificationPermission,
+  PersonalDate,
+  Settings,
+  StatusSnapshot,
+} from "../types";
 
 // Initial State
 
@@ -60,6 +67,12 @@ export async function getStatus(): Promise<StatusSnapshot> {
 
 export async function syncNtpNow(): Promise<StatusSnapshot> {
   return invoke<StatusSnapshot>("sync_ntp_now");
+}
+
+// Notifications
+
+export async function getNotificationPermission(): Promise<NotificationPermission> {
+  return invoke<NotificationPermission>("notification_permission_status");
 }
 
 // Skip / unskip

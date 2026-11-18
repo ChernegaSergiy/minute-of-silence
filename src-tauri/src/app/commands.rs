@@ -153,6 +153,21 @@ pub fn import_settings(
     })
 }
 
+/// Report whether the app may show notifications.
+///
+/// Only Android asks for this permission, other platforms answer `unsupported`.
+#[tauri::command]
+pub async fn notification_permission_status() -> Result<crate::platform::NotificationPermission> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::status().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(crate::platform::NotificationPermission::Unsupported)
+    }
+}
+
 /// Sync the persisted autostart setting with the actual platform state.
 #[tauri::command]
 pub fn sync_autostart_from_system(state: State<'_, AppState>) -> Result<()> {
