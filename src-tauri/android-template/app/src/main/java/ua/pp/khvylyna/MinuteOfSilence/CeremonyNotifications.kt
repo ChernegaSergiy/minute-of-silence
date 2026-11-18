@@ -16,6 +16,7 @@ object CeremonyNotifications {
   const val SERVICE_CHANNEL_ID = "ceremony_service"
   const val WAKE_NOTIFICATION_ID = 1
   const val SERVICE_NOTIFICATION_ID = 2
+  const val EXTRA_CEREMONY_OVERLAY_LAUNCH = "ceremony_overlay_launch"
 
   /**
    * Posts a notification with a full-screen intent that opens the app. When the
@@ -34,7 +35,9 @@ object CeremonyNotifications {
       .setAutoCancel(true)
       .setContentIntent(openApp(context))
     if (CeremonySchedule.shouldShowVisualOverlay(context)) {
-      builder.setFullScreenIntent(openApp(context), true)
+      if (!CeremonySchedule.isNextSkipped(context)) {
+        builder.setFullScreenIntent(openApp(context, true), true)
+      }
     }
     manager(context).notify(WAKE_NOTIFICATION_ID, builder.build())
   }
@@ -92,13 +95,14 @@ object CeremonyNotifications {
     }
   }
 
-  private fun openApp(context: Context): PendingIntent {
+  private fun openApp(context: Context, overlayLaunch: Boolean = false): PendingIntent {
     val intent = Intent(context, MainActivity::class.java).apply {
       flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+      if (overlayLaunch) putExtra(EXTRA_CEREMONY_OVERLAY_LAUNCH, true)
     }
     return PendingIntent.getActivity(
       context,
-      0,
+      if (overlayLaunch) 1 else 0,
       intent,
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )

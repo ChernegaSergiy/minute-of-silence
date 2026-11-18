@@ -1,6 +1,7 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
 import android.os.Bundle
+import android.content.Intent
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.core.graphics.Insets
@@ -8,6 +9,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : TauriActivity() {
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)

@@ -263,6 +263,26 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     }
   }
 
+  /** Whether the activity was opened by the ceremony's full-screen notification. */
+  @Command
+  fun isCeremonyOverlayLaunch(invoke: Invoke) {
+    val result = JSObject()
+    result.put(
+      "launchedForCeremonyOverlay",
+      activity.intent.getBooleanExtra(CeremonyNotifications.EXTRA_CEREMONY_OVERLAY_LAUNCH, false)
+    )
+    invoke.resolve(result)
+  }
+
+  /** Closes the activity after a full-screen ceremony overlay ends. */
+  @Command
+  fun finishCeremonyOverlayLaunch(invoke: Invoke) {
+    if (activity.intent.getBooleanExtra(CeremonyNotifications.EXTRA_CEREMONY_OVERLAY_LAUNCH, false)) {
+      activity.finish()
+    }
+    invoke.resolve()
+  }
+
   /** Connects notification actions to the Rust settings owner. */
   @Command
   fun registerNotificationActionHandler(invoke: Invoke) {
