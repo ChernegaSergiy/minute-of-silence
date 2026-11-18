@@ -54,6 +54,7 @@ class CeremonyDevice private constructor(private val context: Context) {
       "isAudioIdle" -> result.put("idle", audioPlayer.isIdle())
       "stopAudio" -> audioPlayer.stop()
       "getAudioDuration" -> result.put("durationMs", audioPlayer.durationMs(args.getString("name")))
+      "postReminder" -> CeremonyNotifications.postReminder(context, args.getString("title"), args.getString("body"))
       else -> error("Unknown ceremony command: $command")
     }
     return if (result.length() == 0) "null" else result.toString()

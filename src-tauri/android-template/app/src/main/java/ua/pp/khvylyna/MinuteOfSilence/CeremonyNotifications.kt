@@ -17,6 +17,7 @@ object CeremonyNotifications {
   const val SERVICE_NOTIFICATION_ID = 2
   const val EXTRA_OVERLAY_ID = "ceremony_overlay_id"
   private const val OVERLAY_NOTIFICATION_ID = 1
+  private const val REMINDER_NOTIFICATION_TAG = "ceremony_reminder"
 
   /** Posts a full-screen notification when the ceremony actually starts. */
   fun showCeremonyOverlay(context: Context, ceremonyId: String) {
@@ -33,6 +34,19 @@ object CeremonyNotifications {
       .setFullScreenIntent(openApp(context, ceremonyId), true)
       .build()
     manager(context).notify(OVERLAY_NOTIFICATION_ID, notification)
+  }
+
+  /** Posts a reminder without opening the app. */
+  fun postReminder(context: Context, title: String, body: String) {
+    ensureChannel(context)
+    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+      .setSmallIcon(R.drawable.ic_stat_ceremony)
+      .setContentTitle(title)
+      .setContentText(body)
+      .setAutoCancel(true)
+      .setContentIntent(openApp(context))
+      .build()
+    manager(context).notify(REMINDER_NOTIFICATION_TAG, System.currentTimeMillis().toInt(), notification)
   }
 
   /** The quiet ongoing notification of the foreground service. */

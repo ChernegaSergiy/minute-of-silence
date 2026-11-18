@@ -7,6 +7,7 @@ use std::time::Duration;
 #[cfg(target_os = "windows")]
 use tauri::Listener;
 use tauri::{AppHandle, Emitter, Manager};
+#[cfg(not(target_os = "android"))]
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
@@ -228,6 +229,12 @@ impl CeremonyScheduler {
             return;
         }
 
+        #[cfg(target_os = "android")]
+        let result = crate::platform::android::device::call::<()>(
+            "postReminder",
+            serde_json::json!({ "title": title, "body": body }),
+        );
+        #[cfg(not(target_os = "android"))]
         let result = {
             let Some(app) = self.runtime.app() else {
                 return;
