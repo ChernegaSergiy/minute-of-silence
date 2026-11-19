@@ -10,10 +10,10 @@ jobs:
     name: Build Android APK
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -23,6 +23,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -31,12 +32,18 @@ jobs:
 
       - name: Install Android SDK components
         run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973"
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+          key: android-multi-abi
 
       - name: Install frontend dependencies
         run: npm ci
@@ -75,7 +82,7 @@ jobs:
         run: npm run tauri -- android build --ci --split-per-abi --apk
 
       - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: minute-of-silence-android-apks
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
