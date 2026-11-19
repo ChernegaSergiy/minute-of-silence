@@ -157,19 +157,6 @@ impl CeremonyManager {
             "is_test": is_test,
             "ceremony_id": cfg!(target_os = "android").then(|| ceremony_id.to_string()),
         });
-        #[cfg(target_os = "android")]
-        if !is_test {
-            let runtime = Arc::clone(&self.runtime);
-            tauri::async_runtime::spawn(async move {
-                if let Err(error) =
-                    crate::platform::android::overlay_launch::show_overlay(&runtime, ceremony_id)
-                        .await
-                {
-                    log::warn!("Failed to request the Android ceremony overlay: {error}");
-                }
-            });
-        }
-
         if let Some(app) = self.runtime.app() {
             let _ = app.emit("ceremony-start", payload);
         }
@@ -288,12 +275,6 @@ impl CeremonyManager {
         #[cfg(desktop)]
         if let Some(app) = &app {
             Self::remove_anthem_listeners(app);
-        }
-
-        #[cfg(target_os = "android")]
-        if let Err(error) = crate::platform::android::overlay_launch::end_overlay(ceremony_id).await
-        {
-            log::warn!("Failed to dismiss the Android ceremony overlay: {error}");
         }
 
         // Restore volume and mute
