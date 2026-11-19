@@ -247,6 +247,7 @@ export default function App() {
   const [status, setStatus] = useState<StatusSnapshot>(DEFAULT_STATUS);
   const [version, setVersion] = useState("...");
   const [voices, setVoices] = useState<VoiceCapabilities[]>([]);
+  const [supportsVisualOverlay, setSupportsVisualOverlay] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
@@ -288,6 +289,7 @@ export default function App() {
         }
         setPersonalDates(init.personalDates);
         setStatus(init.status);
+        setSupportsVisualOverlay(init.supportsVisualOverlay);
         if (init.status.ceremonyActive && init.activeOverlay) {
           setCeremonyDurationMs(init.activeOverlay.durationMs);
         }
@@ -366,7 +368,7 @@ export default function App() {
     return () => unlisteners.forEach((u) => u());
   }, []);
 
-  const overlayVisible = !!settings?.showVisualOverlay && (showOverlay || status.ceremonyActive);
+  const overlayVisible = supportsVisualOverlay && !!settings?.showVisualOverlay && (showOverlay || status.ceremonyActive);
   useEffect(() => {
     if (overlayVisible) void bringWindowToFront().catch(() => {});
   }, [overlayVisible]);
@@ -612,13 +614,15 @@ export default function App() {
         />
       </FluentProvider>
 
-      <Overlay
-        show={overlayVisible}
-        durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
-        personalDates={personalDates}
-        settings={settings}
-        isTest={isTestCeremony || status.ceremonyIsTest}
-      />
+      {supportsVisualOverlay && (
+        <Overlay
+          show={overlayVisible}
+          durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
+          personalDates={personalDates}
+          settings={settings}
+          isTest={isTestCeremony || status.ceremonyIsTest}
+        />
+      )}
     </>
   );
 }
