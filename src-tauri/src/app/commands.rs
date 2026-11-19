@@ -58,6 +58,7 @@ pub fn get_initial_state(
         active_overlay,
         version,
         voices: crate::core::voices::voice_capabilities(),
+        supports_visual_overlay: cfg!(desktop),
     })
 }
 

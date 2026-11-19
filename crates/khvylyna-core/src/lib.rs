@@ -400,6 +400,7 @@ pub struct AppInitialState {
     /// What each announcement voice can play.
     pub voices: alloc::vec::Vec<VoiceCapabilities>,
     pub active_overlay: Option<ActiveOverlaySnapshot>,
+    pub supports_visual_overlay: bool,
 }
 
 /// Configuration import and validation errors.
