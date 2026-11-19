@@ -85,11 +85,11 @@ jobs:
             echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
           } >> "$GITHUB_ENV"
 
-      - name: Build Android APKs (debug)
+      - name: Build debug APKs (pull request)
         if: github.event_name == 'pull_request'
         run: npm run tauri -- android build --ci --split-per-abi --apk --debug
 
-      - name: Build Android APKs (release)
+      - name: Build release APKs
         if: github.event_name != 'pull_request'
         run: npm run tauri -- android build --ci --split-per-abi --apk
 
