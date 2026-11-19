@@ -89,6 +89,7 @@ type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => v
 
 interface SettingsTabProps {
   settings: Settings;
+  supportsVisualOverlay: boolean;
   status: StatusSnapshot;
   voices: VoiceCapabilities[];
   volumeValue: number;
@@ -257,6 +258,7 @@ function SwitchRow({
 
 export default function SettingsTab({
   settings,
+  supportsVisualOverlay,
   status,
   voices,
   volumeValue,
@@ -527,9 +529,9 @@ export default function SettingsTab({
           checked={settings.reminderEnabled}
           onChange={(v) => onUpdateSetting("reminderEnabled", v)}
         />
-        <Divider />
         {settings.reminderEnabled && (
           <>
+            <Divider />
             <div className={styles.volumeRow}>
               <Dropdown
                 className={styles.dropdown}
@@ -557,26 +559,30 @@ export default function SettingsTab({
                 ))}
               </Dropdown>
             </div>
-            <Divider />
           </>
         )}
-        <SwitchRow
-          id="overlayToggle"
-          label={t("controls.overlay.label")}
-          desc={t("controls.overlay.description")}
-          checked={settings.showVisualOverlay}
-          onChange={(v) => onUpdateSetting("showVisualOverlay", v)}
-        />
-        {settings.showVisualOverlay && (
+        {supportsVisualOverlay && (
           <>
             <Divider />
             <SwitchRow
-              id="flagAnimationToggle"
-              label={t("controls.flag_animation.label")}
-              desc={t("controls.flag_animation.description")}
-              checked={settings.showFlagAnimation}
-              onChange={(v) => onUpdateSetting("showFlagAnimation", v)}
+              id="overlayToggle"
+              label={t("controls.overlay.label")}
+              desc={t("controls.overlay.description")}
+              checked={settings.showVisualOverlay}
+              onChange={(v) => onUpdateSetting("showVisualOverlay", v)}
             />
+            {settings.showVisualOverlay && (
+              <>
+                <Divider />
+                <SwitchRow
+                  id="flagAnimationToggle"
+                  label={t("controls.flag_animation.label")}
+                  desc={t("controls.flag_animation.description")}
+                  checked={settings.showFlagAnimation}
+                  onChange={(v) => onUpdateSetting("showFlagAnimation", v)}
+                />
+              </>
+            )}
           </>
         )}
       </Card>

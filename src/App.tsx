@@ -518,6 +518,7 @@ export default function App() {
                   {selectedNav === "settings" ? (
                     <SettingsTab
                       settings={settings}
+                      supportsVisualOverlay={supportsVisualOverlay}
                       status={status}
                       voices={voices}
                       volumeValue={volumeValue}
