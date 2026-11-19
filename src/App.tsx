@@ -516,7 +516,7 @@ export default function App() {
                   <ChangelogTab />
                 </Suspense>
               ) : (
-                <div className={styles.scroll}>
+                <div key={selectedNav} className={styles.scroll}>
                   {selectedNav === "settings" ? (
                     <SettingsTab
                       settings={settings}
