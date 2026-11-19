@@ -104,8 +104,8 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
 
   /**
    * Asks the user to allow notifications, which Android 13 and newer require.
-   * Without them the wake-up notification and the one of the service stay
-   * hidden. With `onlyOnce` it asks only if the app never asked before. Answers
+   * Without them the reminder and the service notification stay hidden.
+   * With `onlyOnce` it asks only if the app never asked before. Answers
    * whether the permission is granted.
    */
   @Command

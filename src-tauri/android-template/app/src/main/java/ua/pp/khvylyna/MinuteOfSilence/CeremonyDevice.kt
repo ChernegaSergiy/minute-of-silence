@@ -8,7 +8,6 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.annotation.Keep
 import org.json.JSONObject
 import java.lang.ref.WeakReference
@@ -93,20 +92,13 @@ class CeremonyDevice private constructor(private val context: Context) {
 
   private fun requestOverlay(ceremonyId: String) {
     if (context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != true) return
-    try {
-      activeOverlayId = ceremonyId
-      CeremonyNotifications.showCeremonyOverlay(context, ceremonyId)
-    } catch (error: Exception) {
-      activeOverlayId = null
-      Log.w("CeremonyDevice", "Failed to post the ceremony overlay", error)
-    }
+    activeOverlayId = ceremonyId
   }
 
   private fun endOverlay(ceremonyId: String) {
     if (activeOverlayId != ceremonyId) return
     activeOverlayId = null
     activity?.get()?.endCeremonyOverlay(ceremonyId)
-    CeremonyNotifications.finishCeremonyOverlay(context)
   }
 
   private fun requestExclusiveFocus(): Boolean {

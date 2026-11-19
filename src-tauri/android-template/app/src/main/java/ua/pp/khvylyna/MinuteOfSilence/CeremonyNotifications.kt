@@ -16,25 +16,7 @@ object CeremonyNotifications {
   const val SERVICE_CHANNEL_ID = "ceremony_service"
   const val SERVICE_NOTIFICATION_ID = 2
   const val EXTRA_OVERLAY_ID = "ceremony_overlay_id"
-  private const val OVERLAY_NOTIFICATION_ID = 1
   private const val REMINDER_NOTIFICATION_TAG = "ceremony_reminder"
-
-  /** Posts a full-screen notification when the ceremony actually starts. */
-  fun showCeremonyOverlay(context: Context, ceremonyId: String) {
-    ensureChannel(context)
-    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-      .setSmallIcon(R.drawable.ic_stat_ceremony)
-      .setContentTitle(context.getString(R.string.ceremony_notification_title))
-      .setContentText(context.getString(R.string.ceremony_notification_start))
-      .setCategory(NotificationCompat.CATEGORY_ALARM)
-      .setPriority(NotificationCompat.PRIORITY_HIGH)
-      .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-      .setAutoCancel(true)
-      .setContentIntent(openApp(context))
-      .setFullScreenIntent(openApp(context, ceremonyId), true)
-      .build()
-    manager(context).notify(OVERLAY_NOTIFICATION_ID, notification)
-  }
 
   /** Posts a reminder without opening the app. */
   fun postReminder(context: Context, title: String, body: String) {
@@ -102,27 +84,21 @@ object CeremonyNotifications {
     }
   }
 
-  private fun openApp(context: Context, ceremonyId: String? = null): PendingIntent {
+  private fun openApp(context: Context): PendingIntent {
     val intent = Intent(context, MainActivity::class.java).apply {
       flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-      if (ceremonyId != null) putExtra(EXTRA_OVERLAY_ID, ceremonyId)
     }
     return PendingIntent.getActivity(
       context,
-      if (ceremonyId == null) 0 else 1,
+      0,
       intent,
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
   }
 
-  fun finishCeremonyOverlay(context: Context) {
-    manager(context).cancel(OVERLAY_NOTIFICATION_ID)
-  }
-
   private fun ensureChannel(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val name = context.getString(R.string.ceremony_channel_name)
-    // The wake-up notification must pop up, the one of the service must stay quiet.
     manager(context).createNotificationChannel(
       NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_HIGH)
     )
