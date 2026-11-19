@@ -3,10 +3,9 @@ import {
   Button,
   Caption1,
   Card,
-  CardFooter,
   CardHeader,
-  Divider,
   Dropdown,
+  Divider,
   Option,
   Slider,
   Switch,
@@ -101,18 +100,21 @@ interface SettingsTabProps {
 }
 
 const useStyles = makeStyles({
-  notificationsHint: {
-    marginBottom: tokens.spacingVerticalM,
-  },
-  notificationsHintIcon: {
-    color: tokens.colorPaletteYellowForeground1,
-    fontSize: "24px",
+  notificationsRow: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
+    columnGap: tokens.spacingHorizontalM,
+    flexWrap: "wrap",
   },
-  notificationsHintDesc: {
-    color: tokens.colorNeutralForeground3,
+  notificationsIcon: {
+    color: tokens.colorPaletteYellowForeground1,
+    fontSize: "20px",
+    display: "flex",
+  },
+  notificationsText: {
+    flex: "1 1 160px",
+    minWidth: 0,
+    color: tokens.colorNeutralForeground2,
   },
   scheduleCard: {
     marginBottom: tokens.spacingVerticalM,
@@ -412,36 +414,31 @@ export default function SettingsTab({
             ) : undefined
           }
         />
-      </Card>
-
-      {settings.ceremonyEnabled && notificationPermission === "denied" && (
-        <Card className={styles.notificationsHint}>
-          <CardHeader
-            image={
-              <div className={styles.notificationsHintIcon}>
+        {settings.ceremonyEnabled && notificationPermission === "denied" && (
+          <>
+            <Divider />
+            <div className={styles.notificationsRow}>
+              <span className={styles.notificationsIcon}>
                 <Warning20Regular />
-              </div>
-            }
-            header={<Text weight="semibold">{t("controls.notifications_blocked.title")}</Text>}
-            description={
-              <Caption1 className={styles.notificationsHintDesc}>
+              </span>
+              <Caption1 className={styles.notificationsText}>
                 {t("controls.notifications_blocked.description")}
               </Caption1>
-            }
-          />
-          <CardFooter>
-            <Button
-              onClick={() =>
-                openNotificationSettings().catch((err) =>
-                  console.error("Failed to open the notification settings:", err),
-                )
-              }
-            >
-              {t("controls.notifications_blocked.action")}
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
+              <Button
+                appearance="subtle"
+                size="small"
+                onClick={() =>
+                  openNotificationSettings().catch((err) =>
+                    console.error("Failed to open the notification settings:", err),
+                  )
+                }
+              >
+                {t("controls.notifications_blocked.action")}
+              </Button>
+            </div>
+          </>
+        )}
+      </Card>
 
       <Card className={styles.card}>
         <Text size={100} weight="semibold" block>
