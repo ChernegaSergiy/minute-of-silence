@@ -55,6 +55,11 @@ class CeremonyDevice private constructor(private val context: Context) {
       "stopAudio" -> audioPlayer.stop()
       "getAudioDuration" -> result.put("durationMs", audioPlayer.durationMs(args.getString("name")))
       "postReminder" -> CeremonyNotifications.postReminder(context, args.getString("title"), args.getString("body"))
+      "postPersonalDates" -> {
+        val labelsJson = args.getJSONArray("labels")
+        val labels = List(labelsJson.length()) { index -> labelsJson.getString(index) }
+        CeremonyNotifications.postPersonalDates(context, labels)
+      }
       else -> error("Unknown ceremony command: $command")
     }
     return if (result.length() == 0) "null" else result.toString()

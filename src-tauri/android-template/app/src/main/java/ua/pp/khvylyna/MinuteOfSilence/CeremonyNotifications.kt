@@ -16,6 +16,8 @@ object CeremonyNotifications {
   const val SERVICE_CHANNEL_ID = "ceremony_service"
   const val SERVICE_NOTIFICATION_ID = 2
   private const val REMINDER_NOTIFICATION_TAG = "ceremony_reminder"
+  private const val PERSONAL_DATES_NOTIFICATION_TAG = "personal_dates"
+  private const val PERSONAL_DATES_NOTIFICATION_ID = 3
 
   /** Posts a reminder without opening the app. */
   fun postReminder(context: Context, title: String, body: String) {
@@ -28,6 +30,48 @@ object CeremonyNotifications {
       .setContentIntent(openApp(context))
       .build()
     manager(context).notify(REMINDER_NOTIFICATION_TAG, System.currentTimeMillis().toInt(), notification)
+  }
+
+  /** Posts today's personal dates in an expandable notification. */
+  fun postPersonalDates(context: Context, labels: List<String>) {
+    val dates = labels.map { it.trim() }.filter { it.isNotEmpty() }
+    if (dates.isEmpty()) return
+
+    ensureChannel(context)
+    val title = context.getString(R.string.personal_dates_notification_title)
+    val count = context.resources.getQuantityString(
+      R.plurals.personal_dates_notification_count,
+      dates.size,
+      dates.size
+    )
+    val moreCount = dates.size - MAX_INBOX_LINES
+    val summary = if (moreCount > 0) {
+      context.resources.getQuantityString(
+        R.plurals.personal_dates_notification_more,
+        moreCount,
+        moreCount
+      )
+    } else {
+      null
+    }
+    val style = NotificationCompat.InboxStyle()
+      .setBigContentTitle(title)
+      .setSummaryText(summary)
+    dates.take(MAX_INBOX_LINES).forEach { style.addLine(it) }
+
+    val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+      .setSmallIcon(R.drawable.ic_stat_ceremony)
+      .setContentTitle(title)
+      .setContentText(count)
+      .setStyle(style)
+      .setAutoCancel(true)
+      .setContentIntent(openApp(context))
+      .build()
+    manager(context).notify(
+      PERSONAL_DATES_NOTIFICATION_TAG,
+      PERSONAL_DATES_NOTIFICATION_ID,
+      notification
+    )
   }
 
   /** The quiet ongoing notification of the foreground service. */
@@ -108,4 +152,6 @@ object CeremonyNotifications {
 
   private fun manager(context: Context) =
     context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+  private const val MAX_INBOX_LINES = 5
 }
