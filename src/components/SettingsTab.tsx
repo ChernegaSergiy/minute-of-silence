@@ -90,6 +90,7 @@ type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => v
 interface SettingsTabProps {
   settings: Settings;
   supportsVisualOverlay: boolean;
+  supportsMediaResumption: boolean;
   status: StatusSnapshot;
   voices: VoiceCapabilities[];
   volumeValue: number;
@@ -259,6 +260,7 @@ function SwitchRow({
 export default function SettingsTab({
   settings,
   supportsVisualOverlay,
+  supportsMediaResumption,
   status,
   voices,
   volumeValue,
@@ -713,7 +715,7 @@ export default function SettingsTab({
           onChange={(v) => onUpdateSetting("pauseOtherPlayers", v)}
         />
         <Divider />
-        {settings.pauseOtherPlayers && (
+        {supportsMediaResumption && settings.pauseOtherPlayers && (
           <>
             <SwitchRow
               id="resumeToggle"

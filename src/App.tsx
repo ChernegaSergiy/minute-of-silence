@@ -248,6 +248,7 @@ export default function App() {
   const [version, setVersion] = useState("...");
   const [voices, setVoices] = useState<VoiceCapabilities[]>([]);
   const [supportsVisualOverlay, setSupportsVisualOverlay] = useState(false);
+  const [supportsMediaResumption, setSupportsMediaResumption] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
@@ -290,6 +291,7 @@ export default function App() {
         setPersonalDates(init.personalDates);
         setStatus(init.status);
         setSupportsVisualOverlay(init.supportsVisualOverlay);
+        setSupportsMediaResumption(init.supportsMediaResumption);
         setTestRunning(init.status.ceremonyIsTest);
         setVersion(init.version);
         setVoices(init.voices);
@@ -519,6 +521,7 @@ export default function App() {
                     <SettingsTab
                       settings={settings}
                       supportsVisualOverlay={supportsVisualOverlay}
+                      supportsMediaResumption={supportsMediaResumption}
                       status={status}
                       voices={voices}
                       volumeValue={volumeValue}
