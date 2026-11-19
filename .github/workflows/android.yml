@@ -2,12 +2,17 @@ name: Android APK Pipeline
 
 on:
   push:
-    branches: ["feature/**"]
+    branches: ["main", "feature/**", "fix/**", "refactor/**"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build-apk:
-    name: Build Android APK
+    name: Build and Verify Android
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -58,11 +63,13 @@ jobs:
         run: git apply src-tauri/android-template/ceremony-manifest.patch
 
       - name: Prepare Android signing keystore
+        if: github.event_name != 'pull_request'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.TAURI_ANDROID_KEYSTORE_BASE64 }}
         run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/minute-of-silence-release.keystore"
 
       - name: Configure Android release signing
+        if: github.event_name != 'pull_request'
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
@@ -75,18 +82,24 @@ jobs:
             echo "storeFile=$RUNNER_TEMP/minute-of-silence-release.keystore"
           } > keystore.properties
 
-      - name: Build APK
+      - name: Run Android unit tests
+        run: ./gradlew :app:testUniversalDebugUnitTest
+        working-directory: src-tauri/gen/android
+
+      - name: Build debug APKs for pull requests
+        if: github.event_name == 'pull_request'
+        run: npm run tauri -- android build --ci --debug --split-per-abi --apk
+
+      - name: Build signed release APKs
+        if: github.event_name != 'pull_request'
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
         run: npm run tauri -- android build --ci --split-per-abi --apk
 
       - name: Upload APK artifacts
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: minute-of-silence-android-apks
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
-
-      - name: Run Android unit tests
-        run: ./gradlew :app:testUniversalDebugUnitTest
-        working-directory: src-tauri/gen/android
