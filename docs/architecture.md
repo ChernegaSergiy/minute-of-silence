@@ -46,6 +46,8 @@ Earlier designs simulated media key events (such as `VK_MEDIA_PLAY_PAUSE`), but 
 - **macOS:** AppleScript control of running media apps (`osascript` via `NSWorkspace`)
 Active players are tracked dynamically and restored precisely when the ceremony ends.
 
+Android requests transient audio focus when pausing other players is enabled. The ceremony releases its request at the end, after restoring volume and mute; each player decides whether to resume. The desktop resume setting does not apply on Android.
+
 ### Settings persistence
 Settings are serialised as pretty-printed JSON to the platform config directory:
 - **Windows:** `%APPDATA%\minute-of-silence\settings.json`
@@ -74,12 +76,14 @@ Scheduler loop (every 1 s)
                       ├─ Set ceremony_active = true & last_activation = now
                       ├─ On desktop, register anthem-start/end listeners (if flag animation and visual overlay are enabled & blocks contain the anthem)
                       ├─ emit("ceremony-start", { duration_ms })   → Desktop frontend can show overlay
-                      ├─ platform.pause_media()                    → Pause other players (if enabled)
+                      ├─ On desktop, pause other players (if enabled)
                       ├─ Auto-unmute & set system volume priority
+                      ├─ On Android, request temporary audio focus (if enabled)
                       ├─ audio_engine.play_blocks(...)             → Runs on a dedicated thread
                       └─ finish_ceremony()                         ← Called when audio ends
                            ├─ Restore system volume & mute states
-                           ├─ platform.resume_media(...)           → Resume players (if enabled)
+                           ├─ On desktop, resume paused players (if enabled)
+                           ├─ On Android, release this ceremony's audio focus
                            ├─ Clear settings.skip_date from store
                            └─ emit("ceremony-end")                 → Desktop frontend hides overlay
 ```
