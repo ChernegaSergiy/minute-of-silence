@@ -3,13 +3,10 @@ import {
   Button,
   Caption1,
   Card,
+  CardFooter,
   CardHeader,
   Divider,
   Dropdown,
-  MessageBar,
-  MessageBarActions,
-  MessageBarBody,
-  MessageBarTitle,
   Option,
   Slider,
   Switch,
@@ -24,6 +21,7 @@ import {
   ClipboardCheckmarkRegular,
   ClipboardRegular,
   Clock20Regular,
+  Warning20Regular,
   ClockDismiss20Regular,
 } from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
@@ -106,8 +104,15 @@ const useStyles = makeStyles({
   notificationsHint: {
     marginBottom: tokens.spacingVerticalM,
   },
-  notificationsHintTitle: {
-    display: "block",
+  notificationsHintIcon: {
+    color: tokens.colorPaletteYellowForeground1,
+    fontSize: "24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationsHintDesc: {
+    color: tokens.colorNeutralForeground3,
   },
   scheduleCard: {
     marginBottom: tokens.spacingVerticalM,
@@ -410,14 +415,21 @@ export default function SettingsTab({
       </Card>
 
       {settings.ceremonyEnabled && notificationPermission === "denied" && (
-        <MessageBar className={styles.notificationsHint} intent="warning">
-          <MessageBarBody>
-            <MessageBarTitle className={styles.notificationsHintTitle}>
-              {t("controls.notifications_blocked.title")}
-            </MessageBarTitle>
-            {t("controls.notifications_blocked.description")}
-          </MessageBarBody>
-          <MessageBarActions>
+        <Card className={styles.notificationsHint}>
+          <CardHeader
+            image={
+              <div className={styles.notificationsHintIcon}>
+                <Warning20Regular />
+              </div>
+            }
+            header={<Text weight="semibold">{t("controls.notifications_blocked.title")}</Text>}
+            description={
+              <Caption1 className={styles.notificationsHintDesc}>
+                {t("controls.notifications_blocked.description")}
+              </Caption1>
+            }
+          />
+          <CardFooter>
             <Button
               onClick={() =>
                 openNotificationSettings().catch((err) =>
@@ -427,8 +439,8 @@ export default function SettingsTab({
             >
               {t("controls.notifications_blocked.action")}
             </Button>
-          </MessageBarActions>
-        </MessageBar>
+          </CardFooter>
+        </Card>
       )}
 
       <Card className={styles.card}>
