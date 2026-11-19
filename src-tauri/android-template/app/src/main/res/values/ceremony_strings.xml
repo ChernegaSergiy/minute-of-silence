@@ -7,4 +7,17 @@
     <string name="ceremony_notification_skip">Пропустити церемонію</string>
     <string name="ceremony_notification_restore">Поновити церемонію</string>
     <string name="ceremony_channel_name">Хвилина мовчання</string>
+    <string name="personal_dates_notification_title">Особисті дати сьогодні</string>
+    <plurals name="personal_dates_notification_count">
+        <item quantity="one">%d особиста дата</item>
+        <item quantity="few">%d особисті дати</item>
+        <item quantity="many">%d особистих дат</item>
+        <item quantity="other">%d особистої дати</item>
+    </plurals>
+    <plurals name="personal_dates_notification_more">
+        <item quantity="one">і ще %d дата</item>
+        <item quantity="few">і ще %d дати</item>
+        <item quantity="many">і ще %d дат</item>
+        <item quantity="other">і ще %d дати</item>
+    </plurals>
 </resources>
