@@ -1,5 +1,4 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { MouseEvent, PointerEvent } from "react";
 import {
   Button,
   FluentProvider,
@@ -77,37 +76,6 @@ const mobileNavMotion = {
     transitionDuration: "0ms",
   },
 };
-
-function startMobileNavTouch(event: PointerEvent<HTMLButtonElement>) {
-  if (!event.isPrimary) return;
-  const button = event.currentTarget;
-  delete button.dataset.touchPress;
-  if (event.pointerType !== "touch") return;
-  if (event.target instanceof Element && event.target.hasPointerCapture(event.pointerId)) {
-    event.target.releasePointerCapture(event.pointerId);
-  }
-  button.dataset.touchPress = "active";
-}
-
-function clearMobileNavTouch(event: PointerEvent<HTMLButtonElement>) {
-  if (event.pointerType === "touch" && event.isPrimary && event.currentTarget.dataset.touchPress === "active") {
-    delete event.currentTarget.dataset.touchPress;
-  }
-}
-
-function cancelMobileNavTouch(event: PointerEvent<HTMLButtonElement>) {
-  if (event.pointerType === "touch" && event.isPrimary && event.currentTarget.dataset.touchPress === "active") {
-    event.currentTarget.dataset.touchPress = "cancelled";
-  }
-}
-
-function preventCancelledNavClick(event: MouseEvent<HTMLButtonElement>) {
-  if (event.currentTarget.dataset.touchPress !== "cancelled") return;
-  delete event.currentTarget.dataset.touchPress;
-  if (event.detail === 0) return;
-  event.preventDefault();
-  event.stopPropagation();
-}
 
 const DEFAULT_STATUS: StatusSnapshot = {
   ceremonyActive: false,
@@ -190,10 +158,9 @@ const useStyles = makeStyles({
     transitionProperty: "flex-grow",
     ...mobileNavMotion,
     padding: "10px 0 12px",
-    touchAction: "none",
     "&::after": { display: "none" },
     "&::before": { display: "none" },
-    "&[data-touch-press='active']:enabled": mobileNavHighlight,
+    "&:active:enabled": mobileNavHighlight,
     "@media (hover: hover)": {
       "&:enabled:hover": mobileNavHighlight,
     },
@@ -620,11 +587,6 @@ export default function App() {
                     key={value}
                     value={value}
                     className={mergeClasses(styles.mobileNavItem, selected && styles.mobileNavItemSelected)}
-                    onPointerDown={startMobileNavTouch}
-                    onPointerLeave={cancelMobileNavTouch}
-                    onPointerUp={clearMobileNavTouch}
-                    onPointerCancel={clearMobileNavTouch}
-                    onClickCapture={preventCancelledNavClick}
                   >
                     <span className={mergeClasses(styles.mobileNavContent, selected && styles.mobileNavContentSelected)}>
                       <span
