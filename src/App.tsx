@@ -34,10 +34,6 @@ import {
   DocumentBulletList24Regular,
 } from "@fluentui/react-icons";
 
-const SettingsNavIcon = bundleIcon(Settings24Filled, Settings24Regular);
-const CalendarMonthNavIcon = bundleIcon(CalendarMonth24Filled, CalendarMonth24Regular);
-const InfoNavIcon = bundleIcon(Info24Filled, Info24Regular);
-const DocumentBulletListNavIcon = bundleIcon(DocumentBulletList24Filled, DocumentBulletList24Regular);
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import {
@@ -63,6 +59,21 @@ import UpdateDialog, { type UpdateInfo } from "./components/UpdateDialog";
 import { useIdle } from "./hooks/useIdle";
 
 const ChangelogTab = lazy(() => import("./components/ChangelogTab"));
+
+const MOBILE_NAV_TABS = [
+  { value: "settings", label: "tabs.settings", Icon: bundleIcon(Settings24Filled, Settings24Regular) },
+  { value: "personal_dates", label: "tabs.personal_dates", Icon: bundleIcon(CalendarMonth24Filled, CalendarMonth24Regular) },
+  { value: "about", label: "tabs.about", Icon: bundleIcon(Info24Filled, Info24Regular) },
+  { value: "changelog", label: "tabs.changelog", Icon: bundleIcon(DocumentBulletList24Filled, DocumentBulletList24Regular) },
+] as const;
+const MOBILE_NAV_ICON_HEIGHT = "32px";
+const mobileNavMotion = {
+  transitionDuration: tokens.durationFast,
+  transitionTimingFunction: tokens.curveDecelerateMin,
+  "@media (prefers-reduced-motion: reduce)": {
+    transitionDuration: "0ms",
+  },
+};
 
 const DEFAULT_STATUS: StatusSnapshot = {
   ceremonyActive: false,
@@ -140,9 +151,10 @@ const useStyles = makeStyles({
   mobileNavItem: {
     flex: 1,
     minWidth: 0,
+    gridTemplateColumns: "minmax(0, 1fr)",
     height: "72px",
     transitionProperty: "flex-grow",
-    transitionDuration: tokens.durationNormal,
+    ...mobileNavMotion,
     padding: "10px 0 12px",
     "&::after": { display: "none" },
     "&::before": { display: "none" },
@@ -157,15 +169,23 @@ const useStyles = makeStyles({
     justifyContent: "center",
     gap: "4px",
     width: "100%",
-    height: "100%",
+    transform: `translateY(calc((100% - ${MOBILE_NAV_ICON_HEIGHT}) / 2))`,
+    transitionProperty: "transform",
+    ...mobileNavMotion,
+  },
+  mobileNavContentSelected: {
+    transform: "translateY(0)",
   },
   mobileNavIcon: {
     display: "grid",
     placeItems: "center",
     width: "64px",
-    height: "32px",
+    height: MOBILE_NAV_ICON_HEIGHT,
+    flexShrink: 0,
     borderRadius: "16px",
     color: tokens.colorNeutralForeground2,
+    transitionProperty: "background-color, color",
+    ...mobileNavMotion,
     "& svg": { width: "24px", height: "24px" },
   },
   mobileNavIconSelected: {
@@ -174,26 +194,25 @@ const useStyles = makeStyles({
   },
   mobileNavLabel: {
     fontSize: tokens.fontSizeBase200,
-    fontWeight: tokens.fontWeightRegular,
+    fontWeight: tokens.fontWeightSemibold,
     lineHeight: tokens.lineHeightBase200,
+    color: tokens.colorNeutralForeground1,
     letterSpacing: 0,
     whiteSpace: "nowrap",
+    maxWidth: "100%",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    opacity: 0,
+    transform: "translateY(4px)",
+    transitionProperty: "opacity, transform",
+    ...mobileNavMotion,
     // Preview only: the locale strings are upper case, a sentence-case label needs new strings.
     textTransform: "lowercase",
     "&::first-letter": { textTransform: "uppercase" },
   },
-  // Unselected labels stay in the DOM for screen readers, only hidden from the eye.
-  mobileNavLabelHidden: {
-    position: "absolute",
-    width: "1px",
-    height: "1px",
-    overflow: "hidden",
-    clip: "rect(0 0 0 0)",
-    whiteSpace: "nowrap",
-  },
   mobileNavLabelSelected: {
-    fontWeight: tokens.fontWeightSemibold,
-    color: tokens.colorNeutralForeground1,
+    opacity: 1,
+    transform: "translateY(0)",
   },
 });
 
@@ -552,38 +571,28 @@ export default function App() {
               onTabSelect={(_, data) => setSelectedNav(data.value as string)}
               className={styles.mobileNavList}
             >
-              <Tab className={mergeClasses(styles.mobileNavItem, selectedNav === "settings" && styles.mobileNavItemSelected)} value="settings">
-                <span className={styles.mobileNavContent}>
-                  <span className={mergeClasses(styles.mobileNavIcon, selectedNav === "settings" && styles.mobileNavIconSelected)}>
-                    <SettingsNavIcon filled={selectedNav === "settings"} />
-                  </span>
-                  <span className={mergeClasses(styles.mobileNavLabel, selectedNav === "settings" ? styles.mobileNavLabelSelected : styles.mobileNavLabelHidden)}>{t("tabs.settings")}</span>
-                </span>
-              </Tab>
-              <Tab className={mergeClasses(styles.mobileNavItem, selectedNav === "personal_dates" && styles.mobileNavItemSelected)} value="personal_dates">
-                <span className={styles.mobileNavContent}>
-                  <span className={mergeClasses(styles.mobileNavIcon, selectedNav === "personal_dates" && styles.mobileNavIconSelected)}>
-                    <CalendarMonthNavIcon filled={selectedNav === "personal_dates"} />
-                  </span>
-                  <span className={mergeClasses(styles.mobileNavLabel, selectedNav === "personal_dates" ? styles.mobileNavLabelSelected : styles.mobileNavLabelHidden)}>{t("tabs.personal_dates")}</span>
-                </span>
-              </Tab>
-              <Tab className={mergeClasses(styles.mobileNavItem, selectedNav === "about" && styles.mobileNavItemSelected)} value="about">
-                <span className={styles.mobileNavContent}>
-                  <span className={mergeClasses(styles.mobileNavIcon, selectedNav === "about" && styles.mobileNavIconSelected)}>
-                    <InfoNavIcon filled={selectedNav === "about"} />
-                  </span>
-                  <span className={mergeClasses(styles.mobileNavLabel, selectedNav === "about" ? styles.mobileNavLabelSelected : styles.mobileNavLabelHidden)}>{t("tabs.about")}</span>
-                </span>
-              </Tab>
-              <Tab className={mergeClasses(styles.mobileNavItem, selectedNav === "changelog" && styles.mobileNavItemSelected)} value="changelog">
-                <span className={styles.mobileNavContent}>
-                  <span className={mergeClasses(styles.mobileNavIcon, selectedNav === "changelog" && styles.mobileNavIconSelected)}>
-                    <DocumentBulletListNavIcon filled={selectedNav === "changelog"} />
-                  </span>
-                  <span className={mergeClasses(styles.mobileNavLabel, selectedNav === "changelog" ? styles.mobileNavLabelSelected : styles.mobileNavLabelHidden)}>{t("tabs.changelog")}</span>
-                </span>
-              </Tab>
+              {MOBILE_NAV_TABS.map(({ value, label, Icon }) => {
+                const selected = selectedNav === value;
+                return (
+                  <Tab
+                    key={value}
+                    value={value}
+                    className={mergeClasses(styles.mobileNavItem, selected && styles.mobileNavItemSelected)}
+                  >
+                    <span className={mergeClasses(styles.mobileNavContent, selected && styles.mobileNavContentSelected)}>
+                      <span
+                        aria-hidden="true"
+                        className={mergeClasses(styles.mobileNavIcon, selected && styles.mobileNavIconSelected)}
+                      >
+                        <Icon filled={selected} />
+                      </span>
+                      <span className={mergeClasses(styles.mobileNavLabel, selected && styles.mobileNavLabelSelected)}>
+                        {t(label)}
+                      </span>
+                    </span>
+                  </Tab>
+                );
+              })}
             </TabList>
           </nav>
         </div>
