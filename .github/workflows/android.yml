@@ -36,7 +36,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
       - name: Install frontend dependencies
         run: npm ci
@@ -72,7 +72,7 @@ jobs:
         env:
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
-        run: npm run tauri -- android build --ci --target aarch64 --split-per-abi --apk
+        run: npm run tauri -- android build --ci --split-per-abi --apk
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
