@@ -290,9 +290,6 @@ export default function App() {
         setPersonalDates(init.personalDates);
         setStatus(init.status);
         setSupportsVisualOverlay(init.supportsVisualOverlay);
-        if (init.status.ceremonyActive && init.activeOverlay) {
-          setCeremonyDurationMs(init.activeOverlay.durationMs);
-        }
         setTestRunning(init.status.ceremonyIsTest);
         setVersion(init.version);
         setVoices(init.voices);

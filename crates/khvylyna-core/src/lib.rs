@@ -377,16 +377,6 @@ impl PersonalDate {
     }
 }
 
-/// Details needed to join an Android overlay that is already running.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
-#[serde(rename_all = "camelCase")]
-pub struct ActiveOverlaySnapshot {
-    pub ceremony_id: String,
-    pub duration_ms: u32,
-}
-
 /// Combined initial application state for atomic startup hydration.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
@@ -399,7 +389,6 @@ pub struct AppInitialState {
     pub version: String,
     /// What each announcement voice can play.
     pub voices: alloc::vec::Vec<VoiceCapabilities>,
-    pub active_overlay: Option<ActiveOverlaySnapshot>,
     pub supports_visual_overlay: bool,
 }
 

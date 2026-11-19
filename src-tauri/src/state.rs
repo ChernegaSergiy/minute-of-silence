@@ -38,7 +38,6 @@ pub struct ActiveCeremony {
     pub kind: CeremonyKind,
     pub phase: CeremonyPhase,
     pub stop_requested: bool,
-    pub duration_ms: Option<u64>,
 }
 
 impl ActiveCeremony {
@@ -48,7 +47,6 @@ impl ActiveCeremony {
             kind,
             phase: CeremonyPhase::SettingUp,
             stop_requested: false,
-            duration_ms: None,
         }
     }
 }

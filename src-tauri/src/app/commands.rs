@@ -32,22 +32,9 @@ pub fn get_initial_state(
     state: State<'_, AppState>,
 ) -> Result<khvylyna_core::AppInitialState> {
     let personal_dates = get_personal_dates(app.clone())?;
-    let (settings, status, active_overlay) = {
+    let (settings, status) = {
         let inner = state.lock();
-        let overlay = inner.active_ceremony.and_then(|active| {
-            if !cfg!(target_os = "android")
-                || !inner.settings.show_visual_overlay
-                || active.kind != crate::state::CeremonyKind::Scheduled
-                || active.phase == crate::state::CeremonyPhase::Finishing
-            {
-                return None;
-            }
-            Some(khvylyna_core::ActiveOverlaySnapshot {
-                ceremony_id: active.id.to_string(),
-                duration_ms: u32::try_from(active.duration_ms?).ok()?,
-            })
-        });
-        (inner.settings.clone(), state.snapshot_from(&inner), overlay)
+        (inner.settings.clone(), state.snapshot_from(&inner))
     };
     let version = app.package_info().version.to_string();
 
@@ -55,7 +42,6 @@ pub fn get_initial_state(
         settings,
         personal_dates,
         status,
-        active_overlay,
         version,
         voices: crate::core::voices::voice_capabilities(),
         supports_visual_overlay: cfg!(desktop),
