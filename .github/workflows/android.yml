@@ -62,37 +62,36 @@ jobs:
       - name: Declare ceremony permissions and components in the manifest
         run: git apply src-tauri/android-template/ceremony-manifest.patch
 
-      - name: Prepare Android signing keystore
+      # Release signing is only configured where secrets are available.
+      # Pull requests build a debug APK, which uses Gradle's own debug key.
+      - name: Configure release signing
         if: github.event_name != 'pull_request'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.TAURI_ANDROID_KEYSTORE_BASE64 }}
-        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/minute-of-silence-release.keystore"
-
-      - name: Configure Android signing properties
-        env:
-          ANDROID_KEY_ALIAS: ${{ github.event_name == 'pull_request' && 'debug' || secrets.TAURI_ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ github.event_name == 'pull_request' && 'debug' || secrets.TAURI_ANDROID_KEY_PASSWORD }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ github.event_name == 'pull_request' && 'debug' || secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          cd src-tauri/gen/android
+          keystore_path="$RUNNER_TEMP/minute-of-silence-release.keystore"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           {
             echo "keyAlias=$ANDROID_KEY_ALIAS"
             echo "password=$ANDROID_KEYSTORE_PASSWORD"
             echo "keystorePassword=$ANDROID_KEYSTORE_PASSWORD"
-            echo "storeFile=$RUNNER_TEMP/minute-of-silence-release.keystore"
-          } > keystore.properties
+            echo "storeFile=$keystore_path"
+          } > src-tauri/gen/android/keystore.properties
           {
             echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
             echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
           } >> "$GITHUB_ENV"
 
-      - name: Build Android APKs
-        run: |
-          build_args=(--ci --split-per-abi --apk)
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            build_args+=(--debug)
-          fi
-          npm run tauri -- android build "${build_args[@]}"
+      - name: Build Android APKs (debug)
+        if: github.event_name == 'pull_request'
+        run: npm run tauri -- android build --ci --split-per-abi --apk --debug
+
+      - name: Build Android APKs (release)
+        if: github.event_name != 'pull_request'
+        run: npm run tauri -- android build --ci --split-per-abi --apk
 
       - name: Run Android unit tests
         run: ./gradlew :app:testUniversalDebugUnitTest
