@@ -15,7 +15,6 @@ object CeremonyNotifications {
   const val CHANNEL_ID = "ceremony"
   const val SERVICE_CHANNEL_ID = "ceremony_service"
   const val SERVICE_NOTIFICATION_ID = 2
-  const val EXTRA_OVERLAY_ID = "ceremony_overlay_id"
   private const val REMINDER_NOTIFICATION_TAG = "ceremony_reminder"
 
   /** Posts a reminder without opening the app. */

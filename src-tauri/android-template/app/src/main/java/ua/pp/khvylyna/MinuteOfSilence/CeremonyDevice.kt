@@ -1,16 +1,12 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
-import android.app.KeyguardManager
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import androidx.annotation.Keep
 import org.json.JSONObject
-import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
 
 /** Application-scoped platform operations used by the Rust ceremony runner. */
@@ -27,24 +23,11 @@ class CeremonyDevice private constructor(private val context: Context) {
 
   private val audioPlayer = CeremonyAudioPlayer(context)
 
-  private val mainHandler = Handler(Looper.getMainLooper())
-  private var activity: WeakReference<MainActivity>? = null
-  var activeOverlayId: String? = null
-    private set
-
   private external fun connectNative(dataDir: String, language: String)
   external fun startSchedulerNative()
 
   init {
     connectNative(context.dataDir.absolutePath, context.resources.configuration.locales[0].language)
-  }
-
-  fun attach(activity: MainActivity) {
-    this.activity = WeakReference(activity)
-  }
-
-  fun detach(activity: MainActivity) {
-    if (this.activity?.get() === activity) this.activity = null
   }
 
   fun callFromNative(command: String, payload: String): String {
@@ -73,32 +56,9 @@ class CeremonyDevice private constructor(private val context: Context) {
       "stopAudio" -> audioPlayer.stop()
       "getAudioDuration" -> result.put("durationMs", audioPlayer.durationMs(args.getString("name")))
       "postReminder" -> CeremonyNotifications.postReminder(context, args.getString("title"), args.getString("body"))
-      "showCeremonyOverlay" -> {
-        val ceremonyId = args.getString("ceremonyId")
-        mainHandler.post { requestOverlay(ceremonyId) }
-      }
-      "markCeremonyOverlayReady" -> {
-        val ceremonyId = args.getString("ceremonyId")
-        mainHandler.post { activity?.get()?.markCeremonyOverlayReady(ceremonyId) }
-      }
-      "endCeremonyOverlay" -> {
-        val ceremonyId = args.getString("ceremonyId")
-        mainHandler.post { endOverlay(ceremonyId) }
-      }
       else -> error("Unknown ceremony command: $command")
     }
     return if (result.length() == 0) "null" else result.toString()
-  }
-
-  private fun requestOverlay(ceremonyId: String) {
-    if (context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != true) return
-    activeOverlayId = ceremonyId
-  }
-
-  private fun endOverlay(ceremonyId: String) {
-    if (activeOverlayId != ceremonyId) return
-    activeOverlayId = null
-    activity?.get()?.endCeremonyOverlay(ceremonyId)
   }
 
   private fun requestExclusiveFocus(): Boolean {
