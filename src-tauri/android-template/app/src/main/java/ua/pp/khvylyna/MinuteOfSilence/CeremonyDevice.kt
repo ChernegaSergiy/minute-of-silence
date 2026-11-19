@@ -68,7 +68,7 @@ class CeremonyDevice private constructor(private val context: Context) {
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
-      val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+      val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
         .setAudioAttributes(attributes)
         .setOnAudioFocusChangeListener(focusListener)
         .build()
@@ -81,7 +81,7 @@ class CeremonyDevice private constructor(private val context: Context) {
       val result = audioManager.requestAudioFocus(
         focusListener,
         AudioManager.STREAM_MUSIC,
-        AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+        AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
       )
       if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) return false
     }
