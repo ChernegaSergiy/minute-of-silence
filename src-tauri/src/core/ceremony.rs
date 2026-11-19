@@ -14,6 +14,7 @@ use tauri::{Emitter, Manager};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
+#[cfg(desktop)]
 static PAUSED_PLAYERS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// One-shot anthem listeners of the running ceremony, removed when it finishes.
 #[cfg(desktop)]
@@ -32,9 +33,10 @@ impl CeremonyManager {
     }
 
     pub async fn run_ceremony(&self, is_test: bool) {
+        #[cfg(desktop)]
+        let should_resume_players;
         let (
             should_pause_players,
-            should_resume_players,
             volume_priority,
             auto_unmute,
             target_volume,
@@ -43,9 +45,12 @@ impl CeremonyManager {
             anthem_voice,
         ) = {
             let inner = self.runtime.lock();
+            #[cfg(desktop)]
+            {
+                should_resume_players = inner.settings.resume_after_ceremony;
+            }
             (
                 inner.settings.pause_other_players,
-                inner.settings.resume_after_ceremony,
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
                 inner.settings.volume,
@@ -151,6 +156,7 @@ impl CeremonyManager {
         }
 
         // 3. Pause players
+        #[cfg(desktop)]
         if should_pause_players {
             if let Ok(players) = self.platform.pause_media().await {
                 if should_resume_players {
@@ -202,6 +208,18 @@ impl CeremonyManager {
             requested
         };
 
+        #[cfg(target_os = "android")]
+        if should_pause_players && !stop_requested {
+            crate::platform::android::media::request_focus(ceremony_id);
+            let still_playing = self.runtime.lock().active_ceremony.is_some_and(|active| {
+                active.id == ceremony_id && active.phase == CeremonyPhase::Playing
+            });
+            if !still_playing {
+                crate::platform::android::media::release_focus(ceremony_id);
+                return;
+            }
+        }
+
         let runtime = Arc::clone(&self.runtime);
         let platform_handle = crate::platform::get_platform();
 
@@ -244,7 +262,9 @@ impl CeremonyManager {
         platform: Box<dyn Platform>,
         ceremony_id: u64,
     ) {
-        let (volume_priority, auto_unmute, should_resume, pending_restart) = {
+        #[cfg(desktop)]
+        let should_resume;
+        let (volume_priority, auto_unmute, pending_restart) = {
             let mut inner = runtime.lock();
             let Some(active) = inner.active_ceremony.as_mut() else {
                 return;
@@ -253,10 +273,13 @@ impl CeremonyManager {
                 return;
             }
             active.phase = CeremonyPhase::Finishing;
+            #[cfg(desktop)]
+            {
+                should_resume = inner.settings.resume_after_ceremony;
+            }
             (
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
-                inner.settings.resume_after_ceremony,
                 inner.pending_restart,
             )
         };
@@ -284,6 +307,7 @@ impl CeremonyManager {
         }
 
         // Restore media playback
+        #[cfg(desktop)]
         if should_resume {
             let players = {
                 let mut lock = PAUSED_PLAYERS.lock().unwrap();
@@ -293,6 +317,8 @@ impl CeremonyManager {
                 let _ = platform.resume_media(players).await;
             }
         }
+        #[cfg(target_os = "android")]
+        crate::platform::android::media::release_focus(ceremony_id);
 
         // Clear skip_date after successful ceremony
         if let Some(app) = &app {

@@ -4,7 +4,7 @@ pub mod bridge;
 pub mod custom_tabs;
 pub mod device;
 pub mod headless;
-mod media;
+pub(crate) mod media;
 pub mod notification_actions;
 pub mod permission;
 pub mod schedule;
@@ -20,7 +20,6 @@ pub fn apply_autostart_enabled(_app: &tauri::AppHandle, enabled: bool) {
     }
 }
 
-#[async_trait::async_trait]
 impl super::Platform for AndroidPlatform {
     fn get_volume(&self) -> Result<u8> {
         volume::get_volume()
@@ -36,13 +35,5 @@ impl super::Platform for AndroidPlatform {
 
     fn set_mute(&self, mute: bool) -> Result<()> {
         volume::set_mute(mute)
-    }
-
-    async fn pause_media(&self) -> Result<Vec<String>> {
-        media::pause_media().await
-    }
-
-    async fn resume_media(&self, players: Vec<String>) -> Result<()> {
-        media::resume_media(players).await
     }
 }

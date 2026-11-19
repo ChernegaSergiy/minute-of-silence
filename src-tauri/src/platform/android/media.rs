@@ -1,36 +1,32 @@
-//! Pausing and resuming other players through the audio focus.
+//! Temporary Android audio focus owned by a ceremony.
 
 use super::device;
-use crate::error::Result;
 use serde::Deserialize;
 use serde_json::json;
 
-/// Marker returned by [`pause_media`] while the audio focus is held.
-const FOCUS_MARKER: &str = "audio-focus";
-
 #[derive(Deserialize)]
-struct PauseResponse {
+struct FocusResponse {
     granted: bool,
 }
 
-/// Takes the audio focus so that other players pause.
-///
-/// The returned list is empty when Android refused the focus, which tells the
-/// ceremony that there is nothing to resume.
-pub async fn pause_media() -> Result<Vec<String>> {
-    let response: PauseResponse = device::call("pauseMedia", json!({}))?;
-    if response.granted {
-        Ok(vec![FOCUS_MARKER.to_string()])
-    } else {
-        log::warn!("Android did not grant the audio focus, other players keep playing");
-        Ok(Vec::new())
+/// Requests transient focus for the current ceremony.
+pub(crate) fn request_focus(ceremony_id: u64) {
+    match device::call::<FocusResponse>(
+        "requestAudioFocus",
+        json!({ "ceremonyId": ceremony_id.to_string() }),
+    ) {
+        Ok(response) if response.granted => {}
+        Ok(_) => log::warn!("Android did not grant audio focus for the ceremony"),
+        Err(error) => log::warn!("Failed to request Android audio focus: {error}"),
     }
 }
 
-/// Releases the audio focus so that the paused players can resume.
-pub async fn resume_media(players: Vec<String>) -> Result<()> {
-    if players.is_empty() {
-        return Ok(());
+/// Releases focus only if this ceremony acquired it.
+pub(crate) fn release_focus(ceremony_id: u64) {
+    if let Err(error) = device::call::<()>(
+        "releaseAudioFocus",
+        json!({ "ceremonyId": ceremony_id.to_string() }),
+    ) {
+        log::warn!("Failed to release Android audio focus: {error}");
     }
-    device::call("resumeMedia", json!({}))
 }

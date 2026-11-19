@@ -87,7 +87,9 @@ pub trait Platform: Send + Sync {
     fn set_volume(&self, level: u8) -> Result<()>;
     fn is_muted(&self) -> Result<bool>;
     fn set_mute(&self, mute: bool) -> Result<()>;
+    #[cfg(desktop)]
     async fn pause_media(&self) -> Result<Vec<String>>;
+    #[cfg(desktop)]
     async fn resume_media(&self, players: Vec<String>) -> Result<()>;
 }
 

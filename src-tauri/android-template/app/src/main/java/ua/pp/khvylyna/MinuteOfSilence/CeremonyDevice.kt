@@ -15,9 +15,8 @@ class CeremonyDevice private constructor(private val context: Context) {
   private val audioManager: AudioManager
     get() = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-  /** The focus held while other players are paused, API 26 and newer. */
   private var focusRequest: AudioFocusRequest? = null
-  private var holdsFocus = false
+  private var focusCeremonyId: String? = null
 
   private val focusListener = AudioManager.OnAudioFocusChangeListener { }
 
@@ -49,8 +48,8 @@ class CeremonyDevice private constructor(private val context: Context) {
         val direction = if (args.getBoolean("mute")) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE
         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
       }
-      "pauseMedia" -> result.put("granted", requestExclusiveFocus())
-      "resumeMedia" -> abandonFocus()
+      "requestAudioFocus" -> result.put("granted", requestFocus(args.getString("ceremonyId")))
+      "releaseAudioFocus" -> releaseFocus(args.getString("ceremonyId"))
       "enqueueAudio" -> audioPlayer.enqueue(args.getString("name"), args.getDouble("volume").toFloat())
       "isAudioIdle" -> result.put("idle", audioPlayer.isIdle())
       "stopAudio" -> audioPlayer.stop()
@@ -61,9 +60,9 @@ class CeremonyDevice private constructor(private val context: Context) {
     return if (result.length() == 0) "null" else result.toString()
   }
 
-  private fun requestExclusiveFocus(): Boolean {
-    abandonFocus()
-    val granted: Int
+  @Synchronized
+  private fun requestFocus(ceremonyId: String): Boolean {
+    focusCeremonyId?.let { return it == ceremonyId }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val attributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -73,29 +72,34 @@ class CeremonyDevice private constructor(private val context: Context) {
         .setAudioAttributes(attributes)
         .setOnAudioFocusChangeListener(focusListener)
         .build()
+      if (audioManager.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+        return false
+      }
       focusRequest = request
-      granted = audioManager.requestAudioFocus(request)
     } else {
       @Suppress("DEPRECATION")
-      granted = audioManager.requestAudioFocus(
+      val result = audioManager.requestAudioFocus(
         focusListener,
         AudioManager.STREAM_MUSIC,
         AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
       )
+      if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) return false
     }
-    holdsFocus = granted == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-    return holdsFocus
+    focusCeremonyId = ceremonyId
+    return true
   }
 
-  private fun abandonFocus() {
+  @Synchronized
+  private fun releaseFocus(ceremonyId: String) {
+    if (focusCeremonyId != ceremonyId) return
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
       focusRequest = null
-    } else if (holdsFocus) {
+    } else {
       @Suppress("DEPRECATION")
       audioManager.abandonAudioFocus(focusListener)
     }
-    holdsFocus = false
+    focusCeremonyId = null
   }
 
   companion object {
