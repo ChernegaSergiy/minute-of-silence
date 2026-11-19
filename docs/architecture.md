@@ -37,7 +37,7 @@ The scheduler runs as a long-lived Tokio task. It and the Tauri commands share a
 
 On Android, the preparation alarm starts `CeremonyService`, which starts the same Rust scheduler over JNI even when there is no Activity. The runtime reads the persisted Tauri settings and uses the application-scoped Android audio host. The Android Activity attaches to the running runtime instead of creating another scheduler. A scheduled run records its start on disk so restarting the process does not replay it that day.
 
-The service can request a lock-screen overlay only after the scheduled ceremony starts. If Android opens the Activity, it hydrates from the active run and reveals the drawn overlay; playback does not wait for a window or for notification permission.
+On Android, playback does not open the app or depend on notification permission. The visual overlay and anthem flag animation are desktop-only, even if imported settings enable them.
 
 ### Targeted media pausing instead of system-wide key emulation
 Earlier designs simulated media key events (such as `VK_MEDIA_PLAY_PAUSE`), but this was prone to toggling state on already-paused players or failing under certain window focus conditions. Now, the app uses native platform APIs to query active media sessions and pause/resume them selectively:
@@ -72,8 +72,8 @@ Scheduler loop (every 1 s)
             └─ Grace window: [09:00, 09:00 + grace_minutes)        ← late start / wake up
                  └─ trigger_ceremony() (CeremonyManager)
                       ├─ Set ceremony_active = true & last_activation = now
-                      ├─ Register anthem-start/end listeners (if flag animation and visual overlay are enabled & blocks contain the anthem)
-                      ├─ emit("ceremony-start", { duration_ms })   → Frontend shows overlay
+                      ├─ On desktop, register anthem-start/end listeners (if flag animation and visual overlay are enabled & blocks contain the anthem)
+                      ├─ emit("ceremony-start", { duration_ms })   → Desktop frontend can show overlay
                       ├─ platform.pause_media()                    → Pause other players (if enabled)
                       ├─ Auto-unmute & set system volume priority
                       ├─ audio_engine.play_blocks(...)             → Runs on a dedicated thread
@@ -81,5 +81,5 @@ Scheduler loop (every 1 s)
                            ├─ Restore system volume & mute states
                            ├─ platform.resume_media(...)           → Resume players (if enabled)
                            ├─ Clear settings.skip_date from store
-                           └─ emit("ceremony-end")                 → Frontend hides overlay
+                           └─ emit("ceremony-end")                 → Desktop frontend hides overlay
 ```
