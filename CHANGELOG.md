@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Responsive navigation, vertically stacked form fields and adaptive action buttons for narrow screens.
 - Background ceremony playback with the screen off, supported by a foreground service and scheduled app wake-up before the ceremony.
 - Restore the Android ceremony schedule after a device restart or app update when autostart is enabled.
-- Android media volume and mute controls, with pausing and optional resumption of compatible media players during and after the ceremony.
+- Android media volume and mute controls, with temporary audio focus to let compatible players pause during the ceremony.
 - Android notification permission request and an in-app warning with a shortcut to system settings when notifications are blocked.
 - Ukrainian and English Android app names, adaptive launcher icons with themed icon support, and a dedicated upright trident icon for notifications.
 
