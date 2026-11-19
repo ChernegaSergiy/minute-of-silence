@@ -158,6 +158,14 @@ const useStyles = makeStyles({
     padding: "10px 0 12px",
     "&::after": { display: "none" },
     "&::before": { display: "none" },
+    "@media (hover: hover)": {
+      "&:enabled:hover": {
+        "--mobile-nav-icon-hover-background": tokens.colorNeutralBackground2Hover,
+      },
+      "&[aria-selected='true']:enabled:hover": {
+        "--mobile-nav-icon-hover-background": tokens.colorBrandBackground2Hover,
+      },
+    },
   },
   mobileNavItemSelected: {
     flexGrow: 1.8,
@@ -177,6 +185,8 @@ const useStyles = makeStyles({
     transform: "translateY(0)",
   },
   mobileNavIcon: {
+    position: "relative",
+    isolation: "isolate",
     display: "grid",
     placeItems: "center",
     width: "64px",
@@ -187,6 +197,14 @@ const useStyles = makeStyles({
     transitionProperty: "background-color, color",
     ...mobileNavMotion,
     "& svg": { width: "24px", height: "24px" },
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      inset: 0,
+      borderRadius: "inherit",
+      zIndex: -1,
+      backgroundColor: "var(--mobile-nav-icon-hover-background, transparent)",
+    },
   },
   mobileNavIconSelected: {
     backgroundColor: tokens.colorBrandBackground2,
