@@ -155,7 +155,6 @@ impl CeremonyManager {
         let payload = json!({
             "duration_ms": duration_ms,
             "is_test": is_test,
-            "ceremony_id": cfg!(target_os = "android").then(|| ceremony_id.to_string()),
         });
         if let Some(app) = self.runtime.app() {
             let _ = app.emit("ceremony-start", payload);

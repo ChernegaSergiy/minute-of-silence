@@ -6,7 +6,6 @@ pub mod device;
 pub mod headless;
 mod media;
 pub mod notification_actions;
-pub mod overlay_launch;
 pub mod permission;
 pub mod schedule;
 mod volume;

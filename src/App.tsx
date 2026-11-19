@@ -40,7 +40,6 @@ import {
   bringWindowToFront,
   getInitialState,
   getStatus,
-  markCeremonyOverlayReady,
   onCeremonyEnd,
   onCeremonyStart,
   saveSettings,
@@ -249,7 +248,6 @@ export default function App() {
   const [version, setVersion] = useState("...");
   const [voices, setVoices] = useState<VoiceCapabilities[]>([]);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [overlayCeremonyId, setOverlayCeremonyId] = useState<string>();
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
@@ -271,13 +269,6 @@ export default function App() {
 
   const effectiveDark = (settings?.useSystemTheme ?? true) ? prefersDark : settings?.uiTheme === "dark";
 
-  const handleOverlayReady = useCallback(() => {
-    if (overlayCeremonyId === undefined) return;
-    markCeremonyOverlayReady(overlayCeremonyId).catch((error) =>
-      console.warn("Failed to report ceremony overlay readiness:", error)
-    );
-  }, [overlayCeremonyId]);
-
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
@@ -298,7 +289,6 @@ export default function App() {
         setPersonalDates(init.personalDates);
         setStatus(init.status);
         if (init.status.ceremonyActive && init.activeOverlay) {
-          setOverlayCeremonyId(init.activeOverlay.ceremonyId);
           setCeremonyDurationMs(init.activeOverlay.durationMs);
         }
         setTestRunning(init.status.ceremonyIsTest);
@@ -343,7 +333,6 @@ export default function App() {
           setShowOverlay(true);
           setCeremonyDurationMs(payload?.duration_ms);
           setIsTestCeremony(isTest);
-          setOverlayCeremonyId(isTest ? undefined : payload?.ceremony_id ?? undefined);
           refresh();
         }),
         await onCeremonyEnd(() => {
@@ -351,7 +340,6 @@ export default function App() {
           setShowOverlay(false);
           setCeremonyDurationMs(undefined);
           setIsTestCeremony(false);
-          setOverlayCeremonyId(undefined);
           refresh();
         }),
         await listen("ntp-synced", refresh),
@@ -630,7 +618,6 @@ export default function App() {
         personalDates={personalDates}
         settings={settings}
         isTest={isTestCeremony || status.ceremonyIsTest}
-        onReady={overlayCeremonyId === undefined ? undefined : handleOverlayReady}
       />
     </>
   );

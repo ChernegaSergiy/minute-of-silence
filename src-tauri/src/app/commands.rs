@@ -199,24 +199,6 @@ pub async fn open_notification_settings() -> Result<()> {
     }
 }
 
-/// Lets Android reveal a rendered ceremony overlay over the lock screen.
-#[tauri::command]
-pub async fn mark_ceremony_overlay_ready(app: AppHandle, ceremony_id: String) -> Result<()> {
-    #[cfg(target_os = "android")]
-    {
-        let ceremony_id = ceremony_id
-            .parse()
-            .map_err(|_| crate::AppError::Platform("Invalid ceremony ID".into()))?;
-        let state = app.state::<AppState>();
-        crate::platform::android::overlay_launch::mark_ready(&state.runtime, ceremony_id).await
-    }
-    #[cfg(not(target_os = "android"))]
-    {
-        let _ = (app, ceremony_id);
-        Ok(())
-    }
-}
-
 /// Open an About-page link in an Android Custom Tab, or the platform browser.
 #[tauri::command]
 pub async fn open_about_link(_app: AppHandle, url: String) -> Result<()> {

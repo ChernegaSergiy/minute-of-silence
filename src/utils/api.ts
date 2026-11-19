@@ -79,10 +79,6 @@ export async function openNotificationSettings(): Promise<void> {
   return invoke<void>("open_notification_settings");
 }
 
-export async function markCeremonyOverlayReady(ceremonyId: string): Promise<void> {
-  return invoke<void>("mark_ceremony_overlay_ready", { ceremonyId });
-}
-
 export async function openAboutLink(url: string): Promise<void> {
   return invoke<void>("open_about_link", { url });
 }
@@ -120,7 +116,7 @@ export async function getLogContents(): Promise<string> {
 export const CEREMONY_START_EVENT = "ceremony-start";
 export const CEREMONY_END_EVENT = "ceremony-end";
 
-export type CeremonyStartPayload = { duration_ms?: number; is_test?: boolean; ceremony_id?: string | null };
+export type CeremonyStartPayload = { duration_ms?: number; is_test?: boolean };
 
 export function onCeremonyStart(callback: (payload: CeremonyStartPayload) => void): Promise<UnlistenFn> {
   return listen(CEREMONY_START_EVENT, (e) => callback((e.payload as unknown) as CeremonyStartPayload));

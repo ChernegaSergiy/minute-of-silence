@@ -248,7 +248,6 @@ pub fn run() {
             app::commands::sync_autostart_from_system,
             app::commands::notification_permission_status,
             app::commands::open_notification_settings,
-            app::commands::mark_ceremony_overlay_ready,
             app::commands::open_about_link,
             app::commands::get_status,
             app::commands::sync_ntp_now,
