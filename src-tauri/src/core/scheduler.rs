@@ -12,8 +12,12 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
 use crate::core::audio::lead_in_pause;
+#[cfg(any(target_os = "android", test))]
+use crate::core::settings::PersonalDate;
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
 use crate::core::voices::effective_blocks;
+#[cfg(target_os = "android")]
+use crate::state::CeremonyKind;
 use crate::state::{AppState, CeremonyRuntime};
 
 /// Scheduler for the daily ceremony.
@@ -208,6 +212,8 @@ impl CeremonyScheduler {
 
             if should_trigger {
                 log::info!("Ceremony triggered at {}", now_time);
+                #[cfg(target_os = "android")]
+                self.schedule_personal_dates_notification(today, now_time);
                 self.trigger_ceremony(false).await;
             }
         }
@@ -252,6 +258,60 @@ impl CeremonyScheduler {
             Ok(_) => log::info!("Reminder notification sent ({} min before)", mins_before),
             Err(e) => log::warn!("Failed to send reminder notification: {e}"),
         }
+    }
+
+    #[cfg(target_os = "android")]
+    fn schedule_personal_dates_notification(&self, date: NaiveDate, time: NaiveTime) {
+        let Some(app) = self.runtime.app() else {
+            log::warn!("Cannot load personal dates: app handle is unavailable");
+            return;
+        };
+        let dates = match crate::app::commands::get_personal_dates(app) {
+            Ok(dates) => dates,
+            Err(error) => {
+                log::warn!("Failed to load personal dates for notification: {error}");
+                return;
+            }
+        };
+        let labels = personal_date_labels_for_day(&dates, date);
+        if labels.is_empty() {
+            return;
+        }
+
+        let ceremony_time = NaiveTime::MIN + chrono::Duration::hours(9);
+        let delay = ceremony_time
+            .signed_duration_since(time)
+            .to_std()
+            .unwrap_or_default();
+        if delay.is_zero() {
+            if let Err(error) = crate::platform::android::device::call::<()>(
+                "postPersonalDates",
+                serde_json::json!({ "labels": labels }),
+            ) {
+                log::warn!("Failed to post personal dates notification: {error}");
+            }
+            return;
+        }
+
+        let runtime = Arc::clone(&self.runtime);
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(delay).await;
+
+            let ceremony_is_active = runtime
+                .lock()
+                .active_ceremony
+                .is_some_and(|ceremony| ceremony.kind == CeremonyKind::Scheduled);
+            if !ceremony_is_active {
+                return;
+            }
+
+            if let Err(error) = crate::platform::android::device::call::<()>(
+                "postPersonalDates",
+                serde_json::json!({ "labels": labels }),
+            ) {
+                log::warn!("Failed to post personal dates notification: {error}");
+            }
+        });
     }
 
     #[cfg(target_os = "android")]
@@ -341,6 +401,22 @@ impl CeremonyScheduler {
     }
 }
 
+#[cfg(any(target_os = "android", test))]
+fn personal_date_labels_for_day(dates: &[PersonalDate], date: NaiveDate) -> Vec<String> {
+    let month = date.month() as u8;
+    let day = date.day() as u8;
+    let is_non_leap_february_28 = month == 2 && day == 28 && date.with_day(29).is_none();
+
+    dates
+        .iter()
+        .filter(|personal_date| {
+            (personal_date.month == month && personal_date.day == day)
+                || (is_non_leap_february_28 && personal_date.month == 2 && personal_date.day == 29)
+        })
+        .map(|personal_date| personal_date.label.clone())
+        .collect()
+}
+
 pub(crate) async fn run(runtime: Arc<CeremonyRuntime>) {
     let scheduler = CeremonyScheduler::new(runtime);
     scheduler.run().await;
@@ -420,6 +496,67 @@ mod tests {
         assert_eq!(
             CeremonyScheduler::get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
             ANNOUNCEMENT + BELL + METRONOME_LEAD_PAUSE
+        );
+    }
+
+    #[test]
+    fn personal_dates_for_today_include_all_matching_labels() {
+        let dates = [
+            PersonalDate {
+                id: None,
+                month: 11,
+                day: 19,
+                year: 2014,
+                label: "Date one".to_string(),
+            },
+            PersonalDate {
+                id: None,
+                month: 11,
+                day: 19,
+                year: 2020,
+                label: "Date two".to_string(),
+            },
+            PersonalDate {
+                id: None,
+                month: 11,
+                day: 20,
+                year: 2010,
+                label: "Other date".to_string(),
+            },
+        ];
+
+        assert_eq!(
+            personal_date_labels_for_day(
+                &dates,
+                NaiveDate::from_ymd_opt(2026, 11, 19).expect("valid date")
+            ),
+            ["Date one", "Date two"]
+        );
+    }
+
+    #[test]
+    fn february_29_dates_are_included_on_february_28_in_non_leap_years() {
+        let date = PersonalDate {
+            id: None,
+            month: 2,
+            day: 29,
+            year: 2000,
+            label: "Leap day".to_string(),
+        };
+
+        assert_eq!(
+            personal_date_labels_for_day(
+                std::slice::from_ref(&date),
+                NaiveDate::from_ymd_opt(2025, 2, 28).expect("valid date")
+            ),
+            ["Leap day"]
+        );
+        assert!(
+            personal_date_labels_for_day(
+                std::slice::from_ref(&date),
+                NaiveDate::from_ymd_opt(2024, 2, 28).expect("valid date")
+            )
+            .is_empty()
         );
     }
 }
