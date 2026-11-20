@@ -15,7 +15,12 @@ class BootReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     when (intent.action) {
       Intent.ACTION_BOOT_COMPLETED,
-      Intent.ACTION_MY_PACKAGE_REPLACED -> CeremonySchedule.schedule(context)
+      Intent.ACTION_MY_PACKAGE_REPLACED -> {
+        CeremonySchedule.schedule(context)
+        if (CeremonySchedule.isEnabled(context)) {
+          CeremonyService.start(context)
+        }
+      }
     }
   }
 
