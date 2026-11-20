@@ -248,6 +248,8 @@ pub fn run() {
             app::commands::sync_autostart_from_system,
             app::commands::notification_permission_status,
             app::commands::open_notification_settings,
+            app::commands::exact_alarm_permission_status,
+            app::commands::open_exact_alarm_settings,
             app::commands::open_about_link,
             app::commands::get_status,
             app::commands::sync_ntp_now,

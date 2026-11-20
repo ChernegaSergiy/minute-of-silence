@@ -42,3 +42,20 @@ pub async fn status() -> Result<NotificationPermission> {
 pub async fn open_settings() -> Result<()> {
     bridge::call_async("openNotificationSettings", json!({})).await
 }
+
+#[derive(Deserialize)]
+struct ExactAlarmPermissionResponse {
+    granted: bool,
+}
+
+/// Returns whether Android currently allows this app to schedule exact alarms.
+pub async fn exact_alarm_status() -> Result<bool> {
+    let response: ExactAlarmPermissionResponse =
+        bridge::call_async("getExactAlarmPermission", json!({})).await?;
+    Ok(response.granted)
+}
+
+/// Opens Android's exact-alarm access settings.
+pub async fn open_exact_alarm_settings() -> Result<()> {
+    bridge::call_async("openExactAlarmSettings", json!({})).await
+}

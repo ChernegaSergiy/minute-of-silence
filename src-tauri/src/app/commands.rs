@@ -187,6 +187,34 @@ pub async fn open_notification_settings() -> Result<()> {
     }
 }
 
+/// Report whether the app may schedule exact alarms.
+///
+/// Other platforms do not require this Android-specific access.
+#[tauri::command]
+pub async fn exact_alarm_permission_status() -> Result<bool> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::exact_alarm_status().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(true)
+    }
+}
+
+/// Open Android's exact-alarm settings. Other platforms do nothing.
+#[tauri::command]
+pub async fn open_exact_alarm_settings() -> Result<()> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::open_exact_alarm_settings().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(())
+    }
+}
+
 /// Open an About-page link in an Android Custom Tab, or the platform browser.
 #[tauri::command]
 pub async fn open_about_link(_app: AppHandle, url: String) -> Result<()> {
