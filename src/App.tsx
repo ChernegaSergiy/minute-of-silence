@@ -167,10 +167,11 @@ const useStyles = makeStyles({
   rail: {
     display: "flex",
     flexDirection: "column",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     flexShrink: 0,
     width: "96px",
     overflowY: "auto",
+    paddingTop: "12px",
     borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
     backgroundColor: tokens.colorNeutralBackground2,
   },
