@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   Button,
   FluentProvider,
@@ -66,6 +66,33 @@ const MOBILE_NAV_TABS = [
   { value: "changelog", label: "tabs.changelog", Icon: bundleIcon(DocumentBulletList24Filled, DocumentBulletList24Regular) },
 ] as const;
 const MOBILE_NAV_ICON_HEIGHT = "32px";
+
+type NavMode = "bottom" | "rail" | "drawer";
+
+const NAV_QUERIES = {
+  touch: "(pointer: coarse)",
+  lowHeight: "(max-height: 480px)",
+  narrow: "(max-width: 600px)",
+};
+
+function subscribeNavMode(onChange: () => void) {
+  const lists = Object.values(NAV_QUERIES).map((q) => window.matchMedia(q));
+  lists.forEach((l) => l.addEventListener("change", onChange));
+  return () => lists.forEach((l) => l.removeEventListener("change", onChange));
+}
+
+function getNavMode(): NavMode {
+  const m = (q: string) => window.matchMedia(q).matches;
+  if (m(NAV_QUERIES.touch) && m(NAV_QUERIES.lowHeight)) return "rail"; // phone, landscape
+  if (m(NAV_QUERIES.narrow)) return "bottom"; // phone, portrait / narrow window
+  if (m(NAV_QUERIES.touch)) return "rail"; // tablet, foldable
+  return "drawer"; // desktop
+}
+
+function useNavMode(): NavMode {
+  return useSyncExternalStore(subscribeNavMode, getNavMode);
+}
+
 const mobileNavHighlight = {
   "--mobile-nav-icon-highlight-background": `var(--mobile-nav-icon-highlight-color, ${tokens.colorNeutralBackground2Hover})`,
 };
@@ -133,19 +160,35 @@ const useStyles = makeStyles({
     alignItems: "center",
     height: "100%",
   },
-  desktopNav: {
-    display: "block",
-    "@media (max-width: 600px)": {
-      display: "none",
-    },
+  bottomBar: {
+    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+    backgroundColor: tokens.colorNeutralBackground2,
   },
-  mobileNav: {
-    display: "none",
-    "@media (max-width: 600px)": {
-      display: "block",
-      borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
-      backgroundColor: tokens.colorNeutralBackground2,
-    },
+  rail: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    flexShrink: 0,
+    width: "96px",
+    overflowY: "auto",
+    borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
+  railList: {
+    width: "100%",
+    alignItems: "stretch",
+  },
+  railItem: {
+    flex: "0 0 auto",
+    height: "auto",
+    padding: "6px 0",
+    justifyContent: "center",
+  },
+  railItemSelected: {
+    "--mobile-nav-icon-highlight-color": tokens.colorBrandBackground2Hover,
+  },
+  railIcon: {
+    width: "56px",
   },
   mobileNavList: {
     display: "flex",
@@ -444,6 +487,54 @@ export default function App() {
     return update;
   }, []);
 
+  const navMode = useNavMode();
+
+  const renderMobileNav = (variant: "bottom" | "rail") => {
+    const isRail = variant === "rail";
+    return (
+      <nav className={isRail ? styles.rail : styles.bottomBar}>
+        <TabList
+          vertical={isRail}
+          selectedValue={selectedNav}
+          onTabSelect={(_, data) => setSelectedNav(data.value as string)}
+          className={mergeClasses(styles.mobileNavList, isRail && styles.railList)}
+        >
+          {MOBILE_NAV_TABS.map(({ value, label, Icon }) => {
+            const selected = selectedNav === value;
+            const showLabel = selected || isRail;
+            return (
+              <Tab
+                key={value}
+                value={value}
+                className={mergeClasses(
+                  styles.mobileNavItem,
+                  isRail && styles.railItem,
+                  selected && (isRail ? styles.railItemSelected : styles.mobileNavItemSelected)
+                )}
+              >
+                <span className={mergeClasses(styles.mobileNavContent, showLabel && styles.mobileNavContentSelected)}>
+                  <span
+                    aria-hidden="true"
+                    className={mergeClasses(
+                      styles.mobileNavIcon,
+                      isRail && styles.railIcon,
+                      selected && styles.mobileNavIconSelected
+                    )}
+                  >
+                    <Icon filled={selected} />
+                  </span>
+                  <span className={mergeClasses(styles.mobileNavLabel, showLabel && styles.mobileNavLabelSelected)}>
+                    {t(label)}
+                  </span>
+                </span>
+              </Tab>
+            );
+          })}
+        </TabList>
+      </nav>
+    );
+  };
+
   if (!hydrated) {
     return (
       <FluentProvider
@@ -480,8 +571,8 @@ export default function App() {
       >
         <div className={styles.layout}>
           <div className={styles.body}>
+            {navMode === "drawer" && (
             <NavDrawer
-              className={styles.desktopNav}
               selectedValue={selectedNav}
               onNavItemSelect={(_, data) => setSelectedNav(data.value as string)}
               open
@@ -503,6 +594,8 @@ export default function App() {
                 </NavItem>
               </NavDrawerBody>
             </NavDrawer>
+            )}
+            {navMode === "rail" && renderMobileNav("rail")}
 
             <div className={styles.content}>
               {selectedNav === "changelog" ? (
@@ -574,36 +667,7 @@ export default function App() {
               </Button>
             </div>
           )}
-          <nav className={styles.mobileNav}>
-            <TabList
-              selectedValue={selectedNav}
-              onTabSelect={(_, data) => setSelectedNav(data.value as string)}
-              className={styles.mobileNavList}
-            >
-              {MOBILE_NAV_TABS.map(({ value, label, Icon }) => {
-                const selected = selectedNav === value;
-                return (
-                  <Tab
-                    key={value}
-                    value={value}
-                    className={mergeClasses(styles.mobileNavItem, selected && styles.mobileNavItemSelected)}
-                  >
-                    <span className={mergeClasses(styles.mobileNavContent, selected && styles.mobileNavContentSelected)}>
-                      <span
-                        aria-hidden="true"
-                        className={mergeClasses(styles.mobileNavIcon, selected && styles.mobileNavIconSelected)}
-                      >
-                        <Icon filled={selected} />
-                      </span>
-                      <span className={mergeClasses(styles.mobileNavLabel, selected && styles.mobileNavLabelSelected)}>
-                        {t(label)}
-                      </span>
-                    </span>
-                  </Tab>
-                );
-              })}
-            </TabList>
-          </nav>
+          {navMode === "bottom" && renderMobileNav("bottom")}
         </div>
         <UpdateDialog
           updateInfo={showUpdateDialog ? updateInfo : null}
