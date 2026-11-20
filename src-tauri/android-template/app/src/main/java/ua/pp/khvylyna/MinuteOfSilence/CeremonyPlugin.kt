@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import app.tauri.annotation.Command
 import app.tauri.PermissionState
 import app.tauri.annotation.InvokeArg
@@ -112,10 +113,15 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
   @Command
   fun requestNotificationPermission(invoke: Invoke) {
     val args = invoke.parseArgs(NotificationRequestArgs::class.java)
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-      getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.GRANTED
-    ) {
-      resolveNotificationPermission(invoke, true)
+    val notificationsEnabled = NotificationManagerCompat.from(activity).areNotificationsEnabled()
+
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+      resolveNotificationPermission(invoke, notificationsEnabled)
+      return
+    }
+
+    if (getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.GRANTED) {
+      resolveNotificationPermission(invoke, notificationsEnabled)
       return
     }
 
@@ -130,7 +136,8 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
 
   @PermissionCallback
   private fun notificationPermissionResult(invoke: Invoke) {
-    val granted = getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.GRANTED
+    val granted = getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.GRANTED &&
+      NotificationManagerCompat.from(activity).areNotificationsEnabled()
     resolveNotificationPermission(invoke, granted)
   }
 
@@ -146,14 +153,17 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
    */
   @Command
   fun getNotificationPermission(invoke: Invoke) {
-    val state = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-      "granted"
-    } else {
-      when (getPermissionState(NOTIFICATIONS_ALIAS)) {
-        PermissionState.GRANTED -> "granted"
-        PermissionState.DENIED -> "denied"
-        else -> "prompt"
+    val notificationsEnabled = NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    val state = if (!notificationsEnabled) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        getPermissionState(NOTIFICATIONS_ALIAS) != PermissionState.DENIED
+      ) {
+        "prompt"
+      } else {
+        "denied"
       }
+    } else {
+      "granted"
     }
     val result = JSObject()
     result.put("state", state)
