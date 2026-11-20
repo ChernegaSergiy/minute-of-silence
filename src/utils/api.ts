@@ -23,6 +23,10 @@ export async function getInitialState(): Promise<AppInitialState> {
   return invoke<AppInitialState>("get_initial_state");
 }
 
+export async function getPlatform(): Promise<"android" | "desktop"> {
+  return invoke<"android" | "desktop">("get_platform");
+}
+
 // Settings
 
 export async function getSettings(): Promise<Settings> {
