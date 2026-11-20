@@ -148,9 +148,6 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalM,
     padding: tokens.spacingVerticalL,
     ...shorthands.borderTop("1px", "solid", tokens.colorNeutralStroke2),
-    "@media (max-width: 600px)": {
-      gap: tokens.spacingHorizontalS,
-    },
   },
   buttonBarButton: {
     "@media (max-width: 600px)": {
