@@ -35,8 +35,10 @@ import type {
 } from "../types";
 import {
   exportSettings,
+  getExactAlarmPermission,
   getNotificationPermission,
   importSettings,
+  openExactAlarmSettings,
   openNotificationSettings,
   skipNext,
   unskipNext,
@@ -294,6 +296,7 @@ export default function SettingsTab({
   };
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermission>("unsupported");
+  const [exactAlarmPermission, setExactAlarmPermission] = useState<boolean | null>(null);
 
   // The permission changes outside of the app, in the system dialog or settings,
   // so it is read again whenever the app comes back to the foreground.
@@ -305,6 +308,11 @@ export default function SettingsTab({
           if (active) setNotificationPermission(permission);
         })
         .catch((err) => console.error("Failed to read the notification permission:", err));
+      getExactAlarmPermission()
+        .then((granted) => {
+          if (active) setExactAlarmPermission(granted);
+        })
+        .catch((err) => console.error("Failed to read exact-alarm access:", err));
     };
     refresh();
     window.addEventListener("focus", refresh);
@@ -434,6 +442,33 @@ export default function SettingsTab({
                 }
               >
                 {t("controls.notifications_blocked.action")}
+              </Button>
+            </div>
+          </>
+        )}
+        {settings.ceremonyEnabled && exactAlarmPermission === false && (
+          <>
+            <Divider />
+            <div className={styles.notificationsRow}>
+              <span className={styles.notificationsIcon}>
+                <Warning20Regular />
+              </span>
+              <div className={styles.notificationsText}>
+                <Text size={200} weight="semibold" block>
+                  {t("controls.exact_alarm_blocked.title")}
+                </Text>
+                <Caption1>{t("controls.exact_alarm_blocked.description")}</Caption1>
+              </div>
+              <Button
+                appearance="subtle"
+                size="small"
+                onClick={() =>
+                  openExactAlarmSettings().catch((err) =>
+                    console.error("Failed to open exact-alarm settings:", err),
+                  )
+                }
+              >
+                {t("controls.exact_alarm_blocked.action")}
               </Button>
             </div>
           </>
