@@ -49,6 +49,11 @@
       "description": "Without notifications the ceremony may not start on time while the app is closed.",
       "action": "Open settings"
     },
+    "exact_alarm_blocked": {
+      "title": "Exact start is unavailable",
+      "description": "Allow exact scheduling in system settings so Android does not delay the ceremony.",
+      "action": "Open settings"
+    },
     "autostart": {
       "label": "Autostart on system boot",
       "description": "Allows the program to start automatically with the system."
