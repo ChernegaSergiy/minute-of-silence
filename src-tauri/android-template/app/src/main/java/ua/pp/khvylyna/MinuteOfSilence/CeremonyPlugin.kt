@@ -2,6 +2,7 @@ package ua.pp.khvylyna.MinuteOfSilence
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -177,6 +178,35 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
       invoke.resolve()
     } catch (e: Exception) {
       invoke.reject("Failed to open the notification settings: ${e.message}")
+    }
+  }
+
+  /** Returns whether this app can currently schedule exact alarms. */
+  @Command
+  fun getExactAlarmPermission(invoke: Invoke) {
+    val granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+      (activity.getSystemService(Context.ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms()
+    val result = JSObject()
+    result.put("granted", granted)
+    invoke.resolve(result)
+  }
+
+  /** Opens Android's exact-alarm access screen when the access is missing. */
+  @Command
+  fun openExactAlarmSettings(invoke: Invoke) {
+    try {
+      val alarmManager = activity.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+        invoke.resolve()
+        return
+      }
+
+      val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+        .setData(Uri.parse("package:${activity.packageName}"))
+      activity.startActivity(intent)
+      invoke.resolve()
+    } catch (e: Exception) {
+      invoke.reject("Failed to open the exact-alarm settings: ${e.message}")
     }
   }
 }
