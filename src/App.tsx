@@ -68,7 +68,7 @@ const MOBILE_NAV_TABS = [
 ] as const;
 const MOBILE_NAV_ICON_HEIGHT = "32px";
 
-type NavMode = "bottom" | "rail" | "drawer";
+type NavMode = "bottom" | "rail" | "drawer" | "compact-drawer";
 
 const NAV_QUERIES = {
   touch: "(pointer: coarse)",
@@ -83,9 +83,8 @@ function subscribeNavMode(onChange: () => void) {
 }
 
 function getNavMode(platform: "android" | "desktop" | null): NavMode {
-  if (platform === "desktop") return "drawer";
-
   const m = (q: string) => window.matchMedia(q).matches;
+  if (platform === "desktop") return m(NAV_QUERIES.narrow) ? "compact-drawer" : "drawer";
   if (m(NAV_QUERIES.lowHeight)) return "rail";
   if (m(NAV_QUERIES.narrow)) return "bottom";
   return "rail";
@@ -124,6 +123,12 @@ const useStyles = makeStyles({
     display: "flex",
     flex: 1,
     ...shorthands.overflow("hidden"),
+  },
+  compactDesktopNavItem: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 0,
+    paddingInline: 0,
   },
   content: {
     flex: 1,
@@ -576,8 +581,9 @@ export default function App() {
       >
         <div className={styles.layout}>
           <div className={styles.body}>
-            {navMode === "drawer" && (
+            {(navMode === "drawer" || navMode === "compact-drawer") && (
             <NavDrawer
+              style={navMode === "compact-drawer" ? { width: "64px" } : undefined}
               selectedValue={selectedNav}
               onNavItemSelect={(_, data) => setSelectedNav(data.value as string)}
               open
@@ -585,17 +591,41 @@ export default function App() {
               density="small"
             >
               <NavDrawerBody key={selectedNav}>
-                <NavItem value="settings" icon={<Settings20Regular />}>
-                  {t("tabs.settings")}
+                <NavItem
+                  value="settings"
+                  icon={<Settings20Regular />}
+                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  aria-label={t("tabs.settings")}
+                  title={t("tabs.settings")}
+                >
+                  {navMode === "drawer" && t("tabs.settings")}
                 </NavItem>
-                <NavItem value="personal_dates" icon={<CalendarMonth20Regular />}>
-                  {t("tabs.personal_dates")}
+                <NavItem
+                  value="personal_dates"
+                  icon={<CalendarMonth20Regular />}
+                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  aria-label={t("tabs.personal_dates")}
+                  title={t("tabs.personal_dates")}
+                >
+                  {navMode === "drawer" && t("tabs.personal_dates")}
                 </NavItem>
-                <NavItem value="about" icon={<Info20Regular />}>
-                  {t("tabs.about")}
+                <NavItem
+                  value="about"
+                  icon={<Info20Regular />}
+                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  aria-label={t("tabs.about")}
+                  title={t("tabs.about")}
+                >
+                  {navMode === "drawer" && t("tabs.about")}
                 </NavItem>
-                <NavItem value="changelog" icon={<DocumentBulletList20Regular />}>
-                  {t("tabs.changelog")}
+                <NavItem
+                  value="changelog"
+                  icon={<DocumentBulletList20Regular />}
+                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  aria-label={t("tabs.changelog")}
+                  title={t("tabs.changelog")}
+                >
+                  {navMode === "drawer" && t("tabs.changelog")}
                 </NavItem>
               </NavDrawerBody>
             </NavDrawer>
