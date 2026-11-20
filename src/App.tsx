@@ -129,7 +129,7 @@ const useStyles = makeStyles({
     minWidth: "44px",
     paddingInline: tokens.spacingHorizontalMNudge,
   },
-  compactDesktopNavIcon: {
+  navItemIcon: {
     pointerEvents: "none",
   },
   content: {
@@ -595,9 +595,7 @@ export default function App() {
               <NavDrawerBody key={selectedNav}>
                 <NavItem
                   value="settings"
-                  icon={navMode === "compact-drawer"
-                    ? { children: <Settings20Regular />, className: styles.compactDesktopNavIcon }
-                    : <Settings20Regular />}
+                  icon={{ children: <Settings20Regular />, className: styles.navItemIcon }}
                   className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.settings")}
                   title={t("tabs.settings")}
@@ -606,9 +604,7 @@ export default function App() {
                 </NavItem>
                 <NavItem
                   value="personal_dates"
-                  icon={navMode === "compact-drawer"
-                    ? { children: <CalendarMonth20Regular />, className: styles.compactDesktopNavIcon }
-                    : <CalendarMonth20Regular />}
+                  icon={{ children: <CalendarMonth20Regular />, className: styles.navItemIcon }}
                   className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.personal_dates")}
                   title={t("tabs.personal_dates")}
@@ -617,9 +613,7 @@ export default function App() {
                 </NavItem>
                 <NavItem
                   value="about"
-                  icon={navMode === "compact-drawer"
-                    ? { children: <Info20Regular />, className: styles.compactDesktopNavIcon }
-                    : <Info20Regular />}
+                  icon={{ children: <Info20Regular />, className: styles.navItemIcon }}
                   className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.about")}
                   title={t("tabs.about")}
@@ -628,9 +622,7 @@ export default function App() {
                 </NavItem>
                 <NavItem
                   value="changelog"
-                  icon={navMode === "compact-drawer"
-                    ? { children: <DocumentBulletList20Regular />, className: styles.compactDesktopNavIcon }
-                    : <DocumentBulletList20Regular />}
+                  icon={{ children: <DocumentBulletList20Regular />, className: styles.navItemIcon }}
                   className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.changelog")}
                   title={t("tabs.changelog")}
