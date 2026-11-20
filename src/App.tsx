@@ -653,7 +653,7 @@ export default function App() {
           {selectedNav === "settings" && (
             <div className={styles.buttonBar}>
               <Button
-                className={styles.buttonBarButton}
+                className={platform === "android" ? styles.buttonBarButton : undefined}
                 icon={testRunning ? <Stop20Regular /> : <Play20Regular />}
                 appearance="secondary"
                 onClick={testRunning ? stopTestCeremony : triggerCeremonyNow}
@@ -662,7 +662,7 @@ export default function App() {
                 {testRunning ? t("buttons.stop") : t("buttons.test")}
               </Button>
               <Button
-                className={styles.buttonBarButton}
+                className={platform === "android" ? styles.buttonBarButton : undefined}
                 icon={<Save20Regular />}
                 appearance="primary"
                 disabled={!hydrated || !isDirty}
