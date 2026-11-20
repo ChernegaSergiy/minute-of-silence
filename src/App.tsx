@@ -124,12 +124,6 @@ const useStyles = makeStyles({
     flex: 1,
     ...shorthands.overflow("hidden"),
   },
-  compactDesktopNavItem: {
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 0,
-    paddingInline: 0,
-  },
   content: {
     flex: 1,
     display: "flex",
@@ -594,7 +588,6 @@ export default function App() {
                 <NavItem
                   value="settings"
                   icon={<Settings20Regular />}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.settings")}
                   title={t("tabs.settings")}
                 >
@@ -603,7 +596,6 @@ export default function App() {
                 <NavItem
                   value="personal_dates"
                   icon={<CalendarMonth20Regular />}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.personal_dates")}
                   title={t("tabs.personal_dates")}
                 >
@@ -612,7 +604,6 @@ export default function App() {
                 <NavItem
                   value="about"
                   icon={<Info20Regular />}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.about")}
                   title={t("tabs.about")}
                 >
@@ -621,7 +612,6 @@ export default function App() {
                 <NavItem
                   value="changelog"
                   icon={<DocumentBulletList20Regular />}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
                   aria-label={t("tabs.changelog")}
                   title={t("tabs.changelog")}
                 >
