@@ -16,6 +16,16 @@ use crate::{
     state::{AppState, StatusSnapshot},
 };
 
+/// Return the current application platform for frontend-specific behavior.
+#[tauri::command]
+pub fn get_platform() -> &'static str {
+    if cfg!(target_os = "android") {
+        "android"
+    } else {
+        "desktop"
+    }
+}
+
 // Settings
 
 /// Retrieve current application settings from runtime state.

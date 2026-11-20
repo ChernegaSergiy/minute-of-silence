@@ -264,6 +264,7 @@ pub fn run() {
             app::commands::export_settings,
             app::commands::import_settings,
             app::commands::get_settings,
+            app::commands::get_platform,
             app::commands::get_initial_state,
             app::commands::save_settings,
             app::commands::reset_settings,
