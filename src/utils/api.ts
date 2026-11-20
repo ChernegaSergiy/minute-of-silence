@@ -79,6 +79,14 @@ export async function openNotificationSettings(): Promise<void> {
   return invoke<void>("open_notification_settings");
 }
 
+export async function getExactAlarmPermission(): Promise<boolean> {
+  return invoke<boolean>("exact_alarm_permission_status");
+}
+
+export async function openExactAlarmSettings(): Promise<void> {
+  return invoke<void>("open_exact_alarm_settings");
+}
+
 export async function openAboutLink(url: string): Promise<void> {
   return invoke<void>("open_about_link", { url });
 }
