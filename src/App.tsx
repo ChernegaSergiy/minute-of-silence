@@ -39,6 +39,7 @@ import { listen } from "@tauri-apps/api/event";
 import {
   bringWindowToFront,
   getInitialState,
+  getPlatform,
   getStatus,
   onCeremonyEnd,
   onCeremonyStart,
@@ -81,16 +82,17 @@ function subscribeNavMode(onChange: () => void) {
   return () => lists.forEach((l) => l.removeEventListener("change", onChange));
 }
 
-function getNavMode(): NavMode {
+function getNavMode(platform: "android" | "desktop" | null): NavMode {
+  if (platform === "desktop") return "drawer";
+
   const m = (q: string) => window.matchMedia(q).matches;
-  if (m(NAV_QUERIES.touch) && m(NAV_QUERIES.lowHeight)) return "rail"; // phone, landscape
-  if (m(NAV_QUERIES.narrow)) return "bottom"; // phone, portrait / narrow window
-  if (m(NAV_QUERIES.touch)) return "rail"; // tablet, foldable
-  return "drawer"; // desktop
+  if (m(NAV_QUERIES.lowHeight)) return "rail";
+  if (m(NAV_QUERIES.narrow)) return "bottom";
+  return "rail";
 }
 
-function useNavMode(): NavMode {
-  return useSyncExternalStore(subscribeNavMode, getNavMode);
+function useNavMode(platform: "android" | "desktop" | null): NavMode {
+  return useSyncExternalStore(subscribeNavMode, () => getNavMode(platform));
 }
 
 const mobileNavHighlight = {
@@ -293,6 +295,7 @@ export default function App() {
   const [voices, setVoices] = useState<VoiceCapabilities[]>([]);
   const [supportsVisualOverlay, setSupportsVisualOverlay] = useState(false);
   const [supportsMediaResumption, setSupportsMediaResumption] = useState(false);
+  const [platform, setPlatform] = useState<"android" | "desktop" | null>(null);
   const [showOverlay, setShowOverlay] = useState(false);
   const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
@@ -326,7 +329,8 @@ export default function App() {
 
       // 1. Atomic startup hydration: fetch all initial state in a single IPC call
       try {
-        const init = await getInitialState();
+        const [init, runtimePlatform] = await Promise.all([getInitialState(), getPlatform()]);
+        setPlatform(runtimePlatform);
         if (!hasImportedRef.current) {
           setSettings(init.settings);
           setInitialSettings(init.settings);
@@ -488,7 +492,7 @@ export default function App() {
     return update;
   }, []);
 
-  const navMode = useNavMode();
+  const navMode = useNavMode(platform);
 
   const renderMobileNav = (variant: "bottom" | "rail") => {
     const isRail = variant === "rail";
