@@ -20,12 +20,19 @@ diff --git a/src-tauri/gen/android/app/src/main/AndroidManifest.xml b/src-tauri/
              android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
              android:launchMode="singleTask"
              android:label="@string/main_activity_title"
-@@ -33,5 +42,28 @@
+@@ -33,5 +42,35 @@
              android:name="android.support.FILE_PROVIDER_PATHS"
              android:resource="@xml/file_paths" />
          </provider>
 +        <!-- minute-of-silence-ceremony:components -->
 +        <receiver android:name=".CeremonyAlarmReceiver" android:exported="false" />
++
++        <receiver android:name=".CeremonyTimeChangedReceiver" android:exported="false">
++            <intent-filter>
++                <action android:name="android.intent.action.TIME_SET" />
++                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
++            </intent-filter>
++        </receiver>
 +
 +        <!-- Disabled until the autostart setting is switched on. -->
 +        <receiver
