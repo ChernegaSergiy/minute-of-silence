@@ -129,6 +129,40 @@ const useStyles = makeStyles({
     minWidth: "44px",
     paddingInline: tokens.spacingHorizontalMNudge,
   },
+  desktopNavDrawer: {
+    flexShrink: 0,
+    transitionProperty: "width",
+    transitionDuration: tokens.durationNormal,
+    transitionTimingFunction: tokens.curveDecelerateMin,
+    "@media (prefers-reduced-motion: reduce)": {
+      transitionDuration: "0ms",
+    },
+  },
+  desktopNavItem: {
+    transitionProperty: "width",
+    transitionDuration: tokens.durationNormal,
+    transitionTimingFunction: tokens.curveDecelerateMin,
+    "@media (prefers-reduced-motion: reduce)": {
+      transitionDuration: "0ms",
+    },
+  },
+  desktopNavLabel: {
+    display: "inline-block",
+    maxWidth: "200px",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    opacity: 1,
+    transitionProperty: "max-width, opacity",
+    transitionDuration: tokens.durationNormal,
+    transitionTimingFunction: tokens.curveDecelerateMin,
+    "@media (prefers-reduced-motion: reduce)": {
+      transitionDuration: "0ms",
+    },
+  },
+  compactDesktopNavLabel: {
+    maxWidth: 0,
+    opacity: 0,
+  },
   navItemIcon: {
     pointerEvents: "none",
   },
@@ -582,7 +616,8 @@ export default function App() {
           <div className={styles.body}>
             {(navMode === "drawer" || navMode === "compact-drawer") && (
             <NavDrawer
-              style={navMode === "compact-drawer" ? { width: "64px" } : undefined}
+              className={styles.desktopNavDrawer}
+              style={{ width: navMode === "compact-drawer" ? "64px" : "260px" }}
               selectedValue={selectedNav}
               onNavItemSelect={(_, data) => setSelectedNav(data.value as string)}
               open
@@ -593,38 +628,62 @@ export default function App() {
                 <NavItem
                   value="settings"
                   icon={{ children: <Settings20Regular />, className: styles.navItemIcon }}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  className={mergeClasses(
+                    styles.desktopNavItem,
+                    navMode === "compact-drawer" && styles.compactDesktopNavItem
+                  )}
                   aria-label={t("tabs.settings")}
                   title={t("tabs.settings")}
                 >
-                  {navMode === "drawer" && t("tabs.settings")}
+                  <span className={mergeClasses(
+                    styles.desktopNavLabel,
+                    navMode === "compact-drawer" && styles.compactDesktopNavLabel
+                  )}>{t("tabs.settings")}</span>
                 </NavItem>
                 <NavItem
                   value="personal_dates"
                   icon={{ children: <CalendarMonth20Regular />, className: styles.navItemIcon }}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  className={mergeClasses(
+                    styles.desktopNavItem,
+                    navMode === "compact-drawer" && styles.compactDesktopNavItem
+                  )}
                   aria-label={t("tabs.personal_dates")}
                   title={t("tabs.personal_dates")}
                 >
-                  {navMode === "drawer" && t("tabs.personal_dates")}
+                  <span className={mergeClasses(
+                    styles.desktopNavLabel,
+                    navMode === "compact-drawer" && styles.compactDesktopNavLabel
+                  )}>{t("tabs.personal_dates")}</span>
                 </NavItem>
                 <NavItem
                   value="about"
                   icon={{ children: <Info20Regular />, className: styles.navItemIcon }}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  className={mergeClasses(
+                    styles.desktopNavItem,
+                    navMode === "compact-drawer" && styles.compactDesktopNavItem
+                  )}
                   aria-label={t("tabs.about")}
                   title={t("tabs.about")}
                 >
-                  {navMode === "drawer" && t("tabs.about")}
+                  <span className={mergeClasses(
+                    styles.desktopNavLabel,
+                    navMode === "compact-drawer" && styles.compactDesktopNavLabel
+                  )}>{t("tabs.about")}</span>
                 </NavItem>
                 <NavItem
                   value="changelog"
                   icon={{ children: <DocumentBulletList20Regular />, className: styles.navItemIcon }}
-                  className={navMode === "compact-drawer" ? styles.compactDesktopNavItem : undefined}
+                  className={mergeClasses(
+                    styles.desktopNavItem,
+                    navMode === "compact-drawer" && styles.compactDesktopNavItem
+                  )}
                   aria-label={t("tabs.changelog")}
                   title={t("tabs.changelog")}
                 >
-                  {navMode === "drawer" && t("tabs.changelog")}
+                  <span className={mergeClasses(
+                    styles.desktopNavLabel,
+                    navMode === "compact-drawer" && styles.compactDesktopNavLabel
+                  )}>{t("tabs.changelog")}</span>
                 </NavItem>
               </NavDrawerBody>
             </NavDrawer>
