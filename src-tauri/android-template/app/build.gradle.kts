@@ -1,5 +1,4 @@
 import java.util.Properties
-import java.io.FileInputStream
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -15,6 +14,13 @@ val tauriProperties = Properties().apply {
     }
 }
 
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+
 android {
     compileSdk = 37
     namespace = "ua.pp.khvylyna.MinuteOfSilence"
@@ -27,14 +33,19 @@ android {
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
     signingConfigs {
-        create("release") {
-            val keystorePropertiesFile = rootProject.file("keystore.properties")
-            val keystoreProperties = Properties()
-            keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keystorePassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["keystorePassword"] as String
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                    ?: error("Missing keyAlias in keystore.properties")
+                keyPassword = keystoreProperties.getProperty("keystorePassword")
+                    ?: error("Missing keystorePassword in keystore.properties")
+                storeFile = file(
+                    keystoreProperties.getProperty("storeFile")
+                        ?: error("Missing storeFile in keystore.properties"),
+                )
+                storePassword = keystoreProperties.getProperty("keystorePassword")
+                    ?: error("Missing keystorePassword in keystore.properties")
+            }
         }
     }
     buildTypes {
@@ -51,7 +62,7 @@ android {
             }
         }
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
                enable = true
             }
