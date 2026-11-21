@@ -429,9 +429,12 @@ export default function SettingsTab({
               <span className={styles.notificationsIcon}>
                 <Warning20Regular />
               </span>
-              <Caption1 className={styles.notificationsText}>
-                {t("controls.notifications_blocked.description")}
-              </Caption1>
+              <div className={styles.notificationsText}>
+                <Text size={200} weight="semibold" block>
+                  {t("controls.notifications_blocked.title")}
+                </Text>
+                <Caption1>{t("controls.notifications_blocked.description")}</Caption1>
+              </div>
               <Button
                 appearance="subtle"
                 size="small"
