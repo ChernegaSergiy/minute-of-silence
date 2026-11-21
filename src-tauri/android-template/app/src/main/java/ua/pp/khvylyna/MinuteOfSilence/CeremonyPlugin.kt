@@ -156,7 +156,7 @@ class CeremonyPlugin(private val activity: Activity) : Plugin(activity) {
     val notificationsEnabled = NotificationManagerCompat.from(activity).areNotificationsEnabled()
     val state = if (!notificationsEnabled) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        getPermissionState(NOTIFICATIONS_ALIAS) != PermissionState.DENIED
+        getPermissionState(NOTIFICATIONS_ALIAS) == PermissionState.PROMPT
       ) {
         "prompt"
       } else {
