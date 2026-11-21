@@ -84,7 +84,7 @@ object CeremonyNotifications {
     } else {
       R.string.ceremony_notification_scheduled
     }
-    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+    val builder = NotificationCompat.Builder(context, SERVICE_CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_stat_ceremony)
       .setContentTitle(context.getString(R.string.ceremony_notification_title))
       .setContentText(context.getString(text))
