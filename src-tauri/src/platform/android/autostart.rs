@@ -9,5 +9,12 @@ use serde_json::json;
 
 /// Switches the alarm re-arming after a reboot on or off.
 pub fn set_enabled(enabled: bool) -> Result<()> {
-    bridge::call("setAutostart", json!({ "enabled": enabled }))
+    tauri::async_runtime::spawn(async move {
+        if let Err(error) =
+            bridge::call_async::<()>("setAutostart", json!({ "enabled": enabled })).await
+        {
+            log::warn!("Failed to apply the autostart setting: {error}");
+        }
+    });
+    Ok(())
 }
