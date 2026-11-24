@@ -1,6 +1,7 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
 import java.util.GregorianCalendar
+import java.util.Locale
 import java.util.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -112,6 +113,18 @@ class CeremonyWakeTimeTest {
   fun skipsTheSkippedDay() {
     val now = at(kyiv, 2026, 11, 18, 6, 0)
     assertEquals(at(kyiv, 2026, 11, 19, 8, 59), wake(now, skipDate = "2026-11-18"))
+  }
+
+  @Test
+  fun skipsTheSkippedDayWithThaiDefaultLocale() {
+    val previousLocale = Locale.getDefault()
+    try {
+      Locale.setDefault(Locale.forLanguageTag("th-TH"))
+      val now = at(kyiv, 2026, 11, 18, 6, 0)
+      assertEquals(at(kyiv, 2026, 11, 19, 8, 59), wake(now, skipDate = "2026-11-18"))
+    } finally {
+      Locale.setDefault(previousLocale)
+    }
   }
 
   @Test
