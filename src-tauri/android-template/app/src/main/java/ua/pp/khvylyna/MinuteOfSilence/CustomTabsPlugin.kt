@@ -2,6 +2,7 @@ package ua.pp.khvylyna.MinuteOfSilence
 
 import android.app.Activity
 import android.net.Uri
+import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
@@ -33,6 +34,7 @@ class CustomTabsPlugin(private val activity: Activity) : Plugin(activity) {
             .launchUrl(activity, uri)
           invoke.resolve()
         } catch (error: Exception) {
+          Toast.makeText(activity, R.string.about_link_open_failed, Toast.LENGTH_SHORT).show()
           invoke.reject("Failed to open the link: ${error.message}")
         }
       }
