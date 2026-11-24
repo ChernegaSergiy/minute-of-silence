@@ -50,13 +50,14 @@ pub async fn register(app: AppHandle) -> Result<()> {
 fn apply_request(app: &AppHandle, request: NotificationActionRequest) -> Result<()> {
     let state = app.state::<AppState>();
     let mut changed = false;
-    let settings = state.update_settings(|settings| {
+    state.update_settings(|settings| {
         changed = request.apply(settings, chrono::Local::now());
     })?;
     if changed {
         let _ = app.emit("status-updated", ());
     } else {
-        schedule::configure(&settings)?;
+        let (settings, generation) = state.schedule_configuration();
+        schedule::configure(&settings, generation)?;
     }
     Ok(())
 }

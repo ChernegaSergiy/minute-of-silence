@@ -277,12 +277,22 @@ impl AppState {
     ///
     /// If settings have not changed, this is a no-op.
     pub fn apply_settings_update(&self, new_settings: Settings) {
+        #[cfg(target_os = "android")]
+        let mut schedule_generation = None;
         let (old_settings, changed) = {
             let mut inner = self.lock();
             let old = inner.settings.clone();
             if old == new_settings {
                 (old, false)
             } else {
+                #[cfg(target_os = "android")]
+                if old.ceremony_enabled != new_settings.ceremony_enabled
+                    || old.weekdays_only != new_settings.weekdays_only
+                    || old.skip_date != new_settings.skip_date
+                {
+                    schedule_generation =
+                        Some(crate::platform::android::schedule::next_configuration_generation());
+                }
                 inner.settings = new_settings.clone();
                 (old, true)
             }
@@ -305,10 +315,7 @@ impl AppState {
         }
 
         #[cfg(target_os = "android")]
-        if old_settings.ceremony_enabled != new_settings.ceremony_enabled
-            || old_settings.weekdays_only != new_settings.weekdays_only
-            || old_settings.skip_date != new_settings.skip_date
-        {
+        if let Some(generation) = schedule_generation {
             let settings = new_settings.clone();
             let ceremony_turned_on =
                 !old_settings.ceremony_enabled && new_settings.ceremony_enabled;
@@ -324,7 +331,9 @@ impl AppState {
                     }
                 }
                 let _ = tauri::async_runtime::spawn_blocking(move || {
-                    if let Err(e) = crate::platform::android::schedule::configure(&settings) {
+                    if let Err(e) =
+                        crate::platform::android::schedule::configure(&settings, generation)
+                    {
                         log::warn!("Failed to update the wake-up alarm: {}", e);
                     }
                 })
@@ -354,6 +363,14 @@ impl AppState {
                 let _ = app_handle.emit("ntp-synced", ());
             });
         }
+    }
+
+    #[cfg(target_os = "android")]
+    pub(crate) fn schedule_configuration(&self) -> (Settings, u64) {
+        let inner = self.lock();
+        let settings = inner.settings.clone();
+        let generation = crate::platform::android::schedule::next_configuration_generation();
+        (settings, generation)
     }
 }
 

@@ -84,7 +84,8 @@ pub fn run() {
             #[cfg(target_os = "android")]
             {
                 let app_handle = handle.clone();
-                let settings = settings.clone();
+                let (settings, schedule_generation) =
+                    app.state::<AppState>().schedule_configuration();
                 tauri::async_runtime::spawn(async move {
                     if let Err(error) =
                         crate::platform::android::notification_actions::register(app_handle.clone())
@@ -94,7 +95,10 @@ pub fn run() {
                     }
                     let ceremony_enabled = settings.ceremony_enabled;
                     let _ = tauri::async_runtime::spawn_blocking(move || {
-                        if let Err(e) = crate::platform::android::schedule::configure(&settings) {
+                        if let Err(e) = crate::platform::android::schedule::configure(
+                            &settings,
+                            schedule_generation,
+                        ) {
                             log::warn!("Failed to set the wake-up alarm: {}", e);
                         }
                         crate::platform::apply_autostart_enabled(
