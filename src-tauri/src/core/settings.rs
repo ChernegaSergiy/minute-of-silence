@@ -26,12 +26,33 @@ fn decode_store_settings(raw: &str) -> Result<Settings> {
     Ok(settings)
 }
 
+#[cfg(any(target_os = "android", test))]
+fn decode_store_personal_dates(raw: &str) -> Result<Vec<PersonalDate>> {
+    #[derive(serde::Deserialize)]
+    struct Store {
+        personal_dates: Option<Vec<PersonalDate>>,
+    }
+
+    let store = serde_json::from_str::<Store>(raw)?;
+    Ok(store.personal_dates.unwrap_or_default())
+}
+
 /// Reads the Tauri store for Android's service before any Activity exists.
 #[cfg(target_os = "android")]
 pub(crate) fn read_store_settings(path: &std::path::Path) -> Result<Settings> {
     match std::fs::read_to_string(path) {
         Ok(raw) => decode_store_settings(&raw),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Settings::default()),
+        Err(error) => Err(error.into()),
+    }
+}
+
+/// Reads personal dates from the Tauri store for Android's service before any Activity exists.
+#[cfg(target_os = "android")]
+pub(crate) fn read_store_personal_dates(path: &std::path::Path) -> Result<Vec<PersonalDate>> {
+    match std::fs::read_to_string(path) {
+        Ok(raw) => decode_store_personal_dates(&raw),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Vec::new()),
         Err(error) => Err(error.into()),
     }
 }
@@ -164,5 +185,29 @@ mod tests {
     #[test]
     fn background_settings_do_not_treat_invalid_data_as_defaults() {
         assert!(decode_store_settings(r#"{"settings":{"ceremonyEnabled":"no"}}"#).is_err());
+    }
+
+    #[test]
+    fn background_personal_dates_read_the_store_key() {
+        let dates = decode_store_personal_dates(
+            r#"{"personal_dates":[{"month":11,"day":24,"year":2026,"label":"Remember"}]}"#,
+        )
+        .expect("stored personal dates");
+        assert_eq!(dates.len(), 1);
+        assert_eq!(dates[0].label, "Remember");
+    }
+
+    #[test]
+    fn background_personal_dates_default_to_empty_when_missing() {
+        assert!(
+            decode_store_personal_dates(r#"{"settings":{}}"#)
+                .expect("store without personal dates")
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn background_personal_dates_reject_invalid_data() {
+        assert!(decode_store_personal_dates(r#"{"personal_dates":"invalid"}"#).is_err());
     }
 }

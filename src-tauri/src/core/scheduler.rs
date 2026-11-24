@@ -262,11 +262,11 @@ impl CeremonyScheduler {
 
     #[cfg(target_os = "android")]
     fn schedule_personal_dates_notification(&self, date: NaiveDate, time: NaiveTime) {
-        let Some(app) = self.runtime.app() else {
-            log::warn!("Cannot load personal dates: app handle is unavailable");
-            return;
+        let dates_result = match self.runtime.app() {
+            Some(app) => crate::app::commands::get_personal_dates(app),
+            None => crate::platform::android::headless::read_personal_dates(),
         };
-        let dates = match crate::app::commands::get_personal_dates(app) {
+        let dates = match dates_result {
             Ok(dates) => dates,
             Err(error) => {
                 log::warn!("Failed to load personal dates for notification: {error}");

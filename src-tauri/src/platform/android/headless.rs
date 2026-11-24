@@ -3,7 +3,7 @@
 use super::device;
 use crate::Settings;
 use crate::app::notification_actions::NotificationActionRequest;
-use crate::core::settings::read_store_settings;
+use crate::core::settings::{PersonalDate, read_store_personal_dates, read_store_settings};
 use crate::state::AppState;
 use crate::state::CeremonyRuntime;
 use chrono::{DateTime, Local};
@@ -88,6 +88,16 @@ fn load_runtime() -> Option<Arc<CeremonyRuntime>> {
             None
         }
     }
+}
+
+/// Loads personal dates from the Tauri store while the Android service has no Activity.
+pub(crate) fn read_personal_dates() -> crate::error::Result<Vec<PersonalDate>> {
+    let directory = device::data_dir()
+        .ok_or_else(|| crate::AppError::Platform("Android data directory is unavailable".into()))?;
+    let _guard = SETTINGS_FILE_LOCK.lock().map_err(|_| {
+        crate::AppError::Platform("Android settings file lock is unavailable".into())
+    })?;
+    read_store_personal_dates(&directory.join("settings.json"))
 }
 
 /// Clears a consumed skip date from the Android settings store and runtime.
