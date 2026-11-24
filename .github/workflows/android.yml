@@ -81,7 +81,7 @@ jobs:
           test -s "$keystore_path"
           {
             echo "keyAlias=$ANDROID_KEY_ALIAS"
-            echo "password=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
             echo "keystorePassword=$ANDROID_KEYSTORE_PASSWORD"
             echo "storeFile=$keystore_path"
           } > src-tauri/gen/android/keystore.properties

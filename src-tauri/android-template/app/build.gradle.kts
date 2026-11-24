@@ -37,8 +37,8 @@ android {
             create("release") {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                     ?: error("Missing keyAlias in keystore.properties")
-                keyPassword = keystoreProperties.getProperty("keystorePassword")
-                    ?: error("Missing keystorePassword in keystore.properties")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                    ?: error("Missing keyPassword in keystore.properties")
                 storeFile = file(
                     keystoreProperties.getProperty("storeFile")
                         ?: error("Missing storeFile in keystore.properties"),
