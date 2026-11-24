@@ -2,5 +2,5 @@
 <resources>
     <string name="app_name">Minute of Silence</string>
     <string name="main_activity_title">Minute of Silence</string>
-    <string name="about_link_open_failed">Couldn't open the link</string>
+    <string name="about_link_open_failed">Couldn\'t open the link</string>
 </resources>
