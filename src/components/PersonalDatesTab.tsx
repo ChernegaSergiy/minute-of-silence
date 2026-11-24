@@ -54,9 +54,6 @@ const useStyles = makeStyles({
     flex: "2 1 180px",
     minWidth: "120px",
   },
-  addInput: {
-    paddingBlock: "5px",
-  },
   addButton: {
     flexGrow: 1,
     flexShrink: 0,
@@ -261,7 +258,6 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
           <div className={styles.addDateField}>
             <Field className={styles.field} label={t("personal_dates.date")}>
               <DatePicker
-                className={styles.addInput}
                 placeholder={t("personal_dates.date")}
                 value={newDate}
                 onSelectDate={(d) => setNewDate(d ?? null)}
@@ -274,7 +270,6 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
           <div className={styles.addLabelField}>
             <Field className={styles.field} label={t("personal_dates.label")}>
               <Input
-                className={styles.addInput}
                 placeholder={t("personal_dates.label")}
                 value={newLabel}
                 onChange={(_, d) => setNewLabel(d.value)}
