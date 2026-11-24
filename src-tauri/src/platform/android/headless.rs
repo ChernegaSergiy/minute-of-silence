@@ -3,7 +3,8 @@
 use super::device;
 use crate::Settings;
 use crate::app::notification_actions::NotificationActionRequest;
-use crate::core::settings::{SettingsExt, read_store_settings};
+use crate::core::settings::read_store_settings;
+use crate::state::AppState;
 use crate::state::CeremonyRuntime;
 use chrono::{DateTime, Local};
 use jni::JNIEnv;
@@ -13,6 +14,7 @@ use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
+use tauri::Manager;
 
 static RUNTIME: OnceLock<Arc<CeremonyRuntime>> = OnceLock::new();
 static SCHEDULER_RUNNING: AtomicBool = AtomicBool::new(false);
@@ -24,6 +26,7 @@ struct NotificationActionResult {
     ceremony_enabled: bool,
     weekdays_only: bool,
     skip_date: Option<String>,
+    app_state_handled: bool,
 }
 
 fn start_marker() -> Option<PathBuf> {
@@ -122,24 +125,31 @@ extern "system" fn Java_ua_pp_khvylyna_MinuteOfSilence_CeremonyDevice_handleNoti
 }
 
 fn apply_notification_action(request: NotificationActionRequest) -> crate::error::Result<String> {
-    let _guard = SETTINGS_FILE_LOCK.lock().map_err(|_| {
-        crate::AppError::Platform("Android settings file lock is unavailable".into())
-    })?;
     let directory = device::data_dir()
         .ok_or_else(|| crate::AppError::Platform("Android data directory is unavailable".into()))?;
     let path = directory.join("settings.json");
-    let mut settings = read_store_settings(&path)?;
-    request.apply(&mut settings, Local::now());
-    settings
-        .validate()
-        .map_err(|error| crate::AppError::Settings(error.to_string()))?;
-
     let runtime = load_runtime().ok_or_else(|| {
         crate::AppError::Platform("Android ceremony runtime is unavailable".into())
     })?;
-    if let Some(app) = runtime.app() {
-        settings.save_to_store(&app)?;
+
+    let (settings, app_state_handled) = if let Some(app) = runtime.app() {
+        let state = app.try_state::<AppState>().ok_or_else(|| {
+            crate::AppError::Platform("Android application state is unavailable".into())
+        })?;
+        let settings = state.update_settings(|settings| {
+            request.apply(settings, Local::now());
+        })?;
+        (settings, true)
     } else {
+        let _guard = SETTINGS_FILE_LOCK.lock().map_err(|_| {
+            crate::AppError::Platform("Android settings file lock is unavailable".into())
+        })?;
+        let mut settings = read_store_settings(&path)?;
+        request.apply(&mut settings, Local::now());
+        settings
+            .validate()
+            .map_err(|error| crate::AppError::Settings(error.to_string()))?;
+
         let mut document: Value = match std::fs::read_to_string(&path) {
             Ok(raw) => serde_json::from_str(&raw)?,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => serde_json::json!({}),
@@ -153,11 +163,9 @@ fn apply_notification_action(request: NotificationActionRequest) -> crate::error
         let temporary = path.with_extension("json.tmp");
         std::fs::write(&temporary, serialized)?;
         std::fs::rename(&temporary, &path)?;
-    }
-
-    {
         runtime.lock().settings = settings.clone();
-    }
+        (settings, false)
+    };
 
     serde_json::to_string(&NotificationActionResult {
         ceremony_enabled: settings.ceremony_enabled,
@@ -165,6 +173,7 @@ fn apply_notification_action(request: NotificationActionRequest) -> crate::error
         skip_date: settings
             .skip_date
             .map(|date| date.format("%Y-%m-%d").to_string()),
+        app_state_handled,
     })
     .map_err(Into::into)
 }

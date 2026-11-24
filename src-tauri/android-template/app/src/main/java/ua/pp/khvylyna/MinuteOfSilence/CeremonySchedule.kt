@@ -25,12 +25,22 @@ object CeremonySchedule {
     weekdaysOnly: Boolean,
     skipDate: String?
   ) {
+    updateStoredSettings(context, enabled, weekdaysOnly, skipDate)
+    schedule(context)
+  }
+
+  /** Updates the mirrored state without racing the Rust-owned alarm update. */
+  fun updateStoredSettings(
+    context: Context,
+    enabled: Boolean,
+    weekdaysOnly: Boolean,
+    skipDate: String?
+  ) {
     preferences(context).edit()
       .putBoolean(KEY_ENABLED, enabled)
       .putBoolean(KEY_WEEKDAYS_ONLY, weekdaysOnly)
       .putString(KEY_SKIP_DATE, skipDate)
       .apply()
-    schedule(context)
   }
 
   /** Sets the alarm for the next wake-up, or removes it when the ceremony is off. */

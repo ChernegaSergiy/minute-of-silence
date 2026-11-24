@@ -76,8 +76,8 @@ pub fn run() {
             // --- 2. State Management ---
             let settings = Settings::load_from_store(handle);
             let state = AppState::new_with_settings(handle.clone(), settings.clone());
-            state.runtime.attach_app(handle.clone());
             app.manage(state);
+            app.state::<AppState>().runtime.attach_app(handle.clone());
 
             // --- 2.0. Native schedule and autostart (Android) ---
             // Off the setup thread: the calls wait for the answer of the native side.

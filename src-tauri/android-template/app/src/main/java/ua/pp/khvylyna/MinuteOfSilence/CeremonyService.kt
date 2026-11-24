@@ -104,12 +104,13 @@ class CeremonyService : Service() {
         .handleNotificationActionNative(action, targetDate)
       val settings = org.json.JSONObject(result)
       val skipDate = if (settings.isNull("skipDate")) null else settings.getString("skipDate")
-      CeremonySchedule.configure(
-        this,
-        settings.getBoolean("ceremonyEnabled"),
-        settings.getBoolean("weekdaysOnly"),
-        skipDate
-      )
+      val ceremonyEnabled = settings.getBoolean("ceremonyEnabled")
+      val weekdaysOnly = settings.getBoolean("weekdaysOnly")
+      if (settings.getBoolean("appStateHandled")) {
+        CeremonySchedule.updateStoredSettings(this, ceremonyEnabled, weekdaysOnly, skipDate)
+      } else {
+        CeremonySchedule.configure(this, ceremonyEnabled, weekdaysOnly, skipDate)
+      }
       updateNotification()
     } catch (error: Exception) {
       Log.w("CeremonyService", "Failed to apply notification action", error)
