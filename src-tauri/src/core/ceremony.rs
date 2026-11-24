@@ -321,6 +321,11 @@ impl CeremonyManager {
         crate::platform::android::media::release_focus(ceremony_id);
 
         // Clear skip_date after successful ceremony
+        #[cfg(target_os = "android")]
+        if let Err(error) = crate::platform::android::headless::clear_skip_date(&runtime) {
+            log::warn!("Failed to clear skip_date: {error}");
+        }
+        #[cfg(not(target_os = "android"))]
         if let Some(app) = &app {
             let state = app.state::<AppState>();
             if state.lock().settings.skip_date.is_some() {

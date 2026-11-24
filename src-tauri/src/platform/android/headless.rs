@@ -90,6 +90,50 @@ fn load_runtime() -> Option<Arc<CeremonyRuntime>> {
     }
 }
 
+/// Clears a consumed skip date from the Android settings store and runtime.
+pub(crate) fn clear_skip_date(runtime: &Arc<CeremonyRuntime>) -> crate::error::Result<()> {
+    if let Some(app) = runtime.app() {
+        let state = app.try_state::<AppState>().ok_or_else(|| {
+            crate::AppError::Platform("Android application state is unavailable".into())
+        })?;
+        if state.lock().settings.skip_date.is_some() {
+            state.update_settings(|settings| settings.skip_date = None)?;
+        }
+        return Ok(());
+    }
+
+    let directory = device::data_dir()
+        .ok_or_else(|| crate::AppError::Platform("Android data directory is unavailable".into()))?;
+    let path = directory.join("settings.json");
+    let _guard = SETTINGS_FILE_LOCK.lock().map_err(|_| {
+        crate::AppError::Platform("Android settings file lock is unavailable".into())
+    })?;
+    let mut settings = read_store_settings(&path)?;
+    if settings.skip_date.is_none() {
+        return Ok(());
+    }
+    settings.skip_date = None;
+    settings
+        .validate()
+        .map_err(|error| crate::AppError::Settings(error.to_string()))?;
+
+    let mut document: Value = match std::fs::read_to_string(&path) {
+        Ok(raw) => serde_json::from_str(&raw)?,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => serde_json::json!({}),
+        Err(error) => return Err(error.into()),
+    };
+    let object = document.as_object_mut().ok_or_else(|| {
+        crate::AppError::Settings("Android settings store must be a JSON object".into())
+    })?;
+    object.insert("settings".into(), serde_json::to_value(&settings)?);
+    let serialized = serde_json::to_vec_pretty(&document)?;
+    let temporary = path.with_extension("json.tmp");
+    std::fs::write(&temporary, serialized)?;
+    std::fs::rename(&temporary, &path)?;
+    runtime.lock().settings = settings;
+    Ok(())
+}
+
 #[unsafe(no_mangle)]
 extern "system" fn Java_ua_pp_khvylyna_MinuteOfSilence_CeremonyDevice_handleNotificationActionNative(
     mut env: JNIEnv<'_>,
