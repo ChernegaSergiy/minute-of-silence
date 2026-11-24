@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Хвилина мовчання</string>
     <string name="main_activity_title">Хвилина мовчання</string>
+    <string name="about_link_open_failed">Не вдалося відкрити посилання</string>
 </resources>
