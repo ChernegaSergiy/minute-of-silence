@@ -11,6 +11,7 @@ graph TD
     Commands["commands.rs\n(IPC)"]
     Runtime["CeremonyRuntime\nsettings · active ceremony · NTP/audio"]
     AppState["AppState\nsettings store · Arc<CeremonyRuntime>"]
+    CeremonyManager["CeremonyManager\nceremony orchestration"]
     Platform["Platform layer\ncfg-gated"]
     Windows["platform_windows\nSMTC / Win32"]
     Linux["platform_linux\nMPRIS (zbus)"]
@@ -21,9 +22,11 @@ graph TD
     Frontend -->|invoke| Commands
     Scheduler --> NTP
     Scheduler --> Runtime
+    Scheduler --> CeremonyManager
     Commands --> AppState
     AppState -->|shared runtime| Runtime
-    Runtime --> Platform
+    CeremonyManager --> Runtime
+    CeremonyManager --> Platform
     Platform --> Windows
     Platform --> Linux
     Platform --> Macos
