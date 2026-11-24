@@ -6,7 +6,13 @@
     "settings": "НАЛАШТУВАННЯ",
     "about": "ПРО ПРОГРАМУ",
     "changelog": "ЗМІНИ",
-    "personal_dates": "ОСОБИСТІ ДАТИ"
+    "personal_dates": "ОСОБИСТІ ДАТИ",
+    "mobile": {
+      "settings": "Налаштування",
+      "about": "Про програму",
+      "changelog": "Зміни",
+      "personal_dates": "Особисті дати"
+    }
   },
   "sections": {
     "general": "ОСНОВНІ",

@@ -61,10 +61,10 @@ import { useIdle } from "./hooks/useIdle";
 const ChangelogTab = lazy(() => import("./components/ChangelogTab"));
 
 const MOBILE_NAV_TABS = [
-  { value: "settings", label: "tabs.settings", Icon: bundleIcon(Settings24Filled, Settings24Regular) },
-  { value: "personal_dates", label: "tabs.personal_dates", Icon: bundleIcon(CalendarMonth24Filled, CalendarMonth24Regular) },
-  { value: "about", label: "tabs.about", Icon: bundleIcon(Info24Filled, Info24Regular) },
-  { value: "changelog", label: "tabs.changelog", Icon: bundleIcon(DocumentBulletList24Filled, DocumentBulletList24Regular) },
+  { value: "settings", label: "tabs.mobile.settings", Icon: bundleIcon(Settings24Filled, Settings24Regular) },
+  { value: "personal_dates", label: "tabs.mobile.personal_dates", Icon: bundleIcon(CalendarMonth24Filled, CalendarMonth24Regular) },
+  { value: "about", label: "tabs.mobile.about", Icon: bundleIcon(Info24Filled, Info24Regular) },
+  { value: "changelog", label: "tabs.mobile.changelog", Icon: bundleIcon(DocumentBulletList24Filled, DocumentBulletList24Regular) },
 ] as const;
 const MOBILE_NAV_ICON_HEIGHT = "32px";
 

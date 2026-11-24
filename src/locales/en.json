@@ -6,7 +6,13 @@
     "settings": "SETTINGS",
     "about": "ABOUT",
     "changelog": "CHANGELOG",
-    "personal_dates": "PERSONAL DATES"
+    "personal_dates": "PERSONAL DATES",
+    "mobile": {
+      "settings": "Settings",
+      "about": "About",
+      "changelog": "Changelog",
+      "personal_dates": "Personal dates"
+    }
   },
   "sections": {
     "general": "GENERAL",
