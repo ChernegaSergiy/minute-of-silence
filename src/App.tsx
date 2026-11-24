@@ -629,13 +629,13 @@ export default function App() {
                     styles.desktopNavItem,
                     navMode === "compact-drawer" && styles.compactDesktopNavItem
                   )}
-                  aria-label={t("tabs.settings")}
-                  title={t("tabs.settings")}
+                  aria-label={t("tabs.desktop.settings")}
+                  title={t("tabs.desktop.settings")}
                 >
                   <span className={mergeClasses(
                     styles.desktopNavLabel,
                     navMode === "compact-drawer" && styles.compactDesktopNavLabel
-                  )}>{t("tabs.settings")}</span>
+                  )}>{t("tabs.desktop.settings")}</span>
                 </NavItem>
                 <NavItem
                   value="personal_dates"
@@ -644,13 +644,13 @@ export default function App() {
                     styles.desktopNavItem,
                     navMode === "compact-drawer" && styles.compactDesktopNavItem
                   )}
-                  aria-label={t("tabs.personal_dates")}
-                  title={t("tabs.personal_dates")}
+                  aria-label={t("tabs.desktop.personal_dates")}
+                  title={t("tabs.desktop.personal_dates")}
                 >
                   <span className={mergeClasses(
                     styles.desktopNavLabel,
                     navMode === "compact-drawer" && styles.compactDesktopNavLabel
-                  )}>{t("tabs.personal_dates")}</span>
+                  )}>{t("tabs.desktop.personal_dates")}</span>
                 </NavItem>
                 <NavItem
                   value="about"
@@ -659,13 +659,13 @@ export default function App() {
                     styles.desktopNavItem,
                     navMode === "compact-drawer" && styles.compactDesktopNavItem
                   )}
-                  aria-label={t("tabs.about")}
-                  title={t("tabs.about")}
+                  aria-label={t("tabs.desktop.about")}
+                  title={t("tabs.desktop.about")}
                 >
                   <span className={mergeClasses(
                     styles.desktopNavLabel,
                     navMode === "compact-drawer" && styles.compactDesktopNavLabel
-                  )}>{t("tabs.about")}</span>
+                  )}>{t("tabs.desktop.about")}</span>
                 </NavItem>
                 <NavItem
                   value="changelog"
@@ -674,13 +674,13 @@ export default function App() {
                     styles.desktopNavItem,
                     navMode === "compact-drawer" && styles.compactDesktopNavItem
                   )}
-                  aria-label={t("tabs.changelog")}
-                  title={t("tabs.changelog")}
+                  aria-label={t("tabs.desktop.changelog")}
+                  title={t("tabs.desktop.changelog")}
                 >
                   <span className={mergeClasses(
                     styles.desktopNavLabel,
                     navMode === "compact-drawer" && styles.compactDesktopNavLabel
-                  )}>{t("tabs.changelog")}</span>
+                  )}>{t("tabs.desktop.changelog")}</span>
                 </NavItem>
               </NavDrawerBody>
             </NavDrawer>

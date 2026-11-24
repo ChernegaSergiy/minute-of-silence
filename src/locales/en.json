@@ -3,10 +3,12 @@
     "title": "Minute of Silence"
   },
   "tabs": {
-    "settings": "SETTINGS",
-    "about": "ABOUT",
-    "changelog": "CHANGELOG",
-    "personal_dates": "PERSONAL DATES",
+    "desktop": {
+      "settings": "SETTINGS",
+      "about": "ABOUT",
+      "changelog": "CHANGELOG",
+      "personal_dates": "PERSONAL DATES"
+    },
     "mobile": {
       "settings": "Settings",
       "about": "About",

@@ -3,10 +3,12 @@
     "title": "Хвилина мовчання"
   },
   "tabs": {
-    "settings": "НАЛАШТУВАННЯ",
-    "about": "ПРО ПРОГРАМУ",
-    "changelog": "ЗМІНИ",
-    "personal_dates": "ОСОБИСТІ ДАТИ",
+    "desktop": {
+      "settings": "НАЛАШТУВАННЯ",
+      "about": "ПРО ПРОГРАМУ",
+      "changelog": "ЗМІНИ",
+      "personal_dates": "ОСОБИСТІ ДАТИ"
+    },
     "mobile": {
       "settings": "Налаштування",
       "about": "Про програму",
