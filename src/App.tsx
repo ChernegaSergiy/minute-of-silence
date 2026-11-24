@@ -307,9 +307,6 @@ const useStyles = makeStyles({
     transform: "translateY(4px)",
     transitionProperty: "opacity, transform",
     ...mobileNavMotion,
-    // Preview only: the locale strings are upper case, a sentence-case label needs new strings.
-    textTransform: "lowercase",
-    "&::first-letter": { textTransform: "uppercase" },
   },
   mobileNavLabelSelected: {
     opacity: 1,
