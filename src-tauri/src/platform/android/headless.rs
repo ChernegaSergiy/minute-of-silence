@@ -20,6 +20,14 @@ static RUNTIME: OnceLock<Arc<CeremonyRuntime>> = OnceLock::new();
 static SCHEDULER_RUNNING: AtomicBool = AtomicBool::new(false);
 static SETTINGS_FILE_LOCK: Mutex<()> = Mutex::new(());
 
+struct SchedulerRunningGuard;
+
+impl Drop for SchedulerRunningGuard {
+    fn drop(&mut self) {
+        SCHEDULER_RUNNING.store(false, Ordering::Release);
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct NotificationActionResult {
@@ -65,11 +73,12 @@ extern "system" fn Java_ua_pp_khvylyna_MinuteOfSilence_CeremonyDevice_startSched
     if SCHEDULER_RUNNING.swap(true, Ordering::AcqRel) {
         return;
     }
-    tauri::async_runtime::spawn(async {
+    let running_guard = SchedulerRunningGuard;
+    tauri::async_runtime::spawn(async move {
+        let _running_guard = running_guard;
         if let Some(runtime) = load_runtime() {
             crate::core::scheduler::run(runtime).await;
         }
-        SCHEDULER_RUNNING.store(false, Ordering::Release);
     });
 }
 
