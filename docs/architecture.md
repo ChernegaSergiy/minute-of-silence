@@ -27,6 +27,8 @@ graph TD
     AppState -->|shared runtime| Runtime
     CeremonyManager --> Runtime
     CeremonyManager --> Platform
+    Commands --> CeremonyManager
+    Scheduler --> Platform
     Platform --> Windows
     Platform --> Linux
     Platform --> Macos
