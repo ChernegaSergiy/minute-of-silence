@@ -1,6 +1,6 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
-import java.util.Calendar
+import java.util.GregorianCalendar
 import java.util.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -25,7 +25,7 @@ class CeremonyWakeTimeTest {
     hour: Int,
     minute: Int,
     second: Int = 0
-  ): Long = Calendar.getInstance(zone).apply {
+  ): Long = GregorianCalendar(zone).apply {
     clear()
     set(year, month - 1, day, hour, minute, second)
   }.timeInMillis

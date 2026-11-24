@@ -1,6 +1,7 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
 import java.util.Calendar
+import java.util.GregorianCalendar
 import java.util.Locale
 import java.util.TimeZone
 
@@ -28,7 +29,7 @@ object CeremonyWakeTime {
     zone: TimeZone = TimeZone.getDefault()
   ): Long? {
     for (offset in 0..8) {
-      val day = Calendar.getInstance(zone).apply {
+      val day = GregorianCalendar(zone).apply {
         timeInMillis = now
         add(Calendar.DAY_OF_YEAR, offset)
         set(Calendar.HOUR_OF_DAY, CEREMONY_HOUR)
