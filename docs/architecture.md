@@ -9,7 +9,8 @@ graph TD
     Frontend["Frontend\n(Vite / TS)"]
     Overlay["OverlayController"]
     Commands["commands.rs\n(IPC)"]
-    State["AppState\nArc<Mutex<Inner>>\nsettings · skip_date · ceremony_active"]
+    Runtime["CeremonyRuntime\nsettings · active ceremony · NTP/audio"]
+    AppState["AppState\nsettings store · Arc<CeremonyRuntime>"]
     Platform["Platform layer\ncfg-gated"]
     Windows["platform_windows\nSMTC / Win32"]
     Linux["platform_linux\nMPRIS (zbus)"]
@@ -19,9 +20,10 @@ graph TD
     Frontend --> Overlay
     Frontend -->|invoke| Commands
     Scheduler --> NTP
-    Scheduler --> State
-    Commands --> State
-    State --> Platform
+    Scheduler --> Runtime
+    Commands --> AppState
+    AppState -->|shared runtime| Runtime
+    Runtime --> Platform
     Platform --> Windows
     Platform --> Linux
     Platform --> Macos
