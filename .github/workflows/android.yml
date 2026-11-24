@@ -69,27 +69,21 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.TAURI_ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.TAURI_ANDROID_KEY_PASSWORD }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
         run: |
           : "${ANDROID_KEYSTORE_BASE64:?TAURI_ANDROID_KEYSTORE_BASE64 is required for release builds}"
           : "${ANDROID_KEY_ALIAS:?TAURI_ANDROID_KEY_ALIAS is required for release builds}"
-          : "${ANDROID_KEY_PASSWORD:?TAURI_ANDROID_KEY_PASSWORD is required for release builds}"
           : "${ANDROID_KEYSTORE_PASSWORD:?TAURI_ANDROID_KEYSTORE_PASSWORD is required for release builds}"
           keystore_path="$RUNNER_TEMP/minute-of-silence-release.keystore"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           test -s "$keystore_path"
           {
             echo "keyAlias=$ANDROID_KEY_ALIAS"
-            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+            echo "password=$ANDROID_KEYSTORE_PASSWORD"
             echo "keystorePassword=$ANDROID_KEYSTORE_PASSWORD"
             echo "storeFile=$keystore_path"
           } > src-tauri/gen/android/keystore.properties
           test -s src-tauri/gen/android/keystore.properties
-          {
-            echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
-            echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
-          } >> "$GITHUB_ENV"
 
       - name: Build debug APKs (pull request)
         if: github.event_name == 'pull_request'
