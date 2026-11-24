@@ -1,6 +1,7 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
-import java.util.Calendar
+import java.util.GregorianCalendar
+import java.util.Locale
 import java.util.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -12,7 +13,7 @@ class CeremonyNotificationStateTest {
   private val kyiv = TimeZone.getTimeZone("Europe/Kiev")
 
   private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int = 0, second: Int = 0): Long =
-    Calendar.getInstance(kyiv).apply {
+    GregorianCalendar(kyiv).apply {
       clear()
       set(year, month - 1, day, hour, minute, second)
     }.timeInMillis
@@ -93,6 +94,19 @@ class CeremonyNotificationStateTest {
   fun handlesTheYearBoundaryAndPaddedDates() {
     assertTrue(CeremonyNotificationState.isNextSkipped(at(2026, 12, 31, 23), false, "2027-01-01", kyiv))
     assertFalse(CeremonyNotificationState.isNextSkipped(at(2026, 12, 31, 23), false, "2027-1-1", kyiv))
+  }
+
+  @Test
+  fun usesGregorianDatesWithThaiDefaultLocale() {
+    val previousLocale = Locale.getDefault()
+    try {
+      Locale.setDefault(Locale.forLanguageTag("th-TH"))
+      val now = at(2026, 11, 18, 6)
+      assertEquals("2026-11-18", CeremonyNotificationState.nextCeremonyDate(now, false, kyiv))
+      assertTrue(CeremonyNotificationState.isNextSkipped(now, false, "2026-11-18", kyiv))
+    } finally {
+      Locale.setDefault(previousLocale)
+    }
   }
 
   @Test

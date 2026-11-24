@@ -2,7 +2,6 @@ package ua.pp.khvylyna.MinuteOfSilence
 
 import java.util.Calendar
 import java.util.GregorianCalendar
-import java.util.Locale
 import java.util.TimeZone
 
 /**
@@ -42,18 +41,10 @@ object CeremonyWakeTime {
 
       val dayOfWeek = day.get(Calendar.DAY_OF_WEEK)
       if (weekdaysOnly && (dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY)) continue
-      if (skipDate != null && isoDate(day) == skipDate) continue
+      if (skipDate != null && CeremonyDate.isoDate(day.timeInMillis, zone) == skipDate) continue
 
       return wakeAt
     }
     return null
   }
-
-  private fun isoDate(day: Calendar): String = String.format(
-    Locale.ROOT,
-    "%04d-%02d-%02d",
-    day.get(Calendar.YEAR),
-    day.get(Calendar.MONTH) + 1,
-    day.get(Calendar.DAY_OF_MONTH)
-  )
 }

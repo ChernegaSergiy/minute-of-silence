@@ -1,7 +1,7 @@
 package ua.pp.khvylyna.MinuteOfSilence
 
 import java.util.Calendar
-import java.util.Locale
+import java.util.GregorianCalendar
 import java.util.TimeZone
 
 /** Resolves the next eligible ceremony for display, without changing its schedule. */
@@ -12,7 +12,7 @@ object CeremonyNotificationState {
     weekdaysOnly: Boolean,
     zone: TimeZone = TimeZone.getDefault()
   ): Long {
-    val day = Calendar.getInstance(zone).apply {
+    val day = GregorianCalendar(zone).apply {
       timeInMillis = now
       set(Calendar.HOUR_OF_DAY, 9)
       set(Calendar.MINUTE, 0)
@@ -35,16 +35,7 @@ object CeremonyNotificationState {
     weekdaysOnly: Boolean,
     zone: TimeZone = TimeZone.getDefault()
   ): String {
-    val day = Calendar.getInstance(zone).apply {
-      timeInMillis = nextCeremonyMillis(now, weekdaysOnly, zone)
-    }
-    return String.format(
-      Locale.ROOT,
-      "%04d-%02d-%02d",
-      day.get(Calendar.YEAR),
-      day.get(Calendar.MONTH) + 1,
-      day.get(Calendar.DAY_OF_MONTH)
-    )
+    return CeremonyDate.isoDate(nextCeremonyMillis(now, weekdaysOnly, zone), zone)
   }
 
   /** Whether the stored skip date belongs to the next eligible ceremony. */
