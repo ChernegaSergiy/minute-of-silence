@@ -98,11 +98,21 @@ class CeremonyService : Service() {
       return
     }
     try {
-      if (!CeremonyNotificationActions.dispatch(action, targetDate)) {
-        Log.w("CeremonyService", "Notification action backend is unavailable")
-      }
+      if (CeremonyNotificationActions.dispatch(action, targetDate)) return
+
+      val result = CeremonyDevice.install(this)
+        .handleNotificationActionNative(action, targetDate)
+      val settings = org.json.JSONObject(result)
+      val skipDate = if (settings.isNull("skipDate")) null else settings.getString("skipDate")
+      CeremonySchedule.configure(
+        this,
+        settings.getBoolean("ceremonyEnabled"),
+        settings.getBoolean("weekdaysOnly"),
+        skipDate
+      )
+      updateNotification()
     } catch (error: Exception) {
-      Log.w("CeremonyService", "Failed to dispatch notification action", error)
+      Log.w("CeremonyService", "Failed to apply notification action", error)
     }
   }
 

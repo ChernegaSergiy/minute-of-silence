@@ -24,6 +24,7 @@ class CeremonyDevice private constructor(private val context: Context) {
 
   private external fun connectNative(dataDir: String, language: String)
   external fun startSchedulerNative()
+  external fun handleNotificationActionNative(action: String, targetDate: String): String
 
   init {
     connectNative(context.dataDir.absolutePath, context.resources.configuration.locales[0].language)

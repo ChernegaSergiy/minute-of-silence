@@ -92,18 +92,16 @@ object CeremonyNotifications {
       .setOnlyAlertOnce(true)
       .setPriority(NotificationCompat.PRIORITY_LOW)
       .setContentIntent(openApp(context))
-    if (CeremonyNotificationActions.isAvailable()) {
-      val label = if (skipped) {
-        R.string.ceremony_notification_restore
-      } else {
-        R.string.ceremony_notification_skip
-      }
-      builder.addAction(
-        0,
-        context.getString(label),
-        changeSkip(context, skipped, CeremonySchedule.notificationTargetDate(context, now))
-      )
+    val label = if (skipped) {
+      R.string.ceremony_notification_restore
+    } else {
+      R.string.ceremony_notification_skip
     }
+    builder.addAction(
+      0,
+      context.getString(label),
+      changeSkip(context, skipped, CeremonySchedule.notificationTargetDate(context, now))
+    )
     return builder.build()
   }
 
