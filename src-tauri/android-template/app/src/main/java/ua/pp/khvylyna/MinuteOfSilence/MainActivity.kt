@@ -16,10 +16,17 @@ class MainActivity : TauriActivity() {
     val content = findViewById<View>(android.R.id.content)
     val safeAreaTypes = WindowInsetsCompat.Type.systemBars() or
       WindowInsetsCompat.Type.displayCutout()
+    val imeType = WindowInsetsCompat.Type.ime()
 
     ViewCompat.setOnApplyWindowInsetsListener(content) { view, windowInsets ->
       val safeArea = windowInsets.getInsets(safeAreaTypes)
-      view.setPadding(safeArea.left, safeArea.top, safeArea.right, safeArea.bottom)
+      val imeBottom = windowInsets.getInsets(imeType).bottom
+      view.setPadding(
+        safeArea.left,
+        safeArea.top,
+        safeArea.right,
+        maxOf(safeArea.bottom, imeBottom)
+      )
 
       WindowInsetsCompat.Builder(windowInsets)
         .setInsets(safeAreaTypes, Insets.NONE)
