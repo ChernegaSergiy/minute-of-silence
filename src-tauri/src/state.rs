@@ -2,7 +2,10 @@
 
 use chrono::{DateTime, Local};
 pub use khvylyna_core::StatusSnapshot;
-use std::{sync::{Arc, Mutex}, time::Instant};
+use std::{
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 use tauri::AppHandle;
 
 use crate::app::next_skip_date;
