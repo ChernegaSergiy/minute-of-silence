@@ -21,7 +21,7 @@
     "@fluentui/react-datepicker-compat": "^0.6.37",
     "@fluentui/react-icons": "^2.0.346",
     "@fluentui/web-components": "^3.2.1",
-    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/api": "^2.12.5",
     "@tauri-apps/plugin-autostart": "^2.0.0",
     "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
     "@tauri-apps/plugin-log": "^2.10.1",
