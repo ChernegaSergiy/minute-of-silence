@@ -335,7 +335,6 @@ export default function App() {
   const [supportsMediaResumption, setSupportsMediaResumption] = useState(false);
   const [platform, setPlatform] = useState<"android" | "desktop" | null>(null);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
   const [volumeValue, setVolumeValue] = useState(80);
@@ -418,7 +417,6 @@ export default function App() {
           const isTest = payload?.is_test ?? false;
           setTestRunning(isTest);
           setShowOverlay(true);
-          setCeremonyDurationMs(payload?.duration_ms);
           setIsTestCeremony(isTest);
           setStatus((current) => ({
             ...current,
@@ -433,7 +431,6 @@ export default function App() {
         await onCeremonyEnd(() => {
           setTestRunning(false);
           setShowOverlay(false);
-          setCeremonyDurationMs(undefined);
           setIsTestCeremony(false);
           setStatus((current) => ({
             ...current,
@@ -792,7 +789,14 @@ export default function App() {
       {supportsVisualOverlay && (
         <Overlay
           show={overlayVisible}
-          durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
+          progress={status.ceremonyActive && status.ceremonyId !== null &&
+            status.ceremonyElapsedMs !== null && status.ceremonyDurationMs !== null
+            ? {
+                ceremonyId: status.ceremonyId,
+                elapsedMs: status.ceremonyElapsedMs,
+                durationMs: status.ceremonyDurationMs,
+              }
+            : null}
           personalDates={personalDates}
           settings={settings}
           isTest={isTestCeremony || status.ceremonyIsTest}
