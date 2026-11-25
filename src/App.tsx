@@ -463,6 +463,7 @@ export default function App() {
           );
         })
       );
+      refresh();
       setInterval(refresh, 60000);
     })();
 
