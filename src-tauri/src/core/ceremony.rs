@@ -147,8 +147,22 @@ impl CeremonyManager {
                 }
             };
 
+        let ceremony_elapsed_ms = {
+            let mut inner = self.runtime.lock();
+            let Some(active) = inner.active_ceremony.as_mut() else {
+                return;
+            };
+            if active.id != ceremony_id {
+                return;
+            }
+            active.duration_ms = Some(duration_ms);
+            active.elapsed_ms()
+        };
+
         let payload = json!({
+            "ceremony_id": ceremony_id,
             "duration_ms": duration_ms,
+            "elapsed_ms": ceremony_elapsed_ms,
             "is_test": is_test,
         });
         if let Some(app) = self.runtime.app() {
