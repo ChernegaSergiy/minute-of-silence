@@ -18,9 +18,21 @@ import type { PersonalDate, Settings } from "../types";
 interface OverlayProps {
   show: boolean;
   durationSeconds?: number;
+  progress?: CeremonyProgress | null;
   personalDates?: PersonalDate[];
   settings?: Settings;
   isTest?: boolean;
+}
+
+interface CeremonyProgress {
+  ceremonyId: number;
+  elapsedMs: number;
+  durationMs: number;
+}
+
+interface SyncedCeremonyProgress {
+  progress: CeremonyProgress;
+  synchronizedAt: number;
 }
 
 const candleUrl = "/img/candle_circle.png";
@@ -254,6 +266,8 @@ function useApngPlayer(
   src: string,
   durationSeconds: number,
   active: boolean,
+  progress: CeremonyProgress | null | undefined,
+  progressRef: React.RefObject<SyncedCeremonyProgress | null>,
 ) {
   useEffect(() => {
     if (!active) return;
@@ -284,16 +298,21 @@ function useApngPlayer(
         const ctx = canvas.getContext("2d")!;
 
         const tick = (now: number) => {
-          if (!startTime) startTime = now;
-          const elapsed = (now - startTime) / 1000;
-          const progress = Math.min(elapsed / durationSeconds, 1);
-          const frameIdx = Math.min(Math.floor(progress * frames.length), frames.length - 1);
-
+          const synchronizedProgress = progressRef.current;
+          let progressRatio: number;
+          if (synchronizedProgress) {
+            const elapsedMs = synchronizedProgress.progress.elapsedMs +
+              (now - synchronizedProgress.synchronizedAt);
+            const durationMs = Math.max(synchronizedProgress.progress.durationMs, 1);
+            progressRatio = Math.max(0, Math.min(elapsedMs / durationMs, 1));
+          } else {
+            if (startTime === null) startTime = now;
+            progressRatio = Math.min((now - startTime) / (durationSeconds * 1000), 1);
+          }
+          const frameIdx = Math.min(Math.floor(progressRatio * frames.length), frames.length - 1);
           ctx.putImageData(frames[frameIdx], 0, 0);
 
-          if (progress < 1) {
-            rafId = requestAnimationFrame(tick);
-          }
+          if (progressRatio < 1) rafId = requestAnimationFrame(tick);
         };
         rafId = requestAnimationFrame(tick);
       } catch (e) {
@@ -307,12 +326,13 @@ function useApngPlayer(
       isCancelled = true;
       cancelAnimationFrame(rafId);
     };
-  }, [active, src, durationSeconds, canvasRef]);
+  }, [active, src, durationSeconds, canvasRef, progress?.ceremonyId, progressRef]);
 }
 
 export default function Overlay({
   show,
   durationSeconds = 60,
+  progress = null,
   personalDates = [],
   settings,
   isTest = false,
@@ -320,6 +340,13 @@ export default function Overlay({
   const styles = useStyles();
   const ringCanvasRef = useRef<HTMLCanvasElement>(null);
   const lastSavedNearbyIdRef = useRef<string | null>(null);
+  const progressRef = useRef<SyncedCeremonyProgress | null>(null);
+
+  useEffect(() => {
+    progressRef.current = progress
+      ? { progress, synchronizedAt: performance.now() }
+      : null;
+  }, [progress?.ceremonyId, progress?.elapsedMs, progress?.durationMs]);
 
   // Manage mounting delay for smooth transitions
   const [shouldRender, setShouldRender] = useState(show);
@@ -337,7 +364,7 @@ export default function Overlay({
     }
   }, [show]);
 
-  useApngPlayer(ringCanvasRef, ringUrl, durationSeconds, shouldRender);
+  useApngPlayer(ringCanvasRef, ringUrl, durationSeconds, shouldRender, progress, progressRef);
 
   // Get active personal dates matching today
   const activeDates = useMemo(() => {
