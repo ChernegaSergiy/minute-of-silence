@@ -7,12 +7,24 @@ use std::{
 };
 
 use tauri::{AppHandle, Emitter, Manager, State};
+#[cfg(not(target_os = "android"))]
+use tauri_plugin_shell::ShellExt;
 
 use crate::{
     Result,
     app::next_skip_date,
     state::{AppState, StatusSnapshot},
 };
+
+/// Return the current application platform for frontend-specific behavior.
+#[tauri::command]
+pub fn get_platform() -> &'static str {
+    if cfg!(target_os = "android") {
+        "android"
+    } else {
+        "desktop"
+    }
+}
 
 // Settings
 
@@ -29,9 +41,11 @@ pub fn get_initial_state(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<khvylyna_core::AppInitialState> {
-    let settings = state.lock().settings.clone();
     let personal_dates = get_personal_dates(app.clone())?;
-    let status = state.get_snapshot();
+    let (settings, status) = {
+        let inner = state.lock();
+        (inner.settings.clone(), state.snapshot_from(&inner))
+    };
     let version = app.package_info().version.to_string();
 
     Ok(khvylyna_core::AppInitialState {
@@ -40,6 +54,8 @@ pub fn get_initial_state(
         status,
         version,
         voices: crate::core::voices::voice_capabilities(),
+        supports_visual_overlay: cfg!(desktop),
+        supports_media_resumption: cfg!(desktop),
     })
 }
 
@@ -153,6 +169,86 @@ pub fn import_settings(
     })
 }
 
+/// Report whether the app may show notifications.
+///
+/// Only Android asks for this permission, other platforms answer `unsupported`.
+#[tauri::command]
+pub async fn notification_permission_status() -> Result<crate::platform::NotificationPermission> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::status().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(crate::platform::NotificationPermission::Unsupported)
+    }
+}
+
+/// Open the system notification settings of the app. Only Android has them.
+#[tauri::command]
+pub async fn open_notification_settings() -> Result<()> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::open_settings().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(())
+    }
+}
+
+/// Report whether the app may schedule exact alarms.
+///
+/// Other platforms do not require this Android-specific access.
+#[tauri::command]
+pub async fn exact_alarm_permission_status() -> Result<bool> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::exact_alarm_status().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(true)
+    }
+}
+
+/// Open Android's exact-alarm settings. Other platforms do nothing.
+#[tauri::command]
+pub async fn open_exact_alarm_settings() -> Result<()> {
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::permission::open_exact_alarm_settings().await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(())
+    }
+}
+
+/// Open an About-page link in an Android Custom Tab, or the platform browser.
+#[tauri::command]
+pub async fn open_about_link(_app: AppHandle, url: String) -> Result<()> {
+    let parsed_url = tauri::Url::parse(&url)
+        .map_err(|error| crate::AppError::Platform(format!("Invalid link: {error}")))?;
+    if parsed_url.scheme() != "https" || parsed_url.host_str().is_none() {
+        return Err(crate::AppError::Platform(
+            "Only secure web links can be opened".to_string(),
+        ));
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        crate::platform::android::custom_tabs::open(parsed_url.as_str()).await
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        #[allow(deprecated)]
+        _app.shell()
+            .open(parsed_url.to_string(), None)
+            .map_err(|error| crate::AppError::Platform(error.to_string()))
+    }
+}
+
 /// Sync the persisted autostart setting with the actual platform state.
 #[tauri::command]
 pub fn sync_autostart_from_system(state: State<'_, AppState>) -> Result<()> {
@@ -255,7 +351,8 @@ pub async fn finish_ceremony_now(app: AppHandle) -> Result<()> {
         active.id
     };
     let platform = crate::platform::get_platform();
-    crate::core::CeremonyManager::finish_ceremony(app, platform, ceremony_id).await;
+    let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
+    crate::core::CeremonyManager::finish_ceremony(runtime, platform, ceremony_id).await;
     Ok(())
 }
 

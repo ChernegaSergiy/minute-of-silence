@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use tauri::AppHandle;
 
 use crate::app::next_skip_date;
-use crate::core::audio::AudioEngine;
+use crate::core::audio::{AudioEngine, CeremonyAudioBackend};
 use crate::core::ntp_service::NtpService;
 use crate::core::settings::{PersonalDate, Settings, SettingsExt};
 
@@ -51,14 +51,62 @@ impl ActiveCeremony {
     }
 }
 
-/// Runtime state shared between the scheduler, commands, and tray.
+/// Ceremony state that can outlive, or run without, a Tauri activity.
+#[derive(Debug)]
+pub struct CeremonyRuntime {
+    inner: Mutex<Inner>,
+    app: Mutex<Option<AppHandle>>,
+    pub ntp_service: NtpService,
+    pub audio: Arc<dyn CeremonyAudioBackend>,
+}
+
+impl CeremonyRuntime {
+    pub(crate) fn new(
+        settings: Settings,
+        #[cfg(not(target_os = "android"))] app: AppHandle,
+    ) -> Self {
+        let ntp_service = NtpService::new(settings.ntp_server.clone());
+        Self {
+            inner: Mutex::new(Inner {
+                settings,
+                ..Inner::default()
+            }),
+            app: Mutex::new(None),
+            ntp_service,
+            audio: Arc::new(AudioEngine::new(
+                #[cfg(not(target_os = "android"))]
+                app,
+            )),
+        }
+    }
+
+    pub(crate) fn attach_app(&self, app: AppHandle) {
+        *self.app.lock().expect("runtime app mutex poisoned") = Some(app);
+    }
+
+    pub(crate) fn app(&self) -> Option<AppHandle> {
+        self.app.lock().expect("runtime app mutex poisoned").clone()
+    }
+
+    pub(crate) fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
+        self.inner.lock().expect("ceremony runtime mutex poisoned")
+    }
+}
+
+/// Runtime state and settings persistence for a Tauri instance.
 #[derive(Debug)]
 pub struct AppState {
-    inner: Arc<Mutex<Inner>>,
+    pub(crate) runtime: Arc<CeremonyRuntime>,
     settings_mutex: Mutex<()>,
-    pub ntp_service: NtpService,
-    pub audio: Arc<AudioEngine>,
     pub app_handle: AppHandle,
+}
+
+impl std::ops::Deref for AppState {
+    type Target = CeremonyRuntime;
+
+    fn deref(&self) -> &Self::Target {
+        &self.runtime
+    }
 }
 
 #[derive(Default)]
@@ -108,24 +156,20 @@ impl AppState {
     }
 
     pub fn new_with_settings(app_handle: AppHandle, settings: Settings) -> Self {
+        #[cfg(target_os = "android")]
+        let runtime = crate::platform::android::headless::runtime(settings);
+        #[cfg(not(target_os = "android"))]
+        let runtime = Arc::new(CeremonyRuntime::new(settings, app_handle.clone()));
         Self {
-            inner: Arc::new(Mutex::new(Inner {
-                settings: settings.clone(),
-                active_ceremony: None,
-                ceremony_id_counter: 0,
-                last_activation: None,
-                pending_update: None,
-                pending_restart: false,
-            })),
+            runtime,
             settings_mutex: Mutex::new(()),
-            ntp_service: NtpService::new(settings.ntp_server.clone()),
-            audio: Arc::new(AudioEngine::new(app_handle.clone())),
             app_handle,
         }
     }
 
+    /// Exposes the runtime state to Tauri commands and desktop integrations.
     pub fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
-        self.inner.lock().expect("AppState mutex poisoned")
+        self.runtime.lock()
     }
 
     /// Atomically mutate settings with a serialized read-modify-persist-apply cycle.
@@ -233,12 +277,22 @@ impl AppState {
     ///
     /// If settings have not changed, this is a no-op.
     pub fn apply_settings_update(&self, new_settings: Settings) {
+        #[cfg(target_os = "android")]
+        let mut schedule_generation = None;
         let (old_settings, changed) = {
             let mut inner = self.lock();
             let old = inner.settings.clone();
             if old == new_settings {
                 (old, false)
             } else {
+                #[cfg(target_os = "android")]
+                if old.ceremony_enabled != new_settings.ceremony_enabled
+                    || old.weekdays_only != new_settings.weekdays_only
+                    || old.skip_date != new_settings.skip_date
+                {
+                    schedule_generation =
+                        Some(crate::platform::android::schedule::next_configuration_generation());
+                }
                 inner.settings = new_settings.clone();
                 (old, true)
             }
@@ -258,6 +312,33 @@ impl AppState {
                 &self.app_handle,
                 new_settings.autostart_enabled,
             );
+        }
+
+        #[cfg(target_os = "android")]
+        if let Some(generation) = schedule_generation {
+            let settings = new_settings.clone();
+            let ceremony_turned_on =
+                !old_settings.ceremony_enabled && new_settings.ceremony_enabled;
+            tauri::async_runtime::spawn(async move {
+                // Ask first, so that the notification of the service is allowed to show.
+                if ceremony_turned_on {
+                    match crate::platform::android::permission::request_notifications(false).await {
+                        Ok(true) => {}
+                        Ok(false) => log::warn!(
+                            "Notifications are not allowed, the wake-up notification stays hidden"
+                        ),
+                        Err(e) => log::warn!("Failed to ask for notifications: {}", e),
+                    }
+                }
+                let _ = tauri::async_runtime::spawn_blocking(move || {
+                    if let Err(e) =
+                        crate::platform::android::schedule::configure(&settings, generation)
+                    {
+                        log::warn!("Failed to update the wake-up alarm: {}", e);
+                    }
+                })
+                .await;
+            });
         }
 
         let ntp_server_changed = old_settings.ntp_server != new_settings.ntp_server;
@@ -283,11 +364,24 @@ impl AppState {
             });
         }
     }
+
+    #[cfg(target_os = "android")]
+    pub(crate) fn schedule_configuration(&self) -> (Settings, u64) {
+        let inner = self.lock();
+        let settings = inner.settings.clone();
+        let generation = crate::platform::android::schedule::next_configuration_generation();
+        (settings, generation)
+    }
 }
 
 impl AppState {
+    /// Returns the current ceremony and time status together.
     pub fn get_snapshot(&self) -> StatusSnapshot {
         let inner = self.lock();
+        self.snapshot_from(&inner)
+    }
+
+    pub(crate) fn snapshot_from(&self, inner: &Inner) -> StatusSnapshot {
         let skip_target = next_skip_date(Local::now(), inner.settings.weekdays_only);
 
         let ntp_status = if inner.settings.system_time_only {

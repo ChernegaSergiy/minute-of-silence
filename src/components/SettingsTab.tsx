@@ -1,11 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   Caption1,
   Card,
   CardHeader,
-  Divider,
   Dropdown,
+  Divider,
   Option,
   Slider,
   Switch,
@@ -20,18 +20,29 @@ import {
   ClipboardCheckmarkRegular,
   ClipboardRegular,
   Clock20Regular,
+  Warning20Regular,
   ClockDismiss20Regular,
 } from "@fluentui/react-icons";
 import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import type {
   AnnouncementVoice,
   AnthemVoice,
+  NotificationPermission,
   PersonalDate,
   Settings,
   StatusSnapshot,
   VoiceCapabilities,
 } from "../types";
-import { exportSettings, importSettings, skipNext, unskipNext } from "../utils/api";
+import {
+  exportSettings,
+  getExactAlarmPermission,
+  getNotificationPermission,
+  importSettings,
+  openExactAlarmSettings,
+  openNotificationSettings,
+  skipNext,
+  unskipNext,
+} from "../utils/api";
 import { t } from "../utils/i18n";
 import {
   blocksToSlots,
@@ -77,6 +88,8 @@ type UpdateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => v
 
 interface SettingsTabProps {
   settings: Settings;
+  supportsVisualOverlay: boolean;
+  supportsMediaResumption: boolean;
   status: StatusSnapshot;
   voices: VoiceCapabilities[];
   volumeValue: number;
@@ -89,6 +102,22 @@ interface SettingsTabProps {
 }
 
 const useStyles = makeStyles({
+  notificationsRow: {
+    display: "flex",
+    alignItems: "center",
+    columnGap: tokens.spacingHorizontalM,
+    flexWrap: "wrap",
+  },
+  notificationsIcon: {
+    color: tokens.colorPaletteYellowForeground1,
+    fontSize: "20px",
+    display: "flex",
+  },
+  notificationsText: {
+    flex: "1 1 160px",
+    minWidth: 0,
+    color: tokens.colorNeutralForeground2,
+  },
   scheduleCard: {
     marginBottom: tokens.spacingVerticalM,
   },
@@ -127,6 +156,32 @@ const useStyles = makeStyles({
     flex: 1,
     marginRight: tokens.spacingHorizontalM,
     minWidth: 0,
+  },
+  dataRow: {
+    flexWrap: "wrap",
+    columnGap: tokens.spacingHorizontalM,
+    rowGap: tokens.spacingVerticalS,
+    "& > div": {
+      flex: "1 1 240px",
+      minWidth: "min(100%, 240px)",
+      marginRight: 0,
+    },
+    "& > button": {
+      flexGrow: 1,
+      flexShrink: 0,
+      maxWidth: "100%",
+    },
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > div": {
+        flex: "0 1 auto",
+        minWidth: 0,
+      },
+      "& > button": {
+        width: "100%",
+      },
+    },
   },
   switchDesc: {
     fontSize: tokens.fontSizeBase100,
@@ -213,6 +268,8 @@ function SwitchRow({
 
 export default function SettingsTab({
   settings,
+  supportsVisualOverlay,
+  supportsMediaResumption,
   status,
   voices,
   volumeValue,
@@ -237,6 +294,36 @@ export default function SettingsTab({
     const nextVoice = voices.find((v) => v.voice === next);
     onUpdateSetting("blocks", slotsToBlocks(normalizeSlots(slots, nextVoice)));
   };
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>("unsupported");
+  const [exactAlarmPermission, setExactAlarmPermission] = useState<boolean | null>(null);
+
+  // The permission changes outside of the app, in the system dialog or settings,
+  // so it is read again whenever the app comes back to the foreground.
+  useEffect(() => {
+    let active = true;
+    const refresh = () => {
+      getNotificationPermission()
+        .then((permission) => {
+          if (active) setNotificationPermission(permission);
+        })
+        .catch((err) => console.error("Failed to read the notification permission:", err));
+      getExactAlarmPermission()
+        .then((granted) => {
+          if (active) setExactAlarmPermission(granted);
+        })
+        .catch((err) => console.error("Failed to read exact-alarm access:", err));
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [settings.ceremonyEnabled]);
+
   const [copyExportState, setCopyExportState] = useState<"idle" | "copied" | "error">("idle");
   const [importState, setImportState] = useState<"idle" | "success" | "error" | "empty">("idle");
   const [exporting, setExporting] = useState(false);
@@ -335,6 +422,60 @@ export default function SettingsTab({
             ) : undefined
           }
         />
+        {settings.ceremonyEnabled && notificationPermission === "denied" && (
+          <>
+            <Divider />
+            <div className={styles.notificationsRow}>
+              <span className={styles.notificationsIcon}>
+                <Warning20Regular />
+              </span>
+              <div className={styles.notificationsText}>
+                <Text size={200} weight="semibold" block>
+                  {t("controls.notifications_blocked.title")}
+                </Text>
+                <Caption1>{t("controls.notifications_blocked.description")}</Caption1>
+              </div>
+              <Button
+                appearance="subtle"
+                size="small"
+                onClick={() =>
+                  openNotificationSettings().catch((err) =>
+                    console.error("Failed to open the notification settings:", err),
+                  )
+                }
+              >
+                {t("controls.notifications_blocked.action")}
+              </Button>
+            </div>
+          </>
+        )}
+        {settings.ceremonyEnabled && exactAlarmPermission === false && (
+          <>
+            <Divider />
+            <div className={styles.notificationsRow}>
+              <span className={styles.notificationsIcon}>
+                <Warning20Regular />
+              </span>
+              <div className={styles.notificationsText}>
+                <Text size={200} weight="semibold" block>
+                  {t("controls.exact_alarm_blocked.title")}
+                </Text>
+                <Caption1>{t("controls.exact_alarm_blocked.description")}</Caption1>
+              </div>
+              <Button
+                appearance="subtle"
+                size="small"
+                onClick={() =>
+                  openExactAlarmSettings().catch((err) =>
+                    console.error("Failed to open exact-alarm settings:", err),
+                  )
+                }
+              >
+                {t("controls.exact_alarm_blocked.action")}
+              </Button>
+            </div>
+          </>
+        )}
       </Card>
 
       <Card className={styles.card}>
@@ -437,9 +578,9 @@ export default function SettingsTab({
           checked={settings.reminderEnabled}
           onChange={(v) => onUpdateSetting("reminderEnabled", v)}
         />
-        <Divider />
         {settings.reminderEnabled && (
           <>
+            <Divider />
             <div className={styles.volumeRow}>
               <Dropdown
                 className={styles.dropdown}
@@ -467,26 +608,30 @@ export default function SettingsTab({
                 ))}
               </Dropdown>
             </div>
-            <Divider />
           </>
         )}
-        <SwitchRow
-          id="overlayToggle"
-          label={t("controls.overlay.label")}
-          desc={t("controls.overlay.description")}
-          checked={settings.showVisualOverlay}
-          onChange={(v) => onUpdateSetting("showVisualOverlay", v)}
-        />
-        {settings.showVisualOverlay && (
+        {supportsVisualOverlay && (
           <>
             <Divider />
             <SwitchRow
-              id="flagAnimationToggle"
-              label={t("controls.flag_animation.label")}
-              desc={t("controls.flag_animation.description")}
-              checked={settings.showFlagAnimation}
-              onChange={(v) => onUpdateSetting("showFlagAnimation", v)}
+              id="overlayToggle"
+              label={t("controls.overlay.label")}
+              desc={t("controls.overlay.description")}
+              checked={settings.showVisualOverlay}
+              onChange={(v) => onUpdateSetting("showVisualOverlay", v)}
             />
+            {settings.showVisualOverlay && (
+              <>
+                <Divider />
+                <SwitchRow
+                  id="flagAnimationToggle"
+                  label={t("controls.flag_animation.label")}
+                  desc={t("controls.flag_animation.description")}
+                  checked={settings.showFlagAnimation}
+                  onChange={(v) => onUpdateSetting("showFlagAnimation", v)}
+                />
+              </>
+            )}
           </>
         )}
       </Card>
@@ -617,7 +762,7 @@ export default function SettingsTab({
           onChange={(v) => onUpdateSetting("pauseOtherPlayers", v)}
         />
         <Divider />
-        {settings.pauseOtherPlayers && (
+        {supportsMediaResumption && settings.pauseOtherPlayers && (
           <>
             <SwitchRow
               id="resumeToggle"
@@ -650,7 +795,7 @@ export default function SettingsTab({
         <Text size={100} weight="semibold" block>
           {t("sections.data")}
         </Text>
-        <div className={styles.switchRow}>
+        <div className={mergeClasses(styles.switchRow, styles.dataRow)}>
           <div className={styles.switchLabel}>
             <Text weight="medium">{t("controls.export.label")}</Text>
             <div className={styles.switchDesc}>{t("controls.export.description")}</div>
@@ -669,7 +814,7 @@ export default function SettingsTab({
           </Button>
         </div>
         <Divider />
-        <div className={styles.switchRow}>
+        <div className={mergeClasses(styles.switchRow, styles.dataRow)}>
           <div className={styles.switchLabel}>
             <Text weight="medium">{t("controls.import.label")}</Text>
             <div className={styles.switchDesc}>{t("controls.import.description")}</div>

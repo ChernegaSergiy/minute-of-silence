@@ -1,0 +1,105 @@
+name: Android APK Pipeline
+
+on:
+  push:
+    branches: ["main", "feature/**", "fix/**", "refactor/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+          key: android-multi-abi
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Initialize Tauri Android
+        run: npm run tauri -- android init --ci --skip-targets-install
+
+      - name: Apply Android app template
+        run: cp -R src-tauri/android-template/app/. src-tauri/gen/android/app/
+
+      - name: Declare ceremony permissions and components in the manifest
+        run: git apply src-tauri/android-template/ceremony-manifest.patch
+
+      # Release signing is only configured where secrets are available.
+      # Pull requests build a debug APK, which uses Gradle's own debug key.
+      - name: Configure release signing
+        if: github.event_name != 'pull_request'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.TAURI_ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.TAURI_ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.TAURI_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          : "${ANDROID_KEYSTORE_BASE64:?TAURI_ANDROID_KEYSTORE_BASE64 is required for release builds}"
+          : "${ANDROID_KEY_ALIAS:?TAURI_ANDROID_KEY_ALIAS is required for release builds}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?TAURI_ANDROID_KEYSTORE_PASSWORD is required for release builds}"
+          keystore_path="$RUNNER_TEMP/minute-of-silence-release.keystore"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          test -s "$keystore_path"
+          {
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "password=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keystorePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "storeFile=$keystore_path"
+          } > src-tauri/gen/android/keystore.properties
+          test -s src-tauri/gen/android/keystore.properties
+
+      - name: Build debug APKs (pull request)
+        if: github.event_name == 'pull_request'
+        run: npm run tauri -- android build --ci --split-per-abi --apk --debug
+
+      - name: Build release APKs
+        if: github.event_name != 'pull_request'
+        run: npm run tauri -- android build --ci --split-per-abi --apk
+
+      - name: Run Android unit tests
+        run: ./gradlew :app:testUniversalDebugUnitTest
+        working-directory: src-tauri/gen/android
+
+      - name: Upload APK artifacts
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: minute-of-silence-android-apks
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk

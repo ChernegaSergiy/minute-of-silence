@@ -4,26 +4,32 @@ use chrono::{Datelike, FixedOffset, Local, NaiveDate, NaiveTime, Offset, TimeZon
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Listener, Manager};
+#[cfg(target_os = "windows")]
+use tauri::Listener;
+use tauri::{AppHandle, Emitter, Manager};
+#[cfg(not(target_os = "android"))]
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
-use crate::core::audio::{AudioEngine, lead_in_pause};
+use crate::core::audio::lead_in_pause;
+#[cfg(any(target_os = "android", test))]
+use crate::core::settings::PersonalDate;
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
 use crate::core::voices::effective_blocks;
-use crate::state::AppState;
+#[cfg(target_os = "android")]
+use crate::state::CeremonyKind;
+use crate::state::{AppState, CeremonyRuntime};
 
 /// Scheduler for the daily ceremony.
 pub struct CeremonyScheduler {
-    app: AppHandle,
-    audio: Arc<AudioEngine>,
+    runtime: Arc<CeremonyRuntime>,
     voice_durations: HashMap<AnnouncementVoice, Duration>,
     bell_durations: HashMap<AnnouncementVoice, Duration>,
 }
 
 impl CeremonyScheduler {
-    pub fn new(app: AppHandle) -> Self {
-        let audio = app.state::<AppState>().audio.clone();
+    pub(crate) fn new(runtime: Arc<CeremonyRuntime>) -> Self {
+        let audio = Arc::clone(&runtime.audio);
         let mut voice_durations = HashMap::new();
         let mut bell_durations = HashMap::new();
         for voice in [
@@ -54,8 +60,7 @@ impl CeremonyScheduler {
             );
         }
         Self {
-            app,
-            audio,
+            runtime,
             voice_durations,
             bell_durations,
         }
@@ -72,23 +77,20 @@ impl CeremonyScheduler {
     pub async fn run(&self) {
         log::info!("Scheduler loop started");
 
-        // Listen for resume-from-sleep event (Windows)
-        let state = self.app.state::<AppState>();
-        let ntp_service = state.ntp_service.clone();
-        let app_emit_handle = self.app.clone();
-
-        self.app.listen("resume-from-sleep", move |_| {
-            log::info!("Resume-from-sleep event received, forcing NTP sync...");
-            let ntp = ntp_service.clone();
-            let app = app_emit_handle.clone();
-            tauri::async_runtime::spawn(async move {
-                let _ = ntp.sync().await;
-                let _ = app.emit("ntp-synced", ());
+        #[cfg(target_os = "windows")]
+        if let Some(app) = self.runtime.app() {
+            let runtime = Arc::clone(&self.runtime);
+            app.listen("resume-from-sleep", move |_| {
+                let runtime = Arc::clone(&runtime);
+                tauri::async_runtime::spawn(async move { Self::sync_ntp(&runtime).await });
             });
-        });
+        }
 
         // Initial NTP sync
-        self.sync_ntp().await;
+        #[cfg(not(target_os = "android"))]
+        Self::sync_ntp(&self.runtime).await;
+        #[cfg(target_os = "android")]
+        self.sync_ntp_in_background();
 
         // Track the date for which we already sent a reminder,
         // so we don't fire it again on the same day even after restart.
@@ -102,7 +104,10 @@ impl CeremonyScheduler {
             // Periodic NTP sync (every hour)
             let now_local = Local::now();
             if now_local.minute() == 0 && now_local.second() == 0 {
-                self.sync_ntp().await;
+                #[cfg(not(target_os = "android"))]
+                Self::sync_ntp(&self.runtime).await;
+                #[cfg(target_os = "android")]
+                self.sync_ntp_in_background();
             }
 
             let now = self.get_synchronized_now();
@@ -111,8 +116,7 @@ impl CeremonyScheduler {
 
             // Reminder notification
             let reminder_info = {
-                let state = self.app.state::<AppState>();
-                let inner = state.lock();
+                let inner = self.runtime.lock();
                 let mins = inner.settings.reminder_minutes_before;
 
                 if !inner.settings.reminder_enabled
@@ -148,8 +152,7 @@ impl CeremonyScheduler {
 
             // Ceremony trigger
             let should_trigger = {
-                let state = self.app.state::<AppState>();
-                let inner = state.lock();
+                let inner = self.runtime.lock();
 
                 if !inner.settings.ceremony_enabled
                     || (inner.settings.weekdays_only && today.weekday().number_from_monday() > 5)
@@ -209,6 +212,8 @@ impl CeremonyScheduler {
 
             if should_trigger {
                 log::info!("Ceremony triggered at {}", now_time);
+                #[cfg(target_os = "android")]
+                self.schedule_personal_dates_notification(today, now_time);
                 self.trigger_ceremony(false).await;
             }
         }
@@ -236,14 +241,18 @@ impl CeremonyScheduler {
             return;
         }
 
-        // Standard path for non-MSIX Windows and Linux
-        let result = self
-            .app
-            .notification()
-            .builder()
-            .title(title)
-            .body(body)
-            .show();
+        #[cfg(target_os = "android")]
+        let result = crate::platform::android::device::call::<()>(
+            "postReminder",
+            serde_json::json!({ "title": title, "body": body }),
+        );
+        #[cfg(not(target_os = "android"))]
+        let result = {
+            let Some(app) = self.runtime.app() else {
+                return;
+            };
+            app.notification().builder().title(title).body(body).show()
+        };
 
         match result {
             Ok(_) => log::info!("Reminder notification sent ({} min before)", mins_before),
@@ -251,18 +260,78 @@ impl CeremonyScheduler {
         }
     }
 
-    async fn sync_ntp(&self) {
-        let state = self.app.state::<AppState>();
+    #[cfg(target_os = "android")]
+    fn schedule_personal_dates_notification(&self, date: NaiveDate, time: NaiveTime) {
+        let dates_result = match self.runtime.app() {
+            Some(app) => crate::app::commands::get_personal_dates(app),
+            None => crate::platform::android::headless::read_personal_dates(),
+        };
+        let dates = match dates_result {
+            Ok(dates) => dates,
+            Err(error) => {
+                log::warn!("Failed to load personal dates for notification: {error}");
+                return;
+            }
+        };
+        let labels = personal_date_labels_for_day(&dates, date);
+        if labels.is_empty() {
+            return;
+        }
 
-        if state.lock().settings.system_time_only {
-            state.ntp_service.clear_cache();
+        let ceremony_time = NaiveTime::MIN + chrono::Duration::hours(9);
+        let delay = ceremony_time
+            .signed_duration_since(time)
+            .to_std()
+            .unwrap_or_default();
+        if delay.is_zero() {
+            if let Err(error) = crate::platform::android::device::call::<()>(
+                "postPersonalDates",
+                serde_json::json!({ "labels": labels }),
+            ) {
+                log::warn!("Failed to post personal dates notification: {error}");
+            }
+            return;
+        }
+
+        let runtime = Arc::clone(&self.runtime);
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(delay).await;
+
+            let ceremony_is_active = runtime
+                .lock()
+                .active_ceremony
+                .is_some_and(|ceremony| ceremony.kind == CeremonyKind::Scheduled);
+            if !ceremony_is_active {
+                return;
+            }
+
+            if let Err(error) = crate::platform::android::device::call::<()>(
+                "postPersonalDates",
+                serde_json::json!({ "labels": labels }),
+            ) {
+                log::warn!("Failed to post personal dates notification: {error}");
+            }
+        });
+    }
+
+    #[cfg(target_os = "android")]
+    fn sync_ntp_in_background(&self) {
+        let runtime = Arc::clone(&self.runtime);
+        tauri::async_runtime::spawn(async move { Self::sync_ntp(&runtime).await });
+    }
+
+    async fn sync_ntp(runtime: &CeremonyRuntime) {
+        if runtime.lock().settings.system_time_only {
+            runtime.ntp_service.clear_cache();
             return;
         }
 
         log::info!("Attempting NTP synchronization...");
-        let _ = state.ntp_service.sync().await;
+        let _ = runtime.ntp_service.sync().await;
         // Notify frontend (it will call get_status and use NtpService's state)
-        let _ = self.app.emit("ntp-synced", ());
+        if let Some(app) = runtime.app() {
+            let _ = app.emit("ntp-synced", ());
+        }
     }
 
     fn is_within_window(&self, now: NaiveTime, target: NaiveTime, grace_minutes: u8) -> bool {
@@ -298,8 +367,7 @@ impl CeremonyScheduler {
     fn get_synchronized_now(&self) -> chrono::DateTime<FixedOffset> {
         let utc_now = Utc::now();
 
-        let state = self.app.state::<AppState>();
-        let ntp_offset = state.ntp_service.get_offset();
+        let ntp_offset = self.runtime.ntp_service.get_offset();
         let corrected_utc = if let Some(offset_ms) = ntp_offset {
             utc_now + chrono::Duration::milliseconds(offset_ms)
         } else {
@@ -328,19 +396,38 @@ impl CeremonyScheduler {
 
     pub async fn trigger_ceremony(&self, is_test: bool) {
         let platform = crate::platform::get_platform();
-        let manager = CeremonyManager::new(self.app.clone(), platform, Arc::clone(&self.audio));
+        let manager = CeremonyManager::new(Arc::clone(&self.runtime), platform);
         manager.run_ceremony(is_test).await;
     }
 }
 
-pub async fn run(app: AppHandle) {
-    let scheduler = CeremonyScheduler::new(app);
+#[cfg(any(target_os = "android", test))]
+fn personal_date_labels_for_day(dates: &[PersonalDate], date: NaiveDate) -> Vec<String> {
+    let month = date.month() as u8;
+    let day = date.day() as u8;
+    let is_non_leap_february_28 = month == 2 && day == 28 && date.with_day(29).is_none();
+
+    dates
+        .iter()
+        .filter(|personal_date| {
+            (personal_date.month == month && personal_date.day == day)
+                || (is_non_leap_february_28 && personal_date.month == 2 && personal_date.day == 29)
+        })
+        .map(|personal_date| personal_date.label.clone())
+        .collect()
+}
+
+pub(crate) async fn run(runtime: Arc<CeremonyRuntime>) {
+    let scheduler = CeremonyScheduler::new(runtime);
     scheduler.run().await;
 }
 
 pub async fn trigger_now(app: AppHandle, is_test: bool) {
-    let scheduler = CeremonyScheduler::new(app);
-    scheduler.trigger_ceremony(is_test).await;
+    let runtime = Arc::clone(&app.state::<AppState>().runtime);
+    let platform = crate::platform::get_platform();
+    CeremonyManager::new(runtime, platform)
+        .run_ceremony(is_test)
+        .await;
 }
 
 #[cfg(test)]
@@ -409,6 +496,67 @@ mod tests {
         assert_eq!(
             CeremonyScheduler::get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
             ANNOUNCEMENT + BELL + METRONOME_LEAD_PAUSE
+        );
+    }
+
+    #[test]
+    fn personal_dates_for_today_include_all_matching_labels() {
+        let dates = [
+            PersonalDate {
+                id: None,
+                month: 11,
+                day: 19,
+                year: 2014,
+                label: "Date one".to_string(),
+            },
+            PersonalDate {
+                id: None,
+                month: 11,
+                day: 19,
+                year: 2020,
+                label: "Date two".to_string(),
+            },
+            PersonalDate {
+                id: None,
+                month: 11,
+                day: 20,
+                year: 2010,
+                label: "Other date".to_string(),
+            },
+        ];
+
+        assert_eq!(
+            personal_date_labels_for_day(
+                &dates,
+                NaiveDate::from_ymd_opt(2026, 11, 19).expect("valid date")
+            ),
+            ["Date one", "Date two"]
+        );
+    }
+
+    #[test]
+    fn february_29_dates_are_included_on_february_28_in_non_leap_years() {
+        let date = PersonalDate {
+            id: None,
+            month: 2,
+            day: 29,
+            year: 2000,
+            label: "Leap day".to_string(),
+        };
+
+        assert_eq!(
+            personal_date_labels_for_day(
+                std::slice::from_ref(&date),
+                NaiveDate::from_ymd_opt(2025, 2, 28).expect("valid date")
+            ),
+            ["Leap day"]
+        );
+        assert!(
+            personal_date_labels_for_day(
+                std::slice::from_ref(&date),
+                NaiveDate::from_ymd_opt(2024, 2, 28).expect("valid date")
+            )
+            .is_empty()
         );
     }
 }

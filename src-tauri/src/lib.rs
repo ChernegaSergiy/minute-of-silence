@@ -13,6 +13,7 @@ pub use core::settings::{AudioPreset, CONFIG_SCHEMA_VERSION, Settings, SettingsE
 pub use error::{AppError, Result};
 pub use state::AppState;
 
+#[cfg(desktop)]
 #[derive(serde::Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UpdateAvailablePayload {
@@ -23,23 +24,38 @@ struct UpdateAvailablePayload {
 }
 
 /// Application entry point — called from `main.rs`.
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec!["--hidden"]),
-        ))
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        builder = builder
+            .plugin(tauri_plugin_autostart::init(
+                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                Some(vec!["--hidden"]),
+            ))
+            .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w
+                        .unminimize()
+                        .and_then(|_| w.show())
+                        .and_then(|_| w.set_focus());
+                }
+            }));
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        builder = builder
+            .plugin(crate::platform::android::bridge::init())
+            .plugin(crate::platform::android::custom_tabs::init());
+    }
+
+    builder
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(w) = app.get_webview_window("main") {
-                let _ = w
-                    .unminimize()
-                    .and_then(|_| w.show())
-                    .and_then(|_| w.set_focus());
-            }
-        }))
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)
@@ -59,10 +75,49 @@ pub fn run() {
 
             // --- 2. State Management ---
             let settings = Settings::load_from_store(handle);
-            app.manage(AppState::new_with_settings(
-                handle.clone(),
-                settings.clone(),
-            ));
+            let state = AppState::new_with_settings(handle.clone(), settings.clone());
+            app.manage(state);
+            app.state::<AppState>().runtime.attach_app(handle.clone());
+
+            // --- 2.0. Native schedule and autostart (Android) ---
+            // Off the setup thread: the calls wait for the answer of the native side.
+            #[cfg(target_os = "android")]
+            {
+                let app_handle = handle.clone();
+                let (settings, schedule_generation) =
+                    app.state::<AppState>().schedule_configuration();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(error) =
+                        crate::platform::android::notification_actions::register(app_handle.clone())
+                            .await
+                    {
+                        log::warn!("Failed to register notification actions: {error}");
+                    }
+                    let ceremony_enabled = settings.ceremony_enabled;
+                    let _ = tauri::async_runtime::spawn_blocking(move || {
+                        if let Err(e) = crate::platform::android::schedule::configure(
+                            &settings,
+                            schedule_generation,
+                        ) {
+                            log::warn!("Failed to set the wake-up alarm: {}", e);
+                        }
+                        crate::platform::apply_autostart_enabled(
+                            &app_handle,
+                            settings.autostart_enabled,
+                        );
+                    })
+                    .await;
+                    // The ceremony is on by default, so the switch may never be turned on
+                    // by the user. Ask for notifications once, at the first launch, after
+                    // the wake-up alarm has been configured.
+                    if ceremony_enabled
+                        && let Err(e) =
+                            crate::platform::android::permission::request_notifications(true).await
+                    {
+                        log::warn!("Failed to ask for notifications: {}", e);
+                    }
+                });
+            }
 
             // --- 2.1. Store Change Listener ---
             {
@@ -81,6 +136,7 @@ pub fn run() {
             }
 
             // --- 3. UI Initialization ---
+            #[cfg(desktop)]
             app::tray::build_tray(app)?;
 
             #[cfg(target_os = "windows")]
@@ -89,33 +145,39 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             crate::platform::linux::theme::start_theme_watcher(handle.clone());
 
-            let is_hidden = std::env::args().any(|arg| arg == "--hidden");
-            let window =
-                tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
-                    .title("Minute of Silence")
-                    .inner_size(640.0, 520.0)
-                    .min_inner_size(500.0, 400.0)
-                    .center()
-                    .resizable(true)
-                    .decorations(true)
-                    .skip_taskbar(true)
-                    .visible(!is_hidden)
-                    .build()?;
-
-            let main_window = window.clone();
-            window.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
-                    let _ = main_window.hide();
-                }
-            });
-
-            #[cfg(target_os = "windows")]
+            #[cfg(desktop)]
             {
+                let is_hidden = std::env::args().any(|arg| arg == "--hidden");
+                let window =
+                    tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                        .title("Minute of Silence")
+                        .inner_size(640.0, 520.0)
+                        .min_inner_size(500.0, 400.0)
+                        .center()
+                        .resizable(true)
+                        .decorations(true)
+                        .skip_taskbar(true)
+                        .visible(!is_hidden)
+                        .build()?;
+
+                let main_window = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = main_window.hide();
+                    }
+                });
+
+                #[cfg(target_os = "windows")]
                 crate::platform::windows::power::register_power_hook(&window);
             }
 
-            #[cfg(not(test))]
+            #[cfg(mobile)]
+            tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::default())
+                .title("Minute of Silence")
+                .build()?;
+
+            #[cfg(all(desktop, not(test)))]
             {
                 let app_handle = handle.clone();
                 tauri::async_runtime::spawn_blocking(move || {
@@ -128,10 +190,11 @@ pub fn run() {
             }
 
             // --- 4. Core Services ---
-            let app_handle = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                core::scheduler::run(app_handle).await;
-            });
+            #[cfg(not(target_os = "android"))]
+            {
+                let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
+                tauri::async_runtime::spawn(core::scheduler::run(runtime));
+            }
 
             // --- 5. Auto Update Check ---
             #[cfg(desktop)]
@@ -189,6 +252,11 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             app::commands::sync_autostart_from_system,
+            app::commands::notification_permission_status,
+            app::commands::open_notification_settings,
+            app::commands::exact_alarm_permission_status,
+            app::commands::open_exact_alarm_settings,
+            app::commands::open_about_link,
             app::commands::get_status,
             app::commands::sync_ntp_now,
             app::commands::skip_next,
@@ -202,6 +270,7 @@ pub fn run() {
             app::commands::export_settings,
             app::commands::import_settings,
             app::commands::get_settings,
+            app::commands::get_platform,
             app::commands::get_initial_state,
             app::commands::save_settings,
             app::commands::reset_settings,

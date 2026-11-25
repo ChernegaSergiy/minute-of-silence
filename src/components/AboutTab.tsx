@@ -1,9 +1,8 @@
 import { Button, Link, makeStyles, tokens } from "@fluentui/react-components";
 import { ArrowSyncRegular, ClipboardCheckmarkRegular, ClipboardRegular } from "@fluentui/react-icons";
 import { useCallback, useState } from "react";
-import { open } from "@tauri-apps/plugin-shell";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { getLogContents } from "../utils/api";
+import { getLogContents, openAboutLink } from "../utils/api";
 import { t } from "../utils/i18n";
 import { type UpdateInfo } from "./UpdateDialog";
 
@@ -48,6 +47,13 @@ const useStyles = makeStyles({
     display: "flex",
     justifyContent: "center",
     gap: tokens.spacingHorizontalM,
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > button": {
+        width: "100%",
+      },
+    },
   },
   aboutLicense: {
     fontSize: tokens.fontSizeBase100,
@@ -106,6 +112,14 @@ export default function AboutTab({ version, onCheckForUpdates, onUpdateFound }: 
     window.setTimeout(() => setCopyState("idle"), 2000);
   }, [copyState]);
 
+  const handleOpenLink = useCallback(async (url: string) => {
+    try {
+      await openAboutLink(url);
+    } catch (error) {
+      console.error("Failed to open About link:", error);
+    }
+  }, []);
+
   return (
     <div className={styles.aboutContent}>
       <img src="/logo.png" className={styles.aboutLogo} />
@@ -116,12 +130,12 @@ export default function AboutTab({ version, onCheckForUpdates, onUpdateFound }: 
       <div className={styles.aboutDesc}>{t("about.description")}</div>
       <div className={styles.aboutDesc}>{t("about.acknowledgments")}</div>
       <div className={styles.aboutLinks}>
-        <Link onClick={() => open("https://bohdan.com.ua/memoryminute")}>
+        <Link onClick={() => void handleOpenLink("https://bohdan.com.ua/memoryminute")}>
           bohdan.com.ua/memoryminute
         </Link>
         <Link
           onClick={() =>
-            open("https://github.com/ChernegaSergiy/minute-of-silence")
+            void handleOpenLink("https://github.com/ChernegaSergiy/minute-of-silence")
           }
         >
           github.com/ChernegaSergiy/minute-of-silence

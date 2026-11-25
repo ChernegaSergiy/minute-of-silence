@@ -1,22 +1,54 @@
 //! Backend audio playback engine.
 
+#[cfg(not(target_os = "android"))]
 use rodio::{Decoder, DeviceSinkBuilder, Player};
+#[cfg(not(target_os = "android"))]
 use std::fs::File;
+#[cfg(not(target_os = "android"))]
 use std::io::BufReader;
+#[cfg(not(target_os = "android"))]
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, Manager};
+#[cfg(not(target_os = "android"))]
+use tauri::Manager;
+#[cfg(not(target_os = "android"))]
+use tauri::{AppHandle, Emitter};
 
 use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
 use crate::core::voices::{VoiceAssets, effective_blocks};
-use crate::error::{AppError, Result};
+#[cfg(not(target_os = "android"))]
+use crate::error::AppError;
+use crate::error::Result;
+
+pub trait CeremonyAudioBackend: Send + Sync + std::fmt::Debug {
+    fn stop(&self);
+    fn stop_baseline(&self) -> u64;
+    fn get_duration(&self, filename: &str) -> Result<Duration>;
+    fn play_blocks(
+        &self,
+        blocks: &[PresetBlock],
+        volume: u8,
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+        start_counter: u64,
+    ) -> Result<()>;
+    fn estimate_duration(
+        &self,
+        blocks: &[PresetBlock],
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+    ) -> Result<Duration>;
+    fn get_announcement_filename(&self, voice: AnnouncementVoice) -> String;
+    fn get_bell_filename(&self, voice: AnnouncementVoice) -> String;
+}
 
 /// Audio engine for ceremony playback.
 /// This acts as a class responsible for all audio operations.
 #[derive(Debug)]
 pub struct AudioEngine {
+    #[cfg(not(target_os = "android"))]
     app_handle: AppHandle,
     stop_counter: AtomicU64,
 }
@@ -51,8 +83,9 @@ enum Step {
 }
 
 impl AudioEngine {
-    pub fn new(app_handle: AppHandle) -> Self {
+    pub fn new(#[cfg(not(target_os = "android"))] app_handle: AppHandle) -> Self {
         Self {
+            #[cfg(not(target_os = "android"))]
             app_handle,
             stop_counter: AtomicU64::new(0),
         }
@@ -61,6 +94,8 @@ impl AudioEngine {
     /// Stop any current playback by incrementing the counter.
     pub fn stop(&self) {
         self.stop_counter.fetch_add(1, Ordering::SeqCst);
+        #[cfg(target_os = "android")]
+        self.stop_native_player();
     }
 
     /// The current stop counter. Playback started with this value ends as soon
@@ -84,6 +119,7 @@ impl AudioEngine {
         false
     }
 
+    #[cfg(not(target_os = "android"))]
     fn wait_player_interruptible(&self, player: &Player, start_counter: u64) -> bool {
         while !player.empty() {
             if self.is_stopped(start_counter) {
@@ -95,6 +131,7 @@ impl AudioEngine {
         false
     }
 
+    #[cfg(not(target_os = "android"))]
     pub fn get_duration(&self, filename: &str) -> Result<Duration> {
         use symphonia::core::formats::FormatOptions;
         use symphonia::core::formats::TrackType;
@@ -135,6 +172,7 @@ impl AudioEngine {
     ///
     /// Playback ends early when a stop is requested after `start_counter`,
     /// which the caller takes from [`AudioEngine::stop_baseline`].
+    #[cfg(not(target_os = "android"))]
     pub fn play_blocks(
         &self,
         blocks: &[PresetBlock],
@@ -196,6 +234,96 @@ impl AudioEngine {
         Ok(())
     }
 
+    #[cfg(target_os = "android")]
+    pub fn get_duration(&self, filename: &str) -> Result<Duration> {
+        crate::platform::android::audio::duration(filename)
+    }
+
+    /// Plays the given blocks one after another with the selected voices.
+    ///
+    /// The steps are the same as on desktop, the recordings play in the native
+    /// Android player. Playback ends early when a stop is requested after
+    /// `start_counter`.
+    #[cfg(target_os = "android")]
+    pub fn play_blocks(
+        &self,
+        blocks: &[PresetBlock],
+        volume: u8,
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+        start_counter: u64,
+    ) -> Result<()> {
+        let result = self.play_steps(
+            blocks_to_steps(blocks, voice, anthem_voice),
+            volume as f32 / 100.0,
+            start_counter,
+        );
+        if result.is_err() {
+            self.stop_native_player();
+        }
+        result
+    }
+
+    #[cfg(target_os = "android")]
+    fn play_steps(&self, steps: Vec<Step>, gain: f32, start_counter: u64) -> Result<()> {
+        use crate::platform::android::audio as native;
+
+        for step in steps {
+            if self.is_stopped(start_counter) {
+                self.stop_native_player();
+                return Ok(());
+            }
+
+            match step {
+                Step::File(name) => native::enqueue(&name, gain)?,
+                Step::Pause(dur) => {
+                    if self.sleep_interruptible(dur, start_counter) {
+                        self.stop_native_player();
+                        return Ok(());
+                    }
+                }
+                Step::Wait => {
+                    if self.wait_idle_interruptible(start_counter)? {
+                        return Ok(());
+                    }
+                }
+                Step::Anthem(name) => {
+                    let stopped = native::enqueue(&name, gain)
+                        .and_then(|()| self.wait_idle_interruptible(start_counter));
+                    if stopped? {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        self.wait_idle_interruptible(start_counter)?;
+        Ok(())
+    }
+
+    /// Waits until the native player is idle. Returns true when a stop was
+    /// requested meanwhile, after stopping the player.
+    #[cfg(target_os = "android")]
+    fn wait_idle_interruptible(&self, start_counter: u64) -> Result<bool> {
+        loop {
+            if self.is_stopped(start_counter) {
+                self.stop_native_player();
+                return Ok(true);
+            }
+            if crate::platform::android::audio::is_idle()? {
+                return Ok(false);
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+    }
+
+    #[cfg(target_os = "android")]
+    fn stop_native_player(&self) {
+        if let Err(e) = crate::platform::android::audio::stop() {
+            log::warn!("Failed to stop the native player: {}", e);
+        }
+    }
+
     /// Estimate total duration of the blocks by summing file durations and explicit pauses.
     pub fn estimate_duration(
         &self,
@@ -233,6 +361,7 @@ impl AudioEngine {
 
     /// Resolves the absolute path to an audio resource using Tauri's path resolver.
     /// Works on all platforms: EXE, MSI, MSIX, AppImage, Snap.
+    #[cfg(not(target_os = "android"))]
     fn get_path(&self, filename: &str) -> Result<PathBuf> {
         let resource_path = format!("audio/{}", filename);
 
@@ -272,6 +401,48 @@ impl AudioEngine {
             "Audio file not found: {}",
             filename
         )))
+    }
+}
+
+impl CeremonyAudioBackend for AudioEngine {
+    fn stop(&self) {
+        AudioEngine::stop(self);
+    }
+
+    fn stop_baseline(&self) -> u64 {
+        AudioEngine::stop_baseline(self)
+    }
+
+    fn get_duration(&self, filename: &str) -> Result<Duration> {
+        AudioEngine::get_duration(self, filename)
+    }
+
+    fn play_blocks(
+        &self,
+        blocks: &[PresetBlock],
+        volume: u8,
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+        start_counter: u64,
+    ) -> Result<()> {
+        AudioEngine::play_blocks(self, blocks, volume, voice, anthem_voice, start_counter)
+    }
+
+    fn estimate_duration(
+        &self,
+        blocks: &[PresetBlock],
+        voice: AnnouncementVoice,
+        anthem_voice: AnthemVoice,
+    ) -> Result<Duration> {
+        AudioEngine::estimate_duration(self, blocks, voice, anthem_voice)
+    }
+
+    fn get_announcement_filename(&self, voice: AnnouncementVoice) -> String {
+        AudioEngine::get_announcement_filename(self, voice)
+    }
+
+    fn get_bell_filename(&self, voice: AnnouncementVoice) -> String {
+        AudioEngine::get_bell_filename(self, voice)
     }
 }
 

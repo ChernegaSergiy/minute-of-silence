@@ -8,12 +8,23 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { AppInitialState, ExportBundle, PersonalDate, Settings, StatusSnapshot } from "../types";
+import type {
+  AppInitialState,
+  ExportBundle,
+  NotificationPermission,
+  PersonalDate,
+  Settings,
+  StatusSnapshot,
+} from "../types";
 
 // Initial State
 
 export async function getInitialState(): Promise<AppInitialState> {
   return invoke<AppInitialState>("get_initial_state");
+}
+
+export async function getPlatform(): Promise<"android" | "desktop"> {
+  return invoke<"android" | "desktop">("get_platform");
 }
 
 // Settings
@@ -60,6 +71,28 @@ export async function getStatus(): Promise<StatusSnapshot> {
 
 export async function syncNtpNow(): Promise<StatusSnapshot> {
   return invoke<StatusSnapshot>("sync_ntp_now");
+}
+
+// Notifications
+
+export async function getNotificationPermission(): Promise<NotificationPermission> {
+  return invoke<NotificationPermission>("notification_permission_status");
+}
+
+export async function openNotificationSettings(): Promise<void> {
+  return invoke<void>("open_notification_settings");
+}
+
+export async function getExactAlarmPermission(): Promise<boolean> {
+  return invoke<boolean>("exact_alarm_permission_status");
+}
+
+export async function openExactAlarmSettings(): Promise<void> {
+  return invoke<void>("open_exact_alarm_settings");
+}
+
+export async function openAboutLink(url: string): Promise<void> {
+  return invoke<void>("open_about_link", { url });
 }
 
 // Skip / unskip

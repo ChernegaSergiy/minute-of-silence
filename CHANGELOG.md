@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Android support with the ceremony constructor, test ceremonies and reminders.
+- Responsive navigation, vertically stacked form fields and adaptive action buttons for narrow screens.
+- Background ceremony playback with the screen off, supported by a foreground service and scheduled app wake-up before the ceremony.
+- Restore the Android ceremony schedule after a device restart or app update when autostart is enabled.
+- Android media volume and mute controls, with temporary audio focus to let compatible players pause during the ceremony.
+- Android notification permission request and an in-app warning with a shortcut to system settings when notifications are blocked.
+- Ukrainian and English Android app names, adaptive launcher icons with themed icon support, and a dedicated upright trident icon for notifications.
+
+### Changed
+- Disable browser tap highlighting and selection of non-editable interface text on touch devices, while preserving text selection in input fields.
+
+### Fixed
+- Prevent personal date form controls from overflowing their containers and overlapping adjacent fields or the Add button in narrow windows.
+- Expand the Add button to the full row width when it wraps below the personal date fields.
+- Align the Add button vertically with the personal date fields by removing its extra bottom margin.
+- Keep the visual overlay title and subtitle centered when their text wraps onto multiple lines.
+- Allow the settings copy and paste buttons to wrap below their descriptions when space is limited, preventing the descriptions from collapsing into narrow columns.
+
 ## [0.12.1] - 2026-11-17
 
 ### Added

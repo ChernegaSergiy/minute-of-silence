@@ -27,12 +27,24 @@ const useStyles = makeStyles({
   card: {
     marginBottom: tokens.spacingVerticalM,
   },
+  field: {
+    gridTemplateColumns: "minmax(0, 1fr)",
+  },
 
   addRow: {
     display: "flex",
     gap: tokens.spacingHorizontalS,
     alignItems: "flex-end",
     flexWrap: "wrap",
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > div": {
+        flex: "0 1 auto",
+        minWidth: 0,
+        width: "100%",
+      },
+    },
   },
   addDateField: {
     flex: "1 1 160px",
@@ -43,9 +55,12 @@ const useStyles = makeStyles({
     minWidth: "120px",
   },
   addButton: {
+    flexGrow: 1,
     flexShrink: 0,
     alignSelf: "flex-end",
-    marginBottom: "1px",
+    "@media (max-width: 600px)": {
+      width: "100%",
+    },
   },
 
   listItem: {
@@ -102,6 +117,15 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     alignItems: "flex-end",
     flexWrap: "wrap",
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > div": {
+        flex: "0 1 auto",
+        minWidth: 0,
+        width: "100%",
+      },
+    },
   },
   editDateField: {
     flex: "1 1 160px",
@@ -115,6 +139,13 @@ const useStyles = makeStyles({
     display: "flex",
     gap: tokens.spacingHorizontalXS,
     justifyContent: "flex-end",
+    "@media (max-width: 600px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+      "& > button": {
+        width: "100%",
+      },
+    },
   },
 });
 
@@ -225,7 +256,7 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
 
         <div className={styles.addRow}>
           <div className={styles.addDateField}>
-            <Field label={t("personal_dates.date")}>
+            <Field className={styles.field} label={t("personal_dates.date")}>
               <DatePicker
                 placeholder={t("personal_dates.date")}
                 value={newDate}
@@ -237,7 +268,7 @@ export default function PersonalDatesTab({ personalDates, onPersonalDatesChange 
           </div>
 
           <div className={styles.addLabelField}>
-            <Field label={t("personal_dates.label")}>
+            <Field className={styles.field} label={t("personal_dates.label")}>
               <Input
                 placeholder={t("personal_dates.label")}
                 value={newLabel}
@@ -361,7 +392,7 @@ function EditForm({
     <>
       <div className={styles.editRow}>
         <div className={styles.editDateField}>
-          <Field label={t("personal_dates.date")}>
+          <Field className={styles.field} label={t("personal_dates.date")}>
             <DatePicker
               value={date}
               onSelectDate={(d) => setDate(d ?? null)}
@@ -371,7 +402,7 @@ function EditForm({
           </Field>
         </div>
         <div className={styles.editLabelField}>
-          <Field label={t("personal_dates.label")}>
+          <Field className={styles.field} label={t("personal_dates.label")}>
             <Input
               value={label}
               onChange={(_, d) => setLabel(d.value)}

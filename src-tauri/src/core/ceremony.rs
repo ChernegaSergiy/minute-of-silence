@@ -1,39 +1,42 @@
-use crate::core::audio::AudioEngine;
+#[cfg(desktop)]
 use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
-use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase};
+use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase, CeremonyRuntime};
+#[cfg(desktop)]
 use rust_i18n::t;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, EventId, Listener, Manager, WebviewWindowBuilder};
+#[cfg(desktop)]
+use tauri::WebviewWindowBuilder;
+#[cfg(desktop)]
+use tauri::{AppHandle, EventId, Listener};
+use tauri::{Emitter, Manager};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
+#[cfg(desktop)]
 static PAUSED_PLAYERS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 /// One-shot anthem listeners of the running ceremony, removed when it finishes.
+#[cfg(desktop)]
 static ANTHEM_LISTENERS: Mutex<Vec<EventId>> = Mutex::new(Vec::new());
 
 /// Orchestrator for the ceremony.
 /// This class manages the sequence of events during the ceremony.
 pub struct CeremonyManager {
-    app: AppHandle,
+    runtime: Arc<CeremonyRuntime>,
     platform: Box<dyn Platform>,
-    audio: Arc<AudioEngine>,
 }
 
 impl CeremonyManager {
-    pub fn new(app: AppHandle, platform: Box<dyn Platform>, audio: Arc<AudioEngine>) -> Self {
-        Self {
-            app,
-            platform,
-            audio,
-        }
+    pub(crate) fn new(runtime: Arc<CeremonyRuntime>, platform: Box<dyn Platform>) -> Self {
+        Self { runtime, platform }
     }
 
     pub async fn run_ceremony(&self, is_test: bool) {
+        #[cfg(desktop)]
+        let should_resume_players;
         let (
             should_pause_players,
-            should_resume_players,
             volume_priority,
             auto_unmute,
             target_volume,
@@ -41,11 +44,13 @@ impl CeremonyManager {
             announcement_voice,
             anthem_voice,
         ) = {
-            let state = self.app.state::<AppState>();
-            let inner = state.lock();
+            let inner = self.runtime.lock();
+            #[cfg(desktop)]
+            {
+                should_resume_players = inner.settings.resume_after_ceremony;
+            }
             (
                 inner.settings.pause_other_players,
-                inner.settings.resume_after_ceremony,
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
                 inner.settings.volume,
@@ -56,9 +61,9 @@ impl CeremonyManager {
         };
 
         // 1. Mark active
+        let started = (!is_test).then(chrono::Local::now);
         let ceremony_id = {
-            let state = self.app.state::<AppState>();
-            let mut inner = state.lock();
+            let mut inner = self.runtime.lock();
             if inner.active_ceremony.is_some() {
                 log::info!("Ceremony trigger ignored: a ceremony is already running");
                 return;
@@ -73,22 +78,27 @@ impl CeremonyManager {
                     CeremonyKind::Scheduled
                 },
             ));
-            if !is_test {
-                inner.last_activation = Some(chrono::Local::now());
+            if started.is_some() {
+                inner.last_activation = started;
             }
             ceremony_id
         };
+        #[cfg(target_os = "android")]
+        if let Some(started) = started {
+            crate::platform::android::headless::remember_start(started);
+        }
         // 2. Setup flag animation listeners if conditions are met
+        #[cfg(desktop)]
         let should_show_flag = {
-            let state = self.app.state::<AppState>();
-            let inner = state.lock();
+            let inner = self.runtime.lock();
             inner.settings.show_flag_animation
                 && inner.settings.show_visual_overlay
                 && blocks.contains(&PresetBlock::Anthem)
         };
-        if should_show_flag {
-            let app_clone = self.app.clone();
-            let start_listener = self.app.once("anthem-start", move |_| {
+        #[cfg(desktop)]
+        if should_show_flag && let Some(app) = self.runtime.app() {
+            let app_clone = app.clone();
+            let start_listener = app.once("anthem-start", move |_| {
                 let app = app_clone.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Err(e) = WebviewWindowBuilder::new(
@@ -108,8 +118,8 @@ impl CeremonyManager {
                 });
             });
 
-            let app_clone2 = self.app.clone();
-            let end_listener = self.app.once("anthem-end", move |_| {
+            let app_clone2 = app.clone();
+            let end_listener = app.once("anthem-end", move |_| {
                 let app = app_clone2.clone();
                 tauri::async_runtime::spawn(async move {
                     if let Some(window) = app.get_webview_window("flag-animation") {
@@ -126,6 +136,7 @@ impl CeremonyManager {
         // 3. Notify UI with estimated duration (ms)
         let duration_ms: u64 =
             match self
+                .runtime
                 .audio
                 .estimate_duration(&blocks, announcement_voice, anthem_voice)
             {
@@ -136,10 +147,16 @@ impl CeremonyManager {
                 }
             };
 
-        let payload = json!({ "duration_ms": duration_ms, "is_test": is_test });
-        let _ = self.app.emit("ceremony-start", payload);
+        let payload = json!({
+            "duration_ms": duration_ms,
+            "is_test": is_test,
+        });
+        if let Some(app) = self.runtime.app() {
+            let _ = app.emit("ceremony-start", payload);
+        }
 
         // 3. Pause players
+        #[cfg(desktop)]
         if should_pause_players {
             if let Ok(players) = self.platform.pause_media().await {
                 if should_resume_players {
@@ -172,14 +189,13 @@ impl CeremonyManager {
         }
 
         // 6. Play Audio (Stop previous first)
-        self.audio.stop();
-        let stop_baseline = self.audio.stop_baseline();
+        self.runtime.audio.stop();
+        let stop_baseline = self.runtime.audio.stop_baseline();
         // A stop pressed while the ceremony was still being set up is replayed here.
         // The baseline is taken first, so a stop that arrives after this check
         // still ends the playback through the counter.
         let stop_requested = {
-            let state = self.app.state::<AppState>();
-            let mut inner = state.lock();
+            let mut inner = self.runtime.lock();
             let Some(active) = inner.active_ceremony.as_mut() else {
                 return;
             };
@@ -192,14 +208,25 @@ impl CeremonyManager {
             requested
         };
 
-        let audio_engine = Arc::clone(&self.audio);
-        let app_handle = self.app.clone();
+        #[cfg(target_os = "android")]
+        if should_pause_players && !stop_requested {
+            crate::platform::android::media::request_focus(ceremony_id);
+            let still_playing = self.runtime.lock().active_ceremony.is_some_and(|active| {
+                active.id == ceremony_id && active.phase == CeremonyPhase::Playing
+            });
+            if !still_playing {
+                crate::platform::android::media::release_focus(ceremony_id);
+                return;
+            }
+        }
+
+        let runtime = Arc::clone(&self.runtime);
         let platform_handle = crate::platform::get_platform();
 
         std::thread::spawn(move || {
             if stop_requested {
                 log::info!("Ceremony stopped before playback started");
-            } else if let Err(e) = audio_engine.play_blocks(
+            } else if let Err(e) = runtime.audio.play_blocks(
                 &blocks,
                 target_volume,
                 announcement_voice,
@@ -211,7 +238,7 @@ impl CeremonyManager {
 
             // 7. Finish
             tauri::async_runtime::spawn(async move {
-                CeremonyManager::finish_ceremony(app_handle, platform_handle, ceremony_id).await;
+                CeremonyManager::finish_ceremony(runtime, platform_handle, ceremony_id).await;
             });
         });
     }
@@ -219,6 +246,7 @@ impl CeremonyManager {
     /// Drop the one-shot anthem listeners that did not fire, for example when
     /// the ceremony was stopped before the anthem. Removing a listener that
     /// already fired does nothing.
+    #[cfg(desktop)]
     fn remove_anthem_listeners(app: &AppHandle) {
         let listeners = match ANTHEM_LISTENERS.lock() {
             Ok(mut lock) => std::mem::take(&mut *lock),
@@ -229,10 +257,15 @@ impl CeremonyManager {
         }
     }
 
-    pub async fn finish_ceremony(app: AppHandle, platform: Box<dyn Platform>, ceremony_id: u64) {
-        let (volume_priority, auto_unmute, should_resume, pending_restart) = {
-            let state = app.state::<AppState>();
-            let mut inner = state.lock();
+    pub(crate) async fn finish_ceremony(
+        runtime: Arc<CeremonyRuntime>,
+        platform: Box<dyn Platform>,
+        ceremony_id: u64,
+    ) {
+        #[cfg(desktop)]
+        let should_resume;
+        let (volume_priority, auto_unmute, pending_restart) = {
+            let mut inner = runtime.lock();
             let Some(active) = inner.active_ceremony.as_mut() else {
                 return;
             };
@@ -240,14 +273,21 @@ impl CeremonyManager {
                 return;
             }
             active.phase = CeremonyPhase::Finishing;
+            #[cfg(desktop)]
+            {
+                should_resume = inner.settings.resume_after_ceremony;
+            }
             (
                 inner.settings.volume_priority,
                 inner.settings.auto_unmute,
-                inner.settings.resume_after_ceremony,
                 inner.pending_restart,
             )
         };
-        Self::remove_anthem_listeners(&app);
+        let app = runtime.app();
+        #[cfg(desktop)]
+        if let Some(app) = &app {
+            Self::remove_anthem_listeners(app);
+        }
 
         // Restore volume and mute
         if volume_priority {
@@ -267,6 +307,7 @@ impl CeremonyManager {
         }
 
         // Restore media playback
+        #[cfg(desktop)]
         if should_resume {
             let players = {
                 let mut lock = PAUSED_PLAYERS.lock().unwrap();
@@ -276,9 +317,16 @@ impl CeremonyManager {
                 let _ = platform.resume_media(players).await;
             }
         }
+        #[cfg(target_os = "android")]
+        crate::platform::android::media::release_focus(ceremony_id);
 
         // Clear skip_date after successful ceremony
-        {
+        #[cfg(target_os = "android")]
+        if let Err(error) = crate::platform::android::headless::clear_skip_date(&runtime) {
+            log::warn!("Failed to clear skip_date: {error}");
+        }
+        #[cfg(not(target_os = "android"))]
+        if let Some(app) = &app {
             let state = app.state::<AppState>();
             if state.lock().settings.skip_date.is_some() {
                 if let Err(e) = state.update_settings(|s| {
@@ -290,8 +338,7 @@ impl CeremonyManager {
         }
 
         {
-            let state = app.state::<AppState>();
-            let mut inner = state.lock();
+            let mut inner = runtime.lock();
             if inner
                 .active_ceremony
                 .is_some_and(|ceremony| ceremony.id == ceremony_id)
@@ -300,11 +347,12 @@ impl CeremonyManager {
             }
         }
 
-        let _ = app.emit("ceremony-end", ());
-
-        if pending_restart {
-            log::info!("Executing deferred app restart after ceremony.");
-            app.restart();
+        if let Some(app) = app {
+            let _ = app.emit("ceremony-end", ());
+            if pending_restart {
+                log::info!("Executing deferred app restart after ceremony.");
+                app.restart();
+            }
         }
     }
 }

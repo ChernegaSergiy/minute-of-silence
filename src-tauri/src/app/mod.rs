@@ -1,5 +1,8 @@
 pub mod apng;
 pub mod commands;
+#[cfg(any(target_os = "android", test))]
+pub(crate) mod notification_actions;
+#[cfg(desktop)]
 pub mod tray;
 
 use chrono::{DateTime, Datelike, Local, NaiveDate, NaiveTime};

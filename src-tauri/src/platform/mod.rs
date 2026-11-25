@@ -4,6 +4,8 @@ pub mod windows;
 #[cfg(target_os = "linux")]
 pub mod linux;
 
+#[cfg(target_os = "android")]
+pub mod android;
 #[cfg(target_os = "macos")]
 pub mod macos;
 
@@ -15,28 +17,42 @@ use macos as sys;
 use windows as sys;
 
 use crate::error::Result;
+use serde::{Deserialize, Serialize};
 
 // Re-exports from system-specific modules
+#[cfg(target_os = "android")]
+pub use android::apply_autostart_enabled;
+#[cfg(desktop)]
 pub use sys::autostart::{apply_autostart_enabled, system_autostart_enabled};
+#[cfg(desktop)]
 pub use sys::theme::is_dark_mode;
 
 /// Sync the persisted autostart setting with the actual platform state.
 pub fn sync_autostart_from_system(state: tauri::State<'_, crate::AppState>) -> Result<()> {
-    let system_enabled = system_autostart_enabled().unwrap_or_else(|| {
-        use tauri_plugin_autostart::ManagerExt;
-        state.app_handle.autolaunch().is_enabled().unwrap_or(false)
-    });
-
-    if state.lock().settings.autostart_enabled != system_enabled {
-        let updated = state.update_settings(|s| {
-            s.autostart_enabled = system_enabled;
-        })?;
-        log::info!("Autostart setting synced from system: {}", system_enabled);
-        use tauri::Emitter;
-        let _ = state.app_handle.emit("settings-updated", updated);
+    #[cfg(not(desktop))]
+    {
+        let _ = state;
+        return Ok(());
     }
 
-    Ok(())
+    #[cfg(desktop)]
+    {
+        let system_enabled = system_autostart_enabled().unwrap_or_else(|| {
+            use tauri_plugin_autostart::ManagerExt;
+            state.app_handle.autolaunch().is_enabled().unwrap_or(false)
+        });
+
+        if state.lock().settings.autostart_enabled != system_enabled {
+            let updated = state.update_settings(|s| {
+                s.autostart_enabled = system_enabled;
+            })?;
+            log::info!("Autostart setting synced from system: {}", system_enabled);
+            use tauri::Emitter;
+            let _ = state.app_handle.emit("settings-updated", updated);
+        }
+
+        Ok(())
+    }
 }
 
 /// Returns true when the current process is running from an MSIX package
@@ -71,7 +87,9 @@ pub trait Platform: Send + Sync {
     fn set_volume(&self, level: u8) -> Result<()>;
     fn is_muted(&self) -> Result<bool>;
     fn set_mute(&self, mute: bool) -> Result<()>;
+    #[cfg(desktop)]
     async fn pause_media(&self) -> Result<Vec<String>>;
+    #[cfg(desktop)]
     async fn resume_media(&self, players: Vec<String>) -> Result<()>;
 }
 
@@ -82,4 +100,21 @@ pub fn get_platform() -> Box<dyn Platform> {
     return Box::new(linux::LinuxPlatform);
     #[cfg(target_os = "macos")]
     return Box::new(macos::MacosPlatform);
+    #[cfg(target_os = "android")]
+    return Box::new(android::AndroidPlatform);
+}
+
+/// State of the notification permission, as the frontend sees it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub enum NotificationPermission {
+    /// Notifications are allowed.
+    Granted,
+    /// The system dialog can still be shown.
+    Prompt,
+    /// The user refused for good, only the system settings can change it.
+    Denied,
+    /// The platform does not ask for this permission.
+    Unsupported,
 }

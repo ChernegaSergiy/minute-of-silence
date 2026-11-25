@@ -11,7 +11,7 @@ export type AppInitialState = { settings: Settings, personalDates: Array<Persona
 /**
  * What each announcement voice can play.
  */
-voices: Array<VoiceCapabilities>, };
+voices: Array<VoiceCapabilities>, supportsVisualOverlay: boolean, supportsMediaResumption: boolean, };
 
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
 

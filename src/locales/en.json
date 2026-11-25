@@ -3,10 +3,18 @@
     "title": "Minute of Silence"
   },
   "tabs": {
-    "settings": "SETTINGS",
-    "about": "ABOUT",
-    "changelog": "CHANGELOG",
-    "personal_dates": "PERSONAL DATES"
+    "desktop": {
+      "settings": "SETTINGS",
+      "about": "ABOUT",
+      "changelog": "CHANGELOG",
+      "personal_dates": "PERSONAL DATES"
+    },
+    "mobile": {
+      "settings": "Settings",
+      "about": "About",
+      "changelog": "Changelog",
+      "personal_dates": "Personal dates"
+    }
   },
   "sections": {
     "general": "GENERAL",
@@ -43,6 +51,16 @@
     "ceremony": {
       "label": "Ceremony at 09:00",
       "description": "Automatically activates memorial events every day at 9 AM."
+    },
+    "notifications_blocked": {
+      "title": "Notifications are turned off",
+      "description": "Without notifications the ceremony may not start on time while the app is closed.",
+      "action": "Open settings"
+    },
+    "exact_alarm_blocked": {
+      "title": "Exact start is unavailable",
+      "description": "Allow exact scheduling in system settings so Android does not delay the ceremony.",
+      "action": "Open settings"
     },
     "autostart": {
       "label": "Autostart on system boot",

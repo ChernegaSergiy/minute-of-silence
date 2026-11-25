@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ceremony_icon_background" />
+    <item>
+        <inset
+            android:drawable="@drawable/ic_ceremony_logo"
+            android:insetLeft="21%"
+            android:insetTop="21%"
+            android:insetRight="21%"
+            android:insetBottom="21%" />
+    </item>
+</layer-list>
