@@ -155,6 +155,7 @@ impl CeremonyManager {
             if active.id != ceremony_id {
                 return;
             }
+            active.started_at = std::time::Instant::now();
             active.duration_ms = Some(duration_ms);
             active.elapsed_ms()
         };
