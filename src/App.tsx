@@ -420,6 +420,14 @@ export default function App() {
           setShowOverlay(true);
           setCeremonyDurationMs(payload?.duration_ms);
           setIsTestCeremony(isTest);
+          setStatus((current) => ({
+            ...current,
+            ceremonyActive: true,
+            ceremonyIsTest: isTest,
+            ceremonyId: payload.ceremony_id ?? current.ceremonyId,
+            ceremonyElapsedMs: payload.elapsed_ms ?? current.ceremonyElapsedMs,
+            ceremonyDurationMs: payload.duration_ms ?? current.ceremonyDurationMs,
+          }));
           refresh();
         }),
         await onCeremonyEnd(() => {
@@ -427,6 +435,14 @@ export default function App() {
           setShowOverlay(false);
           setCeremonyDurationMs(undefined);
           setIsTestCeremony(false);
+          setStatus((current) => ({
+            ...current,
+            ceremonyActive: false,
+            ceremonyIsTest: false,
+            ceremonyId: null,
+            ceremonyElapsedMs: null,
+            ceremonyDurationMs: null,
+          }));
           refresh();
         }),
         await listen("ntp-synced", refresh),
