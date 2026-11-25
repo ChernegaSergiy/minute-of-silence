@@ -108,6 +108,9 @@ const mobileNavMotion = {
 const DEFAULT_STATUS: StatusSnapshot = {
   ceremonyActive: false,
   ceremonyIsTest: false,
+  ceremonyId: null,
+  ceremonyElapsedMs: null,
+  ceremonyDurationMs: null,
   skipTomorrow: false,
   lastActivation: null,
   lastNtpSync: null,
