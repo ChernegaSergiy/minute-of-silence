@@ -6,6 +6,9 @@
 
 extern crate alloc;
 
+pub mod voices;
+pub use voices::{effective_blocks, voice_capabilities, VoiceAssets, VoiceDurations};
+
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
