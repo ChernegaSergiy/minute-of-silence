@@ -19,6 +19,7 @@ use crate::core::settings::PresetBlock;
 #[cfg(target_os = "android")]
 use crate::state::CeremonyKind;
 use crate::state::{AppState, CeremonyRuntime};
+use khvylyna_core::voices::VoiceAssets;
 #[cfg(test)]
 use khvylyna_core::voices::effective_blocks;
 
@@ -41,8 +42,11 @@ impl CeremonyScheduler {
             AnnouncementVoice::RadioBg,
             AnnouncementVoice::VinnytsiaCity,
         ] {
+            let manifest = VoiceAssets::for_voice(voice).durations;
             let filename = audio.get_announcement_filename(voice);
-            let duration = audio.get_duration(&filename).unwrap_or(Duration::ZERO);
+            let duration = audio
+                .get_duration(&filename)
+                .unwrap_or(manifest.announcement);
             voice_durations.insert(voice, duration);
             log::info!(
                 "Voice {:?} ({}) duration: {:.2}s",
@@ -52,7 +56,7 @@ impl CeremonyScheduler {
             );
 
             let bell_file = audio.get_bell_filename(voice);
-            let bell_duration = audio.get_duration(&bell_file).unwrap_or(Duration::ZERO);
+            let bell_duration = audio.get_duration(&bell_file).unwrap_or(manifest.bell);
             bell_durations.insert(voice, bell_duration);
             log::info!(
                 "Voice {:?} bell ({}) duration: {:.2}s",
@@ -72,7 +76,11 @@ impl CeremonyScheduler {
         *self
             .voice_durations
             .get(&AnnouncementVoice::BohdanHdal)
-            .unwrap()
+            .unwrap_or(
+                &VoiceAssets::for_voice(AnnouncementVoice::BohdanHdal)
+                    .durations
+                    .announcement,
+            )
     }
 
     /// Run the main scheduler loop.
@@ -171,7 +179,7 @@ impl CeremonyScheduler {
                         .bell_durations
                         .get(&voice)
                         .copied()
-                        .unwrap_or(Duration::ZERO);
+                        .unwrap_or_else(|| VoiceAssets::for_voice(voice).durations.bell);
 
                     let voice_durations = khvylyna_core::voices::VoiceDurations {
                         announcement,
