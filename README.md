@@ -242,7 +242,7 @@ minute-of-silence/
 |   |   |   |   \-- volume.rs         # macOS system volume controller API
 |   |   |   \-- android/
 |   |   |       +-- mod.rs
-|   |   |       +-- audio.rs          # Android audio playback via OpenSL ES
+|   |   |       +-- audio.rs          # Android audio playback via Kotlin MediaPlayer
 |   |   |       +-- autostart.rs      # Android autostart boot receiver coordination
 |   |   |       +-- bridge.rs         # Tauri JNI bridge bindings
 |   |   |       +-- custom_tabs.rs    # Android custom tabs integration
