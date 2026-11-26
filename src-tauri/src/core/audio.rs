@@ -17,10 +17,11 @@ use tauri::Manager;
 use tauri::{AppHandle, Emitter};
 
 use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
-use crate::core::voices::{VoiceAssets, effective_blocks};
 #[cfg(not(target_os = "android"))]
 use crate::error::AppError;
 use crate::error::Result;
+use khvylyna_core::scheduler::lead_in_pause;
+use khvylyna_core::voices::{VoiceAssets, effective_blocks};
 
 pub trait CeremonyAudioBackend: Send + Sync + std::fmt::Debug {
     fn stop(&self);
@@ -51,26 +52,6 @@ pub struct AudioEngine {
     #[cfg(not(target_os = "android"))]
     app_handle: AppHandle,
     stop_counter: AtomicU64,
-}
-
-/// Silence between a voice or a bell and the metronome that follows it.
-pub const METRONOME_LEAD_PAUSE: Duration = Duration::from_secs(1);
-
-/// The pause that separates the opening announcement and bells from the metronome.
-///
-/// It is [`METRONOME_LEAD_PAUSE`] when the metronome directly follows them and
-/// zero otherwise. Playback and the start compensation both use this rule.
-pub(crate) fn lead_in_pause(blocks: &[PresetBlock]) -> Duration {
-    let lead_in_len = blocks
-        .iter()
-        .take_while(|block| matches!(block, PresetBlock::Announcement | PresetBlock::Bell))
-        .count();
-
-    if lead_in_len > 0 && blocks.get(lead_in_len) == Some(&PresetBlock::Metronome) {
-        METRONOME_LEAD_PAUSE
-    } else {
-        Duration::ZERO
-    }
 }
 
 /// A single step in a preset playback sequence.
@@ -556,6 +537,7 @@ mod tests {
     #[test]
     fn the_start_compensation_counts_the_pause_exactly_where_the_steps_play_it() {
         use crate::core::scheduler::CeremonyScheduler;
+        use khvylyna_core::scheduler::METRONOME_LEAD_PAUSE;
 
         // With zero-length recordings only the pause is left in the compensation.
         for preset in PRESETS {

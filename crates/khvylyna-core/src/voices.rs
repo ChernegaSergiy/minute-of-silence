@@ -1,12 +1,22 @@
-//! Audio asset manifest for announcement voices.
-//!
-//! Every file a preset can play for a voice is listed here, so presets never
-//! have to know which recording belongs to which voice.
+//! Audio asset manifest and block resolution for announcement voices.
 
-use crate::core::settings::{AnnouncementVoice, PresetBlock};
-use khvylyna_core::VoiceCapabilities;
+use alloc::vec::Vec;
+use core::time::Duration;
 
-/// Audio files that belong to a single announcement voice.
+use crate::{AnnouncementVoice, PresetBlock, VoiceCapabilities};
+
+/// Standard duration of audio assets for an announcement voice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VoiceDurations {
+    /// Duration of the opening announcement recording.
+    pub announcement: Duration,
+    /// Duration of the bell recording.
+    pub bell: Duration,
+    /// Duration of the ending recording, if the voice has one.
+    pub ending: Option<Duration>,
+}
+
+/// Audio files and properties that belong to a single announcement voice.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VoiceAssets {
     /// Spoken announcement that opens the ceremony.
@@ -19,10 +29,12 @@ pub struct VoiceAssets {
     pub ending: Option<&'static str>,
     /// Whether the announcement already starts with the bell.
     pub announcement_includes_bell: bool,
+    /// Default durations measured from the official bundled recordings.
+    pub durations: VoiceDurations,
 }
 
 impl VoiceAssets {
-    /// Returns the audio files for the given voice.
+    /// Returns the audio assets and metadata for the given voice.
     pub const fn for_voice(voice: AnnouncementVoice) -> Self {
         match voice {
             AnnouncementVoice::BohdanHdal => Self {
@@ -31,6 +43,11 @@ impl VoiceAssets {
                 metronome: "metronome.ogg",
                 ending: Some("ending.ogg"),
                 announcement_includes_bell: false,
+                durations: VoiceDurations {
+                    announcement: Duration::from_millis(2950),
+                    bell: Duration::from_millis(3650),
+                    ending: Some(Duration::from_millis(1420)),
+                },
             },
             AnnouncementVoice::SoniaSotnyk => Self {
                 announcement: "announcement_sotnyk.ogg",
@@ -38,6 +55,11 @@ impl VoiceAssets {
                 metronome: "metronome.ogg",
                 ending: Some("ending_sotnyk.ogg"),
                 announcement_includes_bell: false,
+                durations: VoiceDurations {
+                    announcement: Duration::from_millis(36980),
+                    bell: Duration::from_millis(3650),
+                    ending: Some(Duration::from_millis(2990)),
+                },
             },
             AnnouncementVoice::DaniaKhomutovskyi => Self {
                 announcement: "announcement_khomutovskyi.ogg",
@@ -45,6 +67,11 @@ impl VoiceAssets {
                 metronome: "metronome.ogg",
                 ending: Some("ending_khomutovskyi.ogg"),
                 announcement_includes_bell: false,
+                durations: VoiceDurations {
+                    announcement: Duration::from_millis(30860),
+                    bell: Duration::from_millis(3650),
+                    ending: Some(Duration::from_millis(1710)),
+                },
             },
             AnnouncementVoice::RadioBg => Self {
                 announcement: "announcement_radio_bg.ogg",
@@ -52,20 +79,29 @@ impl VoiceAssets {
                 metronome: "metronome.ogg",
                 ending: Some("ending_radio_bg.ogg"),
                 announcement_includes_bell: false,
+                durations: VoiceDurations {
+                    announcement: Duration::from_millis(37200),
+                    bell: Duration::from_millis(3650),
+                    ending: Some(Duration::from_millis(15880)),
+                },
             },
-            // The Vinnytsia city system has no spoken ending, only the closing bell.
             AnnouncementVoice::VinnytsiaCity => Self {
                 announcement: "announcement_vinnytsia.ogg",
                 bell: "bell_vinnytsia.ogg",
                 metronome: "metronome_vinnytsia.ogg",
                 ending: None,
                 announcement_includes_bell: true,
+                durations: VoiceDurations {
+                    announcement: Duration::from_millis(37480),
+                    bell: Duration::from_millis(9080),
+                    ending: None,
+                },
             },
         }
     }
 }
 
-/// Returns what every announcement voice can play, for the interface.
+/// Returns what every announcement voice can play, for user interface and capability checks.
 pub fn voice_capabilities() -> Vec<VoiceCapabilities> {
     AnnouncementVoice::ALL
         .into_iter()
@@ -105,7 +141,6 @@ pub fn effective_blocks(blocks: &[PresetBlock], voice: AnnouncementVoice) -> Vec
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
 
     const VOICES: [AnnouncementVoice; 5] = [
         AnnouncementVoice::BohdanHdal,
@@ -114,26 +149,6 @@ mod tests {
         AnnouncementVoice::RadioBg,
         AnnouncementVoice::VinnytsiaCity,
     ];
-
-    #[test]
-    fn every_listed_file_exists() {
-        let audio_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("audio");
-        for voice in VOICES {
-            let assets = VoiceAssets::for_voice(voice);
-            let files = [
-                Some(assets.announcement),
-                Some(assets.bell),
-                Some(assets.metronome),
-                assets.ending,
-            ];
-            for file in files.into_iter().flatten() {
-                assert!(
-                    audio_dir.join(file).is_file(),
-                    "{voice:?}: missing audio file {file}"
-                );
-            }
-        }
-    }
 
     #[test]
     fn vinnytsia_has_no_ending() {

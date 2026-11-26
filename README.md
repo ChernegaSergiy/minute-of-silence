@@ -167,86 +167,112 @@ Artifacts are written to `src-tauri/target/release/bundle/`.
 
 ```
 minute-of-silence/
-+-- src/                              # TypeScript frontend (Vite)
-|   +-- components/                   # React tab and overlay components
-|   |   +-- AboutTab.tsx              # About application tab
-|   |   +-- ChangelogTab.tsx          # Changelog and version history UI
-|   |   +-- Overlay.tsx               # Active ceremony overlay component
-|   |   +-- PersonalDatesTab.tsx      # Personal remembrance dates management
-|   |   +-- SettingsTab.tsx           # Main settings interface
-|   |   \-- UpdateDialog.tsx          # Update available dialog with progress tracking
-|   +-- hooks/                        # Custom React hooks
-|   |   \-- useIdle.ts                # User inactivity detection hook
-|   +-- locales/                      # JSON translation files (UK, EN)
-|   +-- utils/                        # Core utilities and services
-|   |   +-- api.ts                    # Typed wrappers around Tauri IPC invoke()
-|   |   +-- changelog.ts              # Changelog parser/loader helper
-|   |   +-- i18n.ts                   # Localization configuration
-|   |   +-- presetBlocks.ts           # Ceremony constructor slots mapped to the stored blocks
-|   |   \-- settingsChanged.ts        # Unsaved settings detection
-|   +-- App.tsx                       # Root container, layout, and event handlers
-|   +-- main.tsx                      # React mounting entry point
-|   +-- style.css                     # Custom global CSS overrides
-|   \-- types.ts                      # Shared type definitions mirroring Rust
++-- crates/
+|   \-- khvylyna-core/                       # Shared core domain, models, scheduler & contracts (no_std)
+|       +-- src/
+|       |   +-- bundle.rs                    # Import/export bundle serialization
+|       |   +-- error.rs                     # Configuration and validation errors
+|       |   +-- lib.rs                       # Crate root and public exports
+|       |   +-- models/                      # Domain data structures (settings, presets, dates, status)
+|       |   +-- scheduler.rs                 # Pure scheduling, compensation, and window checks
+|       |   \-- voices.rs                    # Audio asset manifest, durations, and block filtering
+|       +-- Cargo.toml
+|       \-- README.md
++-- src/                                     # TypeScript frontend (Vite)
+|   +-- components/                          # React tab and overlay components
+|   |   +-- AboutTab.tsx                     # About application tab
+|   |   +-- ChangelogTab.tsx                 # Changelog and version history UI
+|   |   +-- Overlay.tsx                      # Active ceremony overlay component
+|   |   +-- PersonalDatesTab.tsx             # Personal remembrance dates management
+|   |   +-- SettingsTab.tsx                  # Main settings interface
+|   |   \-- UpdateDialog.tsx                 # Update available dialog with progress tracking
+|   +-- hooks/                               # Custom React hooks
+|   |   \-- useIdle.ts                       # User inactivity detection hook
+|   +-- locales/                             # JSON translation files (UK, EN)
+|   +-- utils/                               # Core utilities and services
+|   |   +-- api.ts                           # Typed wrappers around Tauri IPC invoke()
+|   |   +-- changelog.ts                     # Changelog parser/loader helper
+|   |   +-- i18n.ts                          # Localization configuration
+|   |   +-- nearbyDateSelection.ts           # Weighted proximity algorithm for personal dates
+|   |   +-- presetBlocks.ts                  # Ceremony constructor slots mapped to the stored blocks
+|   |   \-- settingsChanged.ts               # Unsaved settings detection
+|   +-- App.tsx                              # Root container, layout, and event handlers
+|   +-- main.tsx                             # React mounting entry point
+|   +-- style.css                            # Custom global CSS overrides
+|   +-- types.gen.ts                         # Generated TypeScript interfaces from khvylyna-core
+|   \-- types.ts                             # Shared type definitions mirroring Rust
 +-- src-tauri/
-|   +-- capabilities/                 # Tauri v2 application permissions configuration
+|   +-- capabilities/                        # Tauri v2 application permissions configuration
 |   +-- src/
-|   |   +-- app/                      # Tauri application modules
+|   |   +-- app/                             # Tauri application modules
 |   |   |   +-- mod.rs
-|   |   |   +-- apng.rs               # Pure-Rust APNG decoder for progress ring
-|   |   |   +-- commands.rs           # Tauri IPC command handlers
-|   |   |   \-- tray.rs               # System tray menu and setup
-|   |   +-- core/                     # Core business logic
+|   |   |   +-- apng.rs                      # Pure-Rust APNG decoder for progress ring
+|   |   |   +-- commands.rs                  # Tauri IPC command handlers
+|   |   |   \-- tray.rs                      # System tray menu and setup
+|   |   +-- core/                            # Runtime orchestration
 |   |   |   +-- mod.rs
-|   |   |   +-- audio.rs              # Audio engine orchestration (rodio)
-|   |   |   +-- ceremony.rs           # Ceremony flow and state management
-|   |   |   +-- ntp_service.rs        # NTP time synchronization and offset caching
-|   |   |   +-- scheduler.rs          # Precise daily scheduler check loop
-|   |   |   +-- settings.rs           # Application configuration load/save
-|   |   |   \-- voices.rs             # Voice manifest and the blocks a voice can play
-|   |   +-- platform/                 # OS-specific trait and implementations
-|   |   |   +-- mod.rs                # Platform selection logic
+|   |   |   +-- audio.rs                     # Audio engine orchestration (rodio)
+|   |   |   +-- ceremony.rs                  # Ceremony flow and state management
+|   |   |   +-- ntp_service.rs               # NTP time synchronization and offset caching
+|   |   |   +-- scheduler.rs                 # Precise daily scheduler check loop
+|   |   |   \-- settings.rs                  # Application configuration load/save
+|   |   +-- platform/                        # OS-specific trait and implementations
+|   |   |   +-- mod.rs                       # Platform selection logic
 |   |   |   +-- windows/
 |   |   |   |   +-- mod.rs
-|   |   |   |   +-- autostart.rs      # Windows startup shortcuts management
-|   |   |   |   +-- media.rs          # Windows media controls muting/restoring
-|   |   |   |   +-- notifications.rs  # Windows MSIX toast notifications
-|   |   |   |   +-- power.rs          # Windows power state/sleep event handlers
-|   |   |   |   +-- theme.rs          # Windows system dark theme detection
-|   |   |   |   \-- volume.rs         # Windows Endpoint volume controls API
+|   |   |   |   +-- autostart.rs             # Windows startup shortcuts management
+|   |   |   |   +-- media.rs                 # Windows media controls muting/restoring
+|   |   |   |   +-- notifications.rs         # Windows MSIX toast notifications
+|   |   |   |   +-- power.rs                 # Windows power state/sleep event handlers
+|   |   |   |   +-- theme.rs                 # Windows system dark theme detection
+|   |   |   |   \-- volume.rs                # Windows Endpoint volume controls API
 |   |   |   +-- linux/
 |   |   |   |   +-- mod.rs
-|   |   |   |   +-- autostart.rs      # Linux autostart desktop entry generator
-|   |   |   |   +-- media.rs          # Linux MPRIS media controller via DBus
-|   |   |   |   +-- theme.rs          # Linux GSettings dark theme detection
-|   |   |   |   \-- volume.rs         # Linux ALSA volume control API wrapper
-|   |   |   \-- macos/
+|   |   |   |   +-- autostart.rs             # Linux autostart desktop entry generator
+|   |   |   |   +-- media.rs                 # Linux MPRIS media controller via DBus
+|   |   |   |   +-- theme.rs                 # Linux GSettings dark theme detection
+|   |   |   |   \-- volume.rs                # Linux ALSA volume control API wrapper
+|   |   |   +-- macos/
+|   |   |   |   +-- mod.rs
+|   |   |   |   +-- autostart.rs             # macOS autostart via tauri_plugin_autostart
+|   |   |   |   +-- media.rs                 # macOS media player keys muting
+|   |   |   |   +-- now_playing.rs           # macOS now playing info via MediaPlayer framework
+|   |   |   |   +-- now_playing.m            # Objective-C bridge for now-playing session detection
+|   |   |   |   +-- theme.m                  # ObjC helper for system theme detection
+|   |   |   |   +-- theme.rs                 # macOS system dark theme detection
+|   |   |   |   \-- volume.rs                # macOS system volume controller API
+|   |   |   \-- android/
 |   |   |       +-- mod.rs
-|   |   |       +-- autostart.rs      # macOS autostart via tauri_plugin_autostart
-|   |   |       +-- media.rs          # macOS media player keys muting
-|   |   |       +-- now_playing.rs    # macOS now playing info via MediaPlayer framework
-|   |   |       +-- theme.m           # ObjC helper for system theme detection
-|   |   |       +-- theme.rs          # macOS system dark theme detection
-|   |   |       \-- volume.rs         # macOS system volume controller API
-|   |   +-- error.rs                  # Unified custom application error types
-|   |   +-- state.rs                  # Thread-safe global application state
-|   |   +-- main.rs                   # Rust entry point (forwarder)
-|   |   \-- lib.rs                    # Tauri run block and event loops
-|   +-- audio/                        # Built-in ceremony audio tracks (.ogg)
-|   +-- tests/                        # Rust integration tests
-|   +-- Cargo.toml                    # Rust/Cargo project dependency manifest
-|   \-- tauri.conf.json               # Tauri v2 application configuration file
+|   |   |       +-- audio.rs                 # Android audio playback via Kotlin MediaPlayer
+|   |   |       +-- autostart.rs             # Android autostart boot receiver coordination
+|   |   |       +-- bridge.rs                # Tauri JNI bridge bindings
+|   |   |       +-- custom_tabs.rs           # Android custom tabs integration
+|   |   |       +-- device.rs                # Android device information and system APIs
+|   |   |       +-- headless.rs              # Android headless ceremony execution
+|   |   |       +-- media.rs                 # Android media player audio focus management
+|   |   |       +-- notification_actions.rs  # Android notification action handlers
+|   |   |       +-- permission.rs            # Android runtime permissions management
+|   |   |       +-- schedule.rs              # Android AlarmManager ceremony alarm scheduling
+|   |   |       \-- volume.rs                # Android audio stream volume controls
+|   |   +-- error.rs                         # Unified custom application error types
+|   |   +-- state.rs                         # Thread-safe global application state
+|   |   +-- main.rs                          # Rust entry point (forwarder)
+|   |   \-- lib.rs                           # Tauri run block and event loops
+|   +-- audio/                               # Built-in ceremony audio tracks (.ogg)
+|   +-- tests/                               # Rust integration tests
+|   +-- Cargo.toml                           # Rust/Cargo project dependency manifest
+|   \-- tauri.conf.json                      # Tauri v2 application configuration file
 +-- docs/
-|   +-- architecture.md               # System design and data flow
-|   \-- images/                       # Documentation images (screenshots)
-+-- public/                           # Static assets (logo, etc.)
+|   +-- architecture.md                      # System design and data flow
+|   \-- images/                              # Documentation images (screenshots)
++-- public/                                  # Static assets (logo, etc.)
 +-- .github/
-|   +-- workflows/ci.yml              # CI/CD pipeline (lint, test, build)
-|   +-- ISSUE_TEMPLATE/               # Bug report and feature request forms
-|   \-- dependabot.yml                # Automated dependency updates
+|   +-- workflows/ci.yml                     # CI/CD pipeline (lint, test, build)
+|   +-- ISSUE_TEMPLATE/                      # Bug report and feature request forms
+|   \-- dependabot.yml                       # Automated dependency updates
 +-- CHANGELOG.md
 +-- CONTRIBUTING.md
-\-- index.html                        # App shell with embedded CSS
+\-- index.html                               # App shell with embedded CSS
 ```
 
 ## Contributing
