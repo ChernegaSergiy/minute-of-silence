@@ -11,6 +11,8 @@ Shared configuration models, validation, schema migrations, and contracts for **
   - `Settings`: Ceremony activation, scheduling rules, NTP server, volume, player pause/resume controls.
   - `AudioPreset` & `PresetBlock`: Audio pipelines (announcement, bell, metronome, silence, ending, anthem).
   - `AnnouncementVoice` & `AnthemVoice`: Supported announcer recordings and voice capabilities (`VoiceCapabilities`).
+  - `VoiceAssets` & `VoiceDurations`: Audio asset filenames, capabilities, and measured durations for lead-in calculations.
+  - `scheduler`: Pure scheduling and compensation logic (`should_trigger_ceremony`, `get_compensation_duration`).
   - `PersonalDate`: Personal memorial dates with date bounds validation.
   - `StatusSnapshot` & `AppInitialState`: Ceremony runtime state representation.
 - **Validation & Migration**:
