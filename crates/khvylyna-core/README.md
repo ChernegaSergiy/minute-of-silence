@@ -17,8 +17,8 @@ Shared configuration models, validation, schema migrations, and contracts for **
   - Validates audio block sequences, volume boundaries, and scheduling grace windows.
   - Backward-compatible schema migration (`Settings::migrate`) across configuration schema versions.
 - **Interoperability**:
-  - JSON serialization/deserialization with `serde`.
-  - Export and import bundles (`ExportBundle`, `import_bundle_from_json`, `export_bundle_to_json`) omitting device-local fields.
+  - Serialization and deserialization via `serde`.
+  - JSON export and import bundles (`ExportBundle`, `import_bundle_from_json`, `export_bundle_to_json`) omitting device-local fields (requires `std`).
   - TypeScript type definition export via `ts-rs` (`types.gen.ts`).
 
 ## Cargo Features
@@ -27,7 +27,7 @@ Shared configuration models, validation, schema migrations, and contracts for **
 |---|---|
 | `std` *(default)* | Enables `std`, `serde_json`, and JSON export/import helpers. |
 | `alloc` | Enables `alloc` support without `std` for `no_std` embedded/IoT environments. |
-| `ts` | Enables `ts-rs` derives to generate TypeScript interfaces for web frontends. |
+| `ts` | Enables `ts-rs` derives to generate TypeScript interfaces for web frontends (also enables `std`). |
 
 ## Usage
 
