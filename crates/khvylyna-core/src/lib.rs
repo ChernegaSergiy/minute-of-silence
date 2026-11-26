@@ -9,6 +9,13 @@ extern crate alloc;
 pub mod voices;
 pub use voices::{effective_blocks, voice_capabilities, VoiceAssets, VoiceDurations};
 
+pub mod scheduler;
+pub use scheduler::{
+    get_compensation_duration, get_settings_compensation, is_in_compensation_window,
+    is_within_grace_window, lead_in_pause, should_trigger_ceremony, CEREMONY_HOUR, CEREMONY_MINUTE,
+    CEREMONY_SECOND, METRONOME_LEAD_PAUSE,
+};
+
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
