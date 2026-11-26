@@ -84,7 +84,7 @@ pub fn is_in_compensation_window(hour: u8, minute: u8, second: u8, compensation:
 }
 
 /// Check if a time (hour, minute, second) falls in the late start grace window:
-/// `[09:00:00, 09:00:00 + grace_minutes)`
+/// `[09:00:00, 09:00:00 + grace_minutes]`
 pub fn is_within_grace_window(hour: u8, minute: u8, second: u8, grace_minutes: u8) -> bool {
     let current_secs = (hour as u32) * 3600 + (minute as u32) * 60 + (second as u32);
     let target_secs =
