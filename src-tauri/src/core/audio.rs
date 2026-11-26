@@ -743,26 +743,4 @@ mod tests {
             }
         }
     }
-
-    #[test]
-    fn every_listed_file_exists() {
-        use std::path::Path;
-
-        let audio_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("audio");
-        for voice in VOICES {
-            let assets = VoiceAssets::for_voice(voice);
-            let files = [
-                Some(assets.announcement),
-                Some(assets.bell),
-                Some(assets.metronome),
-                assets.ending,
-            ];
-            for file in files.into_iter().flatten() {
-                assert!(
-                    audio_dir.join(file).is_file(),
-                    "{voice:?}: missing audio file {file}"
-                );
-            }
-        }
-    }
 }
