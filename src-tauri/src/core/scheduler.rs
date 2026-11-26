@@ -11,9 +11,12 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
+use crate::core::settings::AnnouncementVoice;
 #[cfg(any(target_os = "android", test))]
 use crate::core::settings::PersonalDate;
-use crate::core::settings::{AnnouncementVoice, PresetBlock};
+#[cfg(test)]
+use crate::core::settings::PresetBlock;
+#[cfg(test)]
 use crate::core::voices::effective_blocks;
 #[cfg(target_os = "android")]
 use crate::state::CeremonyKind;
@@ -153,59 +156,40 @@ impl CeremonyScheduler {
             let should_trigger = {
                 let inner = self.runtime.lock();
 
-                if !inner.settings.ceremony_enabled
-                    || (inner.settings.weekdays_only && today.weekday().number_from_monday() > 5)
-                {
+                if inner.active_ceremony.is_some() || inner.settings.skip_date == Some(today) {
                     false
-                } else if inner.active_ceremony.is_none() {
-                    let grace_minutes = inner.settings.late_start_grace_minutes;
-                    let ceremony_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
-
-                    // Check if already triggered today
-                    let last_activated = inner.last_activation.map(|dt| dt.date_naive());
-                    if last_activated == Some(today) || inner.settings.skip_date == Some(today) {
-                        false
-                    } else {
-                        let voice = inner.settings.announcement_voice;
-                        let voice_duration = *self
-                            .voice_durations
-                            .get(&voice)
-                            .unwrap_or(&self.get_default_duration());
-                        let bell_duration = self
-                            .bell_durations
-                            .get(&voice)
-                            .copied()
-                            .unwrap_or(Duration::ZERO);
-                        let blocks = effective_blocks(&inner.settings.blocks, voice);
-                        let compensation =
-                            Self::get_compensation_duration(&blocks, voice_duration, bell_duration);
-                        // Check compensation window first: [09:00 - duration, 09:00)
-                        let window_start = ceremony_time
-                            - chrono::Duration::seconds(compensation.as_secs() as i64);
-                        let in_compensation_window =
-                            now_time >= window_start && now_time < ceremony_time;
-
-                        // Also check grace window: [09:00, 09:00 + grace)
-                        let in_grace_window =
-                            self.is_within_window(now_time, ceremony_time, grace_minutes);
-
-                        let should = in_compensation_window || in_grace_window;
-                        if should && now_time.hour() == 8 && now_time.minute() == 59 {
-                            log::info!(
-                                "Trigger check: blocks={:?}, compensation={:.2}s, now={}, window_start={}, in_compensation={}, in_grace={}, should_trigger={}",
-                                blocks,
-                                compensation.as_secs_f32(),
-                                now_time,
-                                window_start,
-                                in_compensation_window,
-                                in_grace_window,
-                                should
-                            );
-                        }
-                        should
-                    }
                 } else {
-                    false
+                    let last_activated = inner.last_activation.map(|dt| dt.date_naive());
+                    let already_activated = last_activated == Some(today);
+
+                    let voice = inner.settings.announcement_voice;
+                    let announcement = *self
+                        .voice_durations
+                        .get(&voice)
+                        .unwrap_or(&self.get_default_duration());
+                    let bell = self
+                        .bell_durations
+                        .get(&voice)
+                        .copied()
+                        .unwrap_or(Duration::ZERO);
+
+                    let voice_durations = khvylyna_core::voices::VoiceDurations {
+                        announcement,
+                        bell,
+                        ending: None,
+                    };
+
+                    let weekday = today.weekday().number_from_monday() as u8;
+
+                    khvylyna_core::scheduler::should_trigger_ceremony(
+                        now_time.hour() as u8,
+                        now_time.minute() as u8,
+                        now_time.second() as u8,
+                        weekday,
+                        &inner.settings,
+                        already_activated,
+                        &voice_durations,
+                    )
                 }
             };
 
@@ -333,19 +317,12 @@ impl CeremonyScheduler {
         }
     }
 
-    fn is_within_window(&self, now: NaiveTime, target: NaiveTime, grace_minutes: u8) -> bool {
-        if now < target {
-            return false;
-        }
-        let elapsed_secs = (now - target).num_seconds();
-        elapsed_secs <= (grace_minutes as i64) * 60
-    }
-
     /// How long before 09:00 the ceremony has to start so that the main part
     /// (the metronome or the silence) begins exactly at 09:00.
     ///
     /// That is the length of the announcement and bells that open the preset,
     /// plus the short pause that separates them from the metronome.
+    #[cfg(test)]
     pub(crate) fn get_compensation_duration(
         blocks: &[PresetBlock],
         announcement_duration: Duration,
