@@ -237,6 +237,7 @@ minute-of-silence/
 |   |   |   |   +-- autostart.rs      # macOS autostart via tauri_plugin_autostart
 |   |   |   |   +-- media.rs          # macOS media player keys muting
 |   |   |   |   +-- now_playing.rs    # macOS now playing info via MediaPlayer framework
+|   |   |   |   +-- now_playing.m     # Objective-C bridge for now-playing session detection
 |   |   |   |   +-- theme.m           # ObjC helper for system theme detection
 |   |   |   |   +-- theme.rs          # macOS system dark theme detection
 |   |   |   |   \-- volume.rs         # macOS system volume controller API
