@@ -209,7 +209,7 @@ minute-of-silence/
 |   |   |   +-- apng.rs               # Pure-Rust APNG decoder for progress ring
 |   |   |   +-- commands.rs           # Tauri IPC command handlers
 |   |   |   \-- tray.rs               # System tray menu and setup
-|   |   +-- core/                     # Runtime desktop orchestration
+|   |   +-- core/                     # Core business logic
 |   |   |   +-- mod.rs
 |   |   |   +-- audio.rs              # Audio engine orchestration (rodio)
 |   |   |   +-- ceremony.rs           # Ceremony flow and state management
@@ -218,19 +218,47 @@ minute-of-silence/
 |   |   |   \-- settings.rs           # Application configuration load/save
 |   |   +-- platform/                 # OS-specific trait and implementations
 |   |   |   +-- mod.rs                # Platform selection logic
-|   |   |   +-- android/              # Android platform bindings (JNI/services)
-|   |   |   +-- windows/              # Windows audio, SMTC media, toast, volume API
-|   |   |   +-- linux/                # Linux MPRIS media, ALSA volume API
-|   |   |   \-- macos/                # macOS media, MediaPlayer, volume API
+|   |   |   +-- windows/
+|   |   |   |   +-- mod.rs
+|   |   |   |   +-- autostart.rs      # Windows startup shortcuts management
+|   |   |   |   +-- media.rs          # Windows media controls muting/restoring
+|   |   |   |   +-- notifications.rs  # Windows MSIX toast notifications
+|   |   |   |   +-- power.rs          # Windows power state/sleep event handlers
+|   |   |   |   +-- theme.rs          # Windows system dark theme detection
+|   |   |   |   \-- volume.rs         # Windows Endpoint volume controls API
+|   |   |   +-- linux/
+|   |   |   |   +-- mod.rs
+|   |   |   |   +-- autostart.rs      # Linux autostart desktop entry generator
+|   |   |   |   +-- media.rs          # Linux MPRIS media controller via DBus
+|   |   |   |   +-- theme.rs          # Linux GSettings dark theme detection
+|   |   |   |   \-- volume.rs         # Linux ALSA volume control API wrapper
+|   |   |   +-- macos/
+|   |   |   |   +-- mod.rs
+|   |   |   |   +-- autostart.rs      # macOS autostart via tauri_plugin_autostart
+|   |   |   |   +-- media.rs          # macOS media player keys muting
+|   |   |   |   +-- now_playing.rs    # macOS now playing info via MediaPlayer framework
+|   |   |   |   +-- theme.m           # ObjC helper for system theme detection
+|   |   |   |   +-- theme.rs          # macOS system dark theme detection
+|   |   |   |   \-- volume.rs         # macOS system volume controller API
+|   |   |   \-- android/
+|   |   |       +-- mod.rs
+|   |   |       +-- audio.rs          # Android audio playback via OpenSL ES
+|   |   |       +-- autostart.rs      # Android autostart boot receiver coordination
+|   |   |       +-- bridge.rs         # Tauri JNI bridge bindings
+|   |   |       +-- custom_tabs.rs    # Android custom tabs integration
+|   |   |       +-- device.rs         # Android device information and system APIs
+|   |   |       +-- headless.rs       # Android headless ceremony execution
+|   |   |       +-- media.rs          # Android media player audio focus management
+|   |   |       +-- notification_actions.rs # Android notification action handlers
+|   |   |       +-- permission.rs     # Android runtime permissions management
+|   |   |       +-- schedule.rs       # Android AlarmManager ceremony alarm scheduling
+|   |   |       \-- volume.rs         # Android audio stream volume controls
 |   |   +-- error.rs                  # Unified custom application error types
 |   |   +-- state.rs                  # Thread-safe global application state
 |   |   +-- main.rs                   # Rust entry point (forwarder)
 |   |   \-- lib.rs                    # Tauri run block and event loops
 |   +-- audio/                        # Built-in ceremony audio tracks (.ogg)
 |   +-- tests/                        # Rust integration tests
-|   |   +-- audio_assets_test.rs      # Audio assets filesystem presence test
-|   |   +-- scheduler_test.rs         # Scheduler trigger edge cases test
-|   |   \-- settings_test.rs          # Settings serialization test
 |   +-- Cargo.toml                    # Rust/Cargo project dependency manifest
 |   \-- tauri.conf.json               # Tauri v2 application configuration file
 +-- docs/
