@@ -74,7 +74,9 @@ pub fn is_in_compensation_window(hour: u8, minute: u8, second: u8, compensation:
     let target_secs =
         (CEREMONY_HOUR as u32) * 3600 + (CEREMONY_MINUTE as u32) * 60 + (CEREMONY_SECOND as u32);
 
-    let comp_secs = compensation.as_secs() as u32;
+    let comp_secs = compensation
+        .as_secs()
+        .saturating_add((compensation.subsec_nanos() > 0) as u64) as u32;
     if comp_secs == 0 {
         return false;
     }
