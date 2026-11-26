@@ -11,7 +11,6 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::core::CeremonyManager;
-use crate::core::audio::lead_in_pause;
 #[cfg(any(target_os = "android", test))]
 use crate::core::settings::PersonalDate;
 use crate::core::settings::{AnnouncementVoice, PresetBlock};
@@ -352,16 +351,11 @@ impl CeremonyScheduler {
         announcement_duration: Duration,
         bell_duration: Duration,
     ) -> Duration {
-        let lead_in_duration: Duration = blocks
-            .iter()
-            .take_while(|block| matches!(block, PresetBlock::Announcement | PresetBlock::Bell))
-            .map(|block| match block {
-                PresetBlock::Announcement => announcement_duration,
-                _ => bell_duration,
-            })
-            .sum();
-
-        lead_in_duration + lead_in_pause(blocks)
+        khvylyna_core::scheduler::get_compensation_duration(
+            blocks,
+            announcement_duration,
+            bell_duration,
+        )
     }
 
     fn get_synchronized_now(&self) -> chrono::DateTime<FixedOffset> {
