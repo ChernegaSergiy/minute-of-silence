@@ -5,6 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 authors = ["Serhii Cherneha"]
 license-file = "../../LICENSE"
+readme = "README.md"
 description = "Shared core types, contracts, and schema definitions for Minute of Silence"
 
 [dependencies]
