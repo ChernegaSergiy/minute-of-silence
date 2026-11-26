@@ -4,8 +4,8 @@
 
 use core::time::Duration;
 
+use crate::voices::{VoiceDurations, effective_blocks};
 use crate::{PresetBlock, Settings};
-use crate::voices::{effective_blocks, VoiceDurations};
 
 /// Silence between a voice or a bell and the metronome that follows it.
 pub const METRONOME_LEAD_PAUSE: Duration = Duration::from_secs(1);
@@ -58,26 +58,21 @@ pub fn get_compensation_duration(
 }
 
 /// Calculate compensation duration directly from settings using known voice durations.
-pub fn get_settings_compensation(settings: &Settings, voice_durations: &VoiceDurations) -> Duration {
+pub fn get_settings_compensation(
+    settings: &Settings,
+    voice_durations: &VoiceDurations,
+) -> Duration {
     let voice = settings.announcement_voice;
     let blocks = effective_blocks(&settings.blocks, voice);
-    get_compensation_duration(
-        &blocks,
-        voice_durations.announcement,
-        voice_durations.bell,
-    )
+    get_compensation_duration(&blocks, voice_durations.announcement, voice_durations.bell)
 }
 
 /// Check if a time (hour, minute, second) falls in the lead-in compensation window:
 /// `[09:00:00 - compensation, 09:00:00)`
-pub fn is_in_compensation_window(
-    hour: u8,
-    minute: u8,
-    second: u8,
-    compensation: Duration,
-) -> bool {
+pub fn is_in_compensation_window(hour: u8, minute: u8, second: u8, compensation: Duration) -> bool {
     let current_secs = (hour as u32) * 3600 + (minute as u32) * 60 + (second as u32);
-    let target_secs = (CEREMONY_HOUR as u32) * 3600 + (CEREMONY_MINUTE as u32) * 60 + (CEREMONY_SECOND as u32);
+    let target_secs =
+        (CEREMONY_HOUR as u32) * 3600 + (CEREMONY_MINUTE as u32) * 60 + (CEREMONY_SECOND as u32);
 
     let comp_secs = compensation.as_secs() as u32;
     if comp_secs == 0 {
@@ -90,14 +85,10 @@ pub fn is_in_compensation_window(
 
 /// Check if a time (hour, minute, second) falls in the late start grace window:
 /// `[09:00:00, 09:00:00 + grace_minutes)`
-pub fn is_within_grace_window(
-    hour: u8,
-    minute: u8,
-    second: u8,
-    grace_minutes: u8,
-) -> bool {
+pub fn is_within_grace_window(hour: u8, minute: u8, second: u8, grace_minutes: u8) -> bool {
     let current_secs = (hour as u32) * 3600 + (minute as u32) * 60 + (second as u32);
-    let target_secs = (CEREMONY_HOUR as u32) * 3600 + (CEREMONY_MINUTE as u32) * 60 + (CEREMONY_SECOND as u32);
+    let target_secs =
+        (CEREMONY_HOUR as u32) * 3600 + (CEREMONY_MINUTE as u32) * 60 + (CEREMONY_SECOND as u32);
 
     if current_secs < target_secs {
         return false;
@@ -142,7 +133,7 @@ pub fn should_trigger_ceremony(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::AudioPreset;
+    use crate::{AnnouncementVoice, AudioPreset};
 
     const ANNOUNCEMENT: Duration = Duration::from_secs(40);
     const BELL: Duration = Duration::from_secs(9);
@@ -176,7 +167,10 @@ mod tests {
                 "{preset:?}"
             );
         }
-        assert_eq!(compensation(AudioPreset::BellMetronomeBell), BELL + METRONOME_LEAD_PAUSE);
+        assert_eq!(
+            compensation(AudioPreset::BellMetronomeBell),
+            BELL + METRONOME_LEAD_PAUSE
+        );
     }
 
     #[test]
@@ -193,7 +187,11 @@ mod tests {
     #[test]
     fn a_bell_built_into_the_announcement_is_not_counted_twice() {
         let blocks = effective_blocks(
-            &[PresetBlock::Bell, PresetBlock::Announcement, PresetBlock::Metronome],
+            &[
+                PresetBlock::Bell,
+                PresetBlock::Announcement,
+                PresetBlock::Metronome,
+            ],
             AnnouncementVoice::VinnytsiaCity,
         );
         assert_eq!(
@@ -204,7 +202,12 @@ mod tests {
 
     #[test]
     fn a_bell_and_an_announcement_both_count_towards_the_lead_in() {
-        let blocks = [PresetBlock::Bell, PresetBlock::Announcement, PresetBlock::Metronome, PresetBlock::Bell];
+        let blocks = [
+            PresetBlock::Bell,
+            PresetBlock::Announcement,
+            PresetBlock::Metronome,
+            PresetBlock::Bell,
+        ];
         assert_eq!(
             get_compensation_duration(&blocks, ANNOUNCEMENT, BELL),
             ANNOUNCEMENT + BELL + METRONOME_LEAD_PAUSE
@@ -243,18 +246,28 @@ mod tests {
         };
 
         // Sunday (weekday 7) with weekdays_only -> false
-        assert!(!should_trigger_ceremony(8, 59, 30, 7, &settings, false, &durations));
+        assert!(!should_trigger_ceremony(
+            8, 59, 30, 7, &settings, false, &durations
+        ));
 
         // Monday (weekday 1) during compensation -> true
-        assert!(should_trigger_ceremony(8, 59, 30, 1, &settings, false, &durations));
+        assert!(should_trigger_ceremony(
+            8, 59, 30, 1, &settings, false, &durations
+        ));
 
         // Already activated today -> false
-        assert!(!should_trigger_ceremony(8, 59, 30, 1, &settings, true, &durations));
+        assert!(!should_trigger_ceremony(
+            8, 59, 30, 1, &settings, true, &durations
+        ));
 
         // In grace window -> true
-        assert!(should_trigger_ceremony(9, 1, 0, 1, &settings, false, &durations));
+        assert!(should_trigger_ceremony(
+            9, 1, 0, 1, &settings, false, &durations
+        ));
 
         // Outside grace window -> false
-        assert!(!should_trigger_ceremony(9, 5, 0, 1, &settings, false, &durations));
+        assert!(!should_trigger_ceremony(
+            9, 5, 0, 1, &settings, false, &durations
+        ));
     }
 }

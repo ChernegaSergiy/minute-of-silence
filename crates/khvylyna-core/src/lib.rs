@@ -7,13 +7,13 @@
 extern crate alloc;
 
 pub mod voices;
-pub use voices::{effective_blocks, voice_capabilities, VoiceAssets, VoiceDurations};
+pub use voices::{VoiceAssets, VoiceDurations, effective_blocks, voice_capabilities};
 
 pub mod scheduler;
 pub use scheduler::{
+    CEREMONY_HOUR, CEREMONY_MINUTE, CEREMONY_SECOND, METRONOME_LEAD_PAUSE,
     get_compensation_duration, get_settings_compensation, is_in_compensation_window,
-    is_within_grace_window, lead_in_pause, should_trigger_ceremony, CEREMONY_HOUR, CEREMONY_MINUTE,
-    CEREMONY_SECOND, METRONOME_LEAD_PAUSE,
+    is_within_grace_window, lead_in_pause, should_trigger_ceremony,
 };
 
 use alloc::string::{String, ToString};
