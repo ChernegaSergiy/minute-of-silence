@@ -328,6 +328,12 @@ impl Default for Settings {
 pub struct StatusSnapshot {
     pub ceremony_active: bool,
     pub ceremony_is_test: bool,
+    #[cfg_attr(feature = "ts", ts(type = "number | null"))]
+    pub ceremony_id: Option<u64>,
+    #[cfg_attr(feature = "ts", ts(type = "number | null"))]
+    pub ceremony_elapsed_ms: Option<u64>,
+    #[cfg_attr(feature = "ts", ts(type = "number | null"))]
+    pub ceremony_duration_ms: Option<u64>,
     pub skip_tomorrow: bool,
     pub last_activation: Option<String>,
     pub last_ntp_sync: Option<String>,

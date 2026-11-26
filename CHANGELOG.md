@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disable browser tap highlighting and selection of non-editable interface text on touch devices, while preserving text selection in input fields.
 
 ### Fixed
+- Keep the visual overlay animation synchronized with the ceremony's actual progress when it appears or reappears.
 - Prevent personal date form controls from overflowing their containers and overlapping adjacent fields or the Add button in narrow windows.
 - Expand the Add button to the full row width when it wraps below the personal date fields.
 - Align the Add button vertically with the personal date fields by removing its extra bottom margin.

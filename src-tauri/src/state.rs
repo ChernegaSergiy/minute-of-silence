@@ -2,7 +2,10 @@
 
 use chrono::{DateTime, Local};
 pub use khvylyna_core::StatusSnapshot;
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 use tauri::AppHandle;
 
 use crate::app::next_skip_date;
@@ -38,6 +41,8 @@ pub struct ActiveCeremony {
     pub kind: CeremonyKind,
     pub phase: CeremonyPhase,
     pub stop_requested: bool,
+    pub started_at: Instant,
+    pub duration_ms: Option<u64>,
 }
 
 impl ActiveCeremony {
@@ -47,7 +52,13 @@ impl ActiveCeremony {
             kind,
             phase: CeremonyPhase::SettingUp,
             stop_requested: false,
+            started_at: Instant::now(),
+            duration_ms: None,
         }
+    }
+
+    pub fn elapsed_ms(&self) -> u64 {
+        self.started_at.elapsed().as_millis().min(u64::MAX as u128) as u64
     }
 }
 
@@ -398,6 +409,11 @@ impl AppState {
             ceremony_is_test: inner
                 .active_ceremony
                 .is_some_and(|ceremony| ceremony.kind == CeremonyKind::Test),
+            ceremony_id: inner.active_ceremony.map(|ceremony| ceremony.id),
+            ceremony_elapsed_ms: inner.active_ceremony.map(|ceremony| ceremony.elapsed_ms()),
+            ceremony_duration_ms: inner
+                .active_ceremony
+                .and_then(|ceremony| ceremony.duration_ms),
             skip_tomorrow: inner.settings.skip_date == Some(skip_target),
             last_activation: inner
                 .last_activation

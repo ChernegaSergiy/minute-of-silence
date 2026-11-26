@@ -108,6 +108,9 @@ const mobileNavMotion = {
 const DEFAULT_STATUS: StatusSnapshot = {
   ceremonyActive: false,
   ceremonyIsTest: false,
+  ceremonyId: null,
+  ceremonyElapsedMs: null,
+  ceremonyDurationMs: null,
   skipTomorrow: false,
   lastActivation: null,
   lastNtpSync: null,
@@ -332,7 +335,6 @@ export default function App() {
   const [supportsMediaResumption, setSupportsMediaResumption] = useState(false);
   const [platform, setPlatform] = useState<"android" | "desktop" | null>(null);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [ceremonyDurationMs, setCeremonyDurationMs] = useState<number | undefined>(undefined);
   const [isTestCeremony, setIsTestCeremony] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
   const [volumeValue, setVolumeValue] = useState(80);
@@ -345,6 +347,13 @@ export default function App() {
   const isIdle = useIdle(15000); // 15 seconds idle timeout
   const initRef = useRef(false);
   const hasImportedRef = useRef(false);
+  const statusRevisionRef = useRef(0);
+
+  const applyStatusSnapshot = useCallback((nextStatus: StatusSnapshot, revision: number) => {
+    if (revision !== statusRevisionRef.current) return;
+    setStatus(nextStatus);
+    setTestRunning(nextStatus.ceremonyIsTest);
+  }, []);
 
   const isDirty = useMemo(() => {
     if (!hydrated || !settings || !initialSettings) return false;
@@ -363,6 +372,7 @@ export default function App() {
         .catch((error) => console.warn("Failed to set localized window title:", error));
 
       // 1. Atomic startup hydration: fetch all initial state in a single IPC call
+      const statusRevision = ++statusRevisionRef.current;
       try {
         const [init, runtimePlatform] = await Promise.all([getInitialState(), getPlatform()]);
         setPlatform(runtimePlatform);
@@ -372,10 +382,9 @@ export default function App() {
           setVolumeValue(init.settings.volume);
         }
         setPersonalDates(init.personalDates);
-        setStatus(init.status);
+        applyStatusSnapshot(init.status, statusRevision);
         setSupportsVisualOverlay(init.supportsVisualOverlay);
         setSupportsMediaResumption(init.supportsMediaResumption);
-        setTestRunning(init.status.ceremonyIsTest);
         setVersion(init.version);
         setVoices(init.voices);
       } catch (error) {
@@ -395,14 +404,14 @@ export default function App() {
         // ignore background update check errors
       }
     })();
-  }, []);
+  }, [applyStatusSnapshot]);
 
   useEffect(() => {
     const refresh = async () => {
+      const revision = ++statusRevisionRef.current;
       try {
         const nextStatus = await getStatus();
-        setStatus(nextStatus);
-        setTestRunning(nextStatus.ceremonyIsTest);
+        applyStatusSnapshot(nextStatus, revision);
       } catch {
         // ignore transient status refresh errors
       }
@@ -412,18 +421,34 @@ export default function App() {
     (async () => {
       unlisteners.push(
         await onCeremonyStart((payload) => {
+          statusRevisionRef.current += 1;
           const isTest = payload?.is_test ?? false;
           setTestRunning(isTest);
           setShowOverlay(true);
-          setCeremonyDurationMs(payload?.duration_ms);
           setIsTestCeremony(isTest);
+          setStatus((current) => ({
+            ...current,
+            ceremonyActive: true,
+            ceremonyIsTest: isTest,
+            ceremonyId: payload.ceremony_id ?? current.ceremonyId,
+            ceremonyElapsedMs: payload.elapsed_ms ?? current.ceremonyElapsedMs,
+            ceremonyDurationMs: payload.duration_ms ?? current.ceremonyDurationMs,
+          }));
           refresh();
         }),
         await onCeremonyEnd(() => {
+          statusRevisionRef.current += 1;
           setTestRunning(false);
           setShowOverlay(false);
-          setCeremonyDurationMs(undefined);
           setIsTestCeremony(false);
+          setStatus((current) => ({
+            ...current,
+            ceremonyActive: false,
+            ceremonyIsTest: false,
+            ceremonyId: null,
+            ceremonyElapsedMs: null,
+            ceremonyDurationMs: null,
+          }));
           refresh();
         }),
         await listen("ntp-synced", refresh),
@@ -444,11 +469,12 @@ export default function App() {
           );
         })
       );
+      refresh();
       setInterval(refresh, 60000);
     })();
 
     return () => unlisteners.forEach((u) => u());
-  }, []);
+  }, [applyStatusSnapshot]);
 
   const overlayVisible = supportsVisualOverlay && !!settings?.showVisualOverlay && (showOverlay || status.ceremonyActive);
   useEffect(() => {
@@ -499,26 +525,26 @@ export default function App() {
   const handleSettingsImported = useCallback((imported: Settings) => {
     hasImportedRef.current = true;
     setSettings(imported);
+    const revision = ++statusRevisionRef.current;
     void getStatus()
       .then((nextStatus) => {
-        setStatus(nextStatus);
-        setTestRunning(nextStatus.ceremonyIsTest);
+        applyStatusSnapshot(nextStatus, revision);
       })
       .catch((error) => console.error("Failed to refresh status after import:", error));
     setInitialSettings(imported);
     setVolumeValue(imported.volume);
-  }, []);
+  }, [applyStatusSnapshot]);
 
   const handleSyncNtp = useCallback(async () => {
     setSyncing(true);
+    const revision = ++statusRevisionRef.current;
     try {
       const nextStatus = await syncNtpNow();
-      setStatus(nextStatus);
-      setTestRunning(nextStatus.ceremonyIsTest);
+      applyStatusSnapshot(nextStatus, revision);
     } finally {
       setSyncing(false);
     }
-  }, []);
+  }, [applyStatusSnapshot]);
 
   const handleManualUpdateCheck = useCallback(async () => {
     setUpdateDismissed(false);
@@ -772,7 +798,14 @@ export default function App() {
       {supportsVisualOverlay && (
         <Overlay
           show={overlayVisible}
-          durationSeconds={ceremonyDurationMs ? ceremonyDurationMs / 1000 : undefined}
+          progress={status.ceremonyActive && status.ceremonyId !== null &&
+            status.ceremonyElapsedMs !== null && status.ceremonyDurationMs !== null
+            ? {
+                ceremonyId: status.ceremonyId,
+                elapsedMs: status.ceremonyElapsedMs,
+                durationMs: status.ceremonyDurationMs,
+              }
+            : null}
           personalDates={personalDates}
           settings={settings}
           isTest={isTestCeremony || status.ceremonyIsTest}
