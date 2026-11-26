@@ -182,7 +182,7 @@ impl CeremonyManager {
         }
 
         // 4. Handle Volume and Mute (skip when nothing is played)
-        let plays_audio = crate::core::voices::effective_blocks(&blocks, announcement_voice)
+        let plays_audio = khvylyna_core::voices::effective_blocks(&blocks, announcement_voice)
             .iter()
             .any(|block| block.is_audible());
         if auto_unmute && plays_audio {

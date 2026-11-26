@@ -16,11 +16,11 @@ use crate::core::settings::AnnouncementVoice;
 use crate::core::settings::PersonalDate;
 #[cfg(test)]
 use crate::core::settings::PresetBlock;
-#[cfg(test)]
-use crate::core::voices::effective_blocks;
 #[cfg(target_os = "android")]
 use crate::state::CeremonyKind;
 use crate::state::{AppState, CeremonyRuntime};
+#[cfg(test)]
+use khvylyna_core::voices::effective_blocks;
 
 /// Scheduler for the daily ceremony.
 pub struct CeremonyScheduler {

@@ -17,11 +17,11 @@ use tauri::Manager;
 use tauri::{AppHandle, Emitter};
 
 use crate::core::settings::{AnnouncementVoice, AnthemVoice, PresetBlock};
-use crate::core::voices::{VoiceAssets, effective_blocks};
 #[cfg(not(target_os = "android"))]
 use crate::error::AppError;
 use crate::error::Result;
 use khvylyna_core::scheduler::lead_in_pause;
+use khvylyna_core::voices::{VoiceAssets, effective_blocks};
 
 pub trait CeremonyAudioBackend: Send + Sync + std::fmt::Debug {
     fn stop(&self);
