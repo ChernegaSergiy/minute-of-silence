@@ -21,8 +21,7 @@ use crate::core::voices::{VoiceAssets, effective_blocks};
 #[cfg(not(target_os = "android"))]
 use crate::error::AppError;
 use crate::error::Result;
-#[allow(unused_imports)]
-pub use khvylyna_core::scheduler::{METRONOME_LEAD_PAUSE, lead_in_pause};
+use khvylyna_core::scheduler::lead_in_pause;
 
 pub trait CeremonyAudioBackend: Send + Sync + std::fmt::Debug {
     fn stop(&self);
@@ -538,6 +537,7 @@ mod tests {
     #[test]
     fn the_start_compensation_counts_the_pause_exactly_where_the_steps_play_it() {
         use crate::core::scheduler::CeremonyScheduler;
+        use khvylyna_core::scheduler::METRONOME_LEAD_PAUSE;
 
         // With zero-length recordings only the pause is left in the compensation.
         for preset in PRESETS {

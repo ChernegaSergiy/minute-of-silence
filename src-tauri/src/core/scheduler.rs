@@ -427,8 +427,8 @@ pub async fn trigger_now(app: AppHandle, is_test: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::audio::METRONOME_LEAD_PAUSE;
     use crate::core::settings::AudioPreset::{self, *};
+    use khvylyna_core::scheduler::METRONOME_LEAD_PAUSE;
 
     const ANNOUNCEMENT: Duration = Duration::from_secs(40);
     const BELL: Duration = Duration::from_secs(9);
