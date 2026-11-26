@@ -54,13 +54,15 @@ khvylyna-core = { path = "path/to/crates/khvylyna-core", default-features = fals
 ```rust
 use khvylyna_core::{AudioPreset, PresetBlock, Settings};
 
-let mut settings = Settings::default();
-settings.migrate();
-assert!(settings.validate().is_ok());
+fn main() {
+    let mut settings = Settings::default();
+    settings.migrate();
+    assert!(settings.validate().is_ok());
 
-// Inspect blocks for a built-in preset
-let blocks = AudioPreset::VoiceMetronome.blocks();
-assert_eq!(blocks, &[PresetBlock::Announcement, PresetBlock::Metronome]);
+    // Inspect blocks for a built-in preset
+    let blocks = AudioPreset::VoiceMetronome.blocks();
+    assert_eq!(blocks, &[PresetBlock::Announcement, PresetBlock::Metronome]);
+}
 ```
 
 ## License
