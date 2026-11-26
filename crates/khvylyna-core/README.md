@@ -1,6 +1,6 @@
 # khvylyna-core
 
-Shared configuration models, validation, schema migrations, and contracts for **Minute of Silence** ([Хвилина мовчання](https://github.com/khvylynappua/minute-of-silence)).
+Shared configuration models, validation, schema migrations, and contracts for **Minute of Silence** ([Хвилина мовчання](https://github.com/ChernegaSergiy/minute-of-silence)).
 
 `khvylyna-core` serves as the portable, single source of truth for ceremony settings, audio block pipelines, voices, and memorial dates. It is designed to run in both desktop applications (Tauri / full OS) and resource-constrained embedded / IoT environments (`no_std` + `alloc`, e.g., ESP32 running Rust).
 
