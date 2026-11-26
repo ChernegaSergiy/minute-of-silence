@@ -7,6 +7,7 @@
 extern crate alloc;
 
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 use serde::{Deserialize, Serialize};
 
 /// Current configuration schema version.
