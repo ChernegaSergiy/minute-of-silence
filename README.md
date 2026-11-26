@@ -209,7 +209,7 @@ minute-of-silence/
 |   |   |   +-- apng.rs               # Pure-Rust APNG decoder for progress ring
 |   |   |   +-- commands.rs           # Tauri IPC command handlers
 |   |   |   \-- tray.rs               # System tray menu and setup
-|   |   +-- core/                     # Core business logic
+|   |   +-- core/                     # Runtime desktop orchestration
 |   |   |   +-- mod.rs
 |   |   |   +-- audio.rs              # Audio engine orchestration (rodio)
 |   |   |   +-- ceremony.rs           # Ceremony flow and state management
