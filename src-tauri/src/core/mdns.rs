@@ -155,7 +155,13 @@ async fn run_responder(app_version: String) -> std::io::Result<()> {
     let multicast_dest = SocketAddr::V4(SocketAddrV4::new(MDNS_MULTICAST_ADDR, MDNS_PORT));
 
     loop {
-        let (len, src) = socket.recv_from(&mut buf).await?;
+        let (len, src) = match socket.recv_from(&mut buf).await {
+            Ok(v) => v,
+            Err(err) => {
+                log::debug!("mDNS responder recv error: {err}");
+                continue;
+            }
+        };
         let packet = &buf[..len];
         if !is_dnssd_query_for(packet, SERVICE_TYPE) {
             continue;
