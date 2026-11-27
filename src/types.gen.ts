@@ -25,6 +25,23 @@ voices: Array<VoiceCapabilities>, supportsVisualOverlay: boolean, supportsMediaR
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
 
 /**
+ * Discovered standalone Minute of Silence hardware device on the local network.
+ */
+export type DiscoveredDevice = { 
+/**
+ * Advertised hostname (e.g. "khvylyna.local").
+ */
+hostname: string, 
+/**
+ * Local IPv4 address of the device (e.g. "192.168.1.105").
+ */
+ip: string, 
+/**
+ * Port for device communication (e.g. 80 for HTTP).
+ */
+port: number, };
+
+/**
  * A portable export bundle that carries both application settings and personal dates.
  *
  * Produced by [`export_bundle_to_json`] and consumed by [`import_bundle_from_json`].

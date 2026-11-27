@@ -339,6 +339,7 @@ mod tests {
         PersonalDate::export_all(&cfg).expect("failed to export PersonalDate");
         AppInitialState::export_all(&cfg).expect("failed to export AppInitialState");
         ExportBundle::export_all(&cfg).expect("failed to export ExportBundle");
+        DiscoveredDevice::export_all(&cfg).expect("failed to export DiscoveredDevice");
     }
 
     #[test]
