@@ -124,10 +124,30 @@ export async function getLogContents(): Promise<string> {
   return invoke<string>("get_log_contents");
 }
 
-// Device discovery
+// Device discovery & peer sync
 
 export async function discoverDevices(): Promise<DiscoveredDevice[]> {
   return invoke<DiscoveredDevice[]>("discover_devices");
+}
+
+export async function sendSettingsToDevice(ip: string, port: number): Promise<void> {
+  return invoke<void>("send_settings_to_device", { ip, port });
+}
+
+export const INCOMING_SETTINGS_EVENT = "incoming-settings-offer";
+
+export type IncomingSettingsOffer = {
+  senderName: string;
+  senderIp: string;
+  json: string;
+};
+
+export function onIncomingSettingsOffer(
+  callback: (offer: IncomingSettingsOffer) => void,
+): Promise<UnlistenFn> {
+  return listen(INCOMING_SETTINGS_EVENT, (e) =>
+    callback((e.payload as unknown) as IncomingSettingsOffer),
+  );
 }
 
 // Event listeners
