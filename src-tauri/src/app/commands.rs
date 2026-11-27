@@ -570,3 +570,11 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
         }
     }
 }
+
+// Device discovery
+
+/// Discover standalone Minute of Silence hardware devices on the local network via mDNS.
+#[tauri::command]
+pub async fn discover_devices() -> Result<Vec<khvylyna_core::DiscoveredDevice>> {
+    crate::core::mdns::discover_devices().await
+}

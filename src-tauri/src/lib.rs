@@ -277,6 +277,7 @@ pub fn run() {
             app::commands::set_last_shown_nearby_date,
             app::commands::get_personal_dates,
             app::commands::save_personal_dates,
+            app::commands::discover_devices,
             app::apng::decode_apng_frames,
         ])
         .run(tauri::generate_context!())
