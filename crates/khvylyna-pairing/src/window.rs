@@ -6,7 +6,7 @@ use zeroize::Zeroizing;
 
 use crate::{
     ProtocolError,
-    pake::{PairingAttempt, generate_code, receiver_response},
+    pake::{ConfirmedAttempt, PairingAttempt, generate_code, receiver_response},
 };
 
 /// Maximum number of PAKE attempts accepted for one code.
@@ -67,7 +67,7 @@ impl PairingWindow {
     /// Consumes the code after the sender proved knowledge of it.
     pub fn finish(
         &mut self,
-        attempt: PairingAttempt,
+        attempt: ConfirmedAttempt,
         now_ms: u64,
     ) -> Result<crate::channel::SessionSecret, ProtocolError> {
         if self.consumed || now_ms >= self.expires_at_ms {
@@ -158,10 +158,10 @@ mod tests {
         let second_secret = second_sender
             .finish(&code, &second_response)
             .expect("finish");
-        first_attempt
+        let first_confirmed = first_attempt
             .verify_confirm(&first_secret.seal_confirm(&mut TestRng(5)).expect("confirm"))
             .expect("verified");
-        second_attempt
+        let second_confirmed = second_attempt
             .verify_confirm(
                 &second_secret
                     .seal_confirm(&mut TestRng(6))
@@ -169,10 +169,10 @@ mod tests {
             )
             .expect("verified");
 
-        assert!(window.finish(first_attempt, 0).is_ok());
+        assert!(window.finish(first_confirmed, 0).is_ok());
         assert!(window.code(0).is_none());
         assert_eq!(
-            window.finish(second_attempt, 0).err(),
+            window.finish(second_confirmed, 0).err(),
             Some(ProtocolError::WindowUnavailable)
         );
     }

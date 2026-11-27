@@ -146,10 +146,10 @@ pub async fn receive(
     let confirm = read_expected(stream, FrameKind::Confirm, limit)
         .await
         .map_err(io_error)?;
-    attempt.verify_confirm(&confirm).map_err(io_error)?;
+    let confirmed = attempt.verify_confirm(&confirm).map_err(io_error)?;
     let secret = {
         let mut guard = window.lock().map_err(io_error)?;
-        guard.finish(attempt, now_ms()).map_err(io_error)?
+        guard.finish(confirmed, now_ms()).map_err(io_error)?
     };
 
     let ciphertext = read_expected(stream, FrameKind::Data, limit)

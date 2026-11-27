@@ -104,15 +104,24 @@ pub struct PairingAttempt {
     secret: SessionSecret,
 }
 
-impl PairingAttempt {
-    /// Checks that the sender used the same code and negotiated limits.
-    pub fn verify_confirm(&self, message: &[u8]) -> Result<(), ProtocolError> {
-        self.secret.open_confirm(message)
-    }
+/// Receiver state after the sender proved knowledge of the pairing code.
+pub struct ConfirmedAttempt(SessionSecret);
 
-    /// Returns the established session secret after confirmation.
+impl PairingAttempt {
+    /// Verifies the sender's confirmation and releases a finish-only token.
+    pub fn verify_confirm(
+        self,
+        message: &[u8],
+    ) -> Result<ConfirmedAttempt, ProtocolError> {
+        self.secret.open_confirm(message)?;
+        Ok(ConfirmedAttempt(self.secret))
+    }
+}
+
+impl ConfirmedAttempt {
+    /// Returns the established session secret.
     pub fn into_secret(self) -> SessionSecret {
-        self.secret
+        self.0
     }
 }
 
@@ -231,8 +240,8 @@ mod tests {
             .seal_confirm(&mut TestRng::new(&[3; 12]))
             .expect("confirm");
         assert_eq!(
-            attempt.verify_confirm(&confirm),
-            Err(ProtocolError::AuthenticationFailed)
+            attempt.verify_confirm(&confirm).err(),
+            Some(ProtocolError::AuthenticationFailed)
         );
     }
 

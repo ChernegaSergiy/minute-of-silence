@@ -81,8 +81,8 @@ fn main() {
     let confirm = sender_secret
         .seal_confirm(&mut FixedRng::new(3))
         .expect("confirm");
-    attempt.verify_confirm(&confirm).expect("verify confirm");
-    let receiver_secret = attempt.into_secret();
+    let confirmed = attempt.verify_confirm(&confirm).expect("verify confirm");
+    let receiver_secret = confirmed.into_secret();
 
     let data = sender_secret
         .seal_data(plaintext, &mut FixedRng::new(4))

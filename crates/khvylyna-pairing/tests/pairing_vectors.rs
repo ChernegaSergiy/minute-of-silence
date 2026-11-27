@@ -114,8 +114,8 @@ fn desktop_matches_shared_pairing_vectors() {
         .seal_confirm(&mut FixedRng::new(vectors.confirm_seed))
         .expect("confirm");
     assert_eq!(hex::encode(&confirm), vectors.confirm);
-    attempt.verify_confirm(&confirm).expect("verify confirm");
-    let receiver_secret = attempt.into_secret();
+    let confirmed = attempt.verify_confirm(&confirm).expect("verify confirm");
+    let receiver_secret = confirmed.into_secret();
 
     let plaintext = hex::decode(&vectors.plaintext).expect("plaintext hex");
     let data = sender_secret
