@@ -1,3 +1,41 @@
+- version: "0.12.2"
+  date: "2026-11-27"
+  entries:
+    - category: added
+      key: "android_support"
+    - category: added
+      key: "adaptive_navigation"
+    - category: added
+      key: "compact_desktop_navigation"
+    - category: added
+      key: "background_ceremony_service"
+    - category: added
+      key: "android_schedule_restore"
+    - category: added
+      key: "android_audio_controls"
+    - category: added
+      key: "android_notification_permission"
+    - category: added
+      key: "android_branding"
+    - category: changed
+      key: "touch_selection_disabled"
+    - category: changed
+      key: "overlay_desktop_only"
+    - category: fixed
+      key: "overlay_progress_sync"
+    - category: fixed
+      key: "personal_date_overlap_fix"
+    - category: fixed
+      key: "personal_date_add_button_wrap"
+    - category: fixed
+      key: "personal_date_add_button_alignment"
+    - category: fixed
+      key: "overlay_title_centering"
+    - category: fixed
+      key: "settings_actions_wrap"
+    - category: fixed
+      key: "compensation_rounding_fix"
+
 - version: "0.12.1"
   date: "2026-11-17"
   entries:
