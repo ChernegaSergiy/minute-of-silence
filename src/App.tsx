@@ -850,7 +850,7 @@ export default function App() {
           onUpdatingChange={setIsInstallingUpdate}
         />
         <Dialog
-          open={incomingOffer !== null}
+          open={incomingOffer !== null && !status.ceremonyActive && !showOverlay}
           onOpenChange={(_event, data) => {
             if (!data.open && !applyingOffer) {
               handleDeclineIncomingOffer();
