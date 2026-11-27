@@ -196,6 +196,7 @@ pub fn run() {
                 tauri::async_runtime::spawn(core::scheduler::run(runtime));
             }
             core::mdns::spawn_responder(app.package_info().version.to_string());
+            core::peer_sync::spawn_listener(handle.clone());
 
             // --- 5. Auto Update Check ---
             #[cfg(desktop)]
@@ -279,6 +280,7 @@ pub fn run() {
             app::commands::get_personal_dates,
             app::commands::save_personal_dates,
             app::commands::discover_devices,
+            app::commands::send_settings_to_device,
             app::apng::decode_apng_frames,
         ])
         .run(tauri::generate_context!())

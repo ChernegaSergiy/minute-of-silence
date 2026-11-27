@@ -578,3 +578,15 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
 pub async fn discover_devices() -> Result<Vec<khvylyna_core::DiscoveredDevice>> {
     crate::core::mdns::discover_devices().await
 }
+
+/// Export current settings and personal dates and send them to a discovered peer over HTTP.
+#[tauri::command]
+pub async fn send_settings_to_device(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    ip: String,
+    port: u16,
+) -> Result<()> {
+    let json = export_settings(app, state)?;
+    crate::core::peer_sync::send_bundle(&ip, port, &json).await
+}
