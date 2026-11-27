@@ -1,5 +1,7 @@
 //! Password-authenticated key exchange for a single settings-transfer session.
 
+pub mod channel;
+
 use opaque_ke::{
     CipherSuite, ClientLogin, ClientLoginFinishParameters, ClientRegistration,
     ClientRegistrationFinishParameters, CredentialFinalization, CredentialRequest,
