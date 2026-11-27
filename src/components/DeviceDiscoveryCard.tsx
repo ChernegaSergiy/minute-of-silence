@@ -26,7 +26,9 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { DeviceKind, DiscoveredDevice } from "../types";
 import {
   discoverDevices,
+  getReceivingPairingCode,
   getReceivingSettingsEnabled,
+  onPairingCodeChanged,
   onReceivingSettingsStopped,
   sendSettingsToDevice,
   setReceivingSettingsEnabled,
@@ -167,6 +169,8 @@ export default function DeviceDiscoveryCard() {
   const [receivingEnabled, setReceivingEnabled] = useState(false);
   const [receivingBusy, setReceivingBusy] = useState(true);
   const [receivingError, setReceivingError] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [pairingLoading, setPairingLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
   const [error, setError] = useState(false);
@@ -215,6 +219,60 @@ export default function DeviceDiscoveryCard() {
       unlisten?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (!receivingEnabled) {
+      setPairingCode(null);
+      setPairingLoading(false);
+      return;
+    }
+    let active = true;
+    let revision = 0;
+    let timer: number | undefined;
+    let unlisten: (() => void) | undefined;
+    const refresh = async () => {
+      const request = ++revision;
+      const startedAt = performance.now();
+      try {
+        const info = await getReceivingPairingCode();
+        if (!active || request !== revision) return;
+        if (timer !== undefined) window.clearTimeout(timer);
+        const remaining = info ? info.expiresInMs - (performance.now() - startedAt) : 0;
+        setPairingCode(info && remaining > 0 ? info.code : null);
+        if (info && remaining > 0) {
+          timer = window.setTimeout(() => setPairingCode(null), remaining);
+        }
+      } catch (error) {
+        if (active && request === revision) {
+          setPairingCode(null);
+          setReceivingError(true);
+        }
+        console.error("Failed to load pairing code:", error);
+      } finally {
+        if (active && request === revision) setPairingLoading(false);
+      }
+    };
+    setPairingLoading(true);
+    void onPairingCodeChanged(() => { void refresh(); }).then((stopListening) => {
+      if (!active) {
+        stopListening();
+        return;
+      }
+      unlisten = stopListening;
+      void refresh();
+    }).catch((error) => {
+      if (active) {
+        setPairingLoading(false);
+        setReceivingError(true);
+      }
+      console.error("Failed to listen for pairing code updates:", error);
+    });
+    return () => {
+      active = false;
+      if (timer !== undefined) window.clearTimeout(timer);
+      unlisten?.();
+    };
+  }, [receivingEnabled]);
 
   useEffect(() => {
     const timers = sendTimersRef.current;
@@ -325,6 +383,20 @@ export default function DeviceDiscoveryCard() {
         <Caption1 className={styles.errorText}>
           {t("controls.device_discovery.receive_error")}
         </Caption1>
+      )}
+      {receivingEnabled && !pairingLoading && (
+        pairingCode ? (
+          <div className={styles.labelGroup}>
+            <Text weight="medium">{t("controls.device_discovery.pairing_code")}: {pairingCode}</Text>
+            <Caption1 className={styles.statusText}>
+              {t("controls.device_discovery.pairing_code_description")}
+            </Caption1>
+          </div>
+        ) : (
+          <Caption1 className={styles.statusText}>
+            {t("controls.device_discovery.pairing_code_unavailable")}
+          </Caption1>
+        )
       )}
       <Divider />
       <div className={styles.headerRow}>
