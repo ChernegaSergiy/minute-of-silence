@@ -11,15 +11,17 @@ import {
 } from "@fluentui/react-components";
 import {
   ArrowSync20Regular,
+  Checkmark20Regular,
   ClipboardCheckmarkRegular,
   ClipboardRegular,
   Desktop20Regular,
   Phone20Regular,
+  Send20Regular,
   Speaker220Regular,
 } from "@fluentui/react-icons";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { DeviceKind, DiscoveredDevice } from "../types";
-import { discoverDevices } from "../utils/api";
+import { discoverDevices, sendSettingsToDevice } from "../utils/api";
 import { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
@@ -89,6 +91,12 @@ const useStyles = makeStyles({
     columnGap: tokens.spacingHorizontalXS,
     flexWrap: "wrap",
   },
+  deviceActions: {
+    display: "flex",
+    alignItems: "center",
+    columnGap: tokens.spacingHorizontalXS,
+    flexWrap: "wrap",
+  },
   spinIcon: {
     animationName: {
       from: { transform: "rotate(0deg)" },
@@ -116,6 +124,8 @@ function formatEndpoint(device: DiscoveredDevice): string {
   return device.port === 80 ? device.ip : `${device.ip}:${device.port}`;
 }
 
+type SendState = "idle" | "sending" | "sent" | "error";
+
 export default function DeviceDiscoveryCard() {
   const styles = useStyles();
   const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
@@ -123,6 +133,7 @@ export default function DeviceDiscoveryCard() {
   const [hasScanned, setHasScanned] = useState(false);
   const [error, setError] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [sendStates, setSendStates] = useState<Record<string, SendState>>({});
 
   const handleScan = useCallback(async () => {
     setScanning(true);
@@ -149,6 +160,27 @@ export default function DeviceDiscoveryCard() {
       }, 2000);
     } catch {
       // Clipboard write errors are non-fatal
+    }
+  }, []);
+
+  const handleSendSettings = useCallback(async (device: DiscoveredDevice) => {
+    const key = `${device.ip}:${device.port}`;
+    setSendStates((prev) => ({ ...prev, [key]: "sending" }));
+    try {
+      await sendSettingsToDevice(device.ip, device.port);
+      setSendStates((prev) => ({ ...prev, [key]: "sent" }));
+      window.setTimeout(() => {
+        setSendStates((prev) =>
+          prev[key] === "sent" ? { ...prev, [key]: "idle" } : prev,
+        );
+      }, 3000);
+    } catch {
+      setSendStates((prev) => ({ ...prev, [key]: "error" }));
+      window.setTimeout(() => {
+        setSendStates((prev) =>
+          prev[key] === "error" ? { ...prev, [key]: "idle" } : prev,
+        );
+      }, 3000);
     }
   }, []);
 
@@ -194,6 +226,7 @@ export default function DeviceDiscoveryCard() {
               {devices.map((device) => {
                 const key = `${device.ip}:${device.port}`;
                 const isCopied = copiedKey === key;
+                const sendState: SendState = sendStates[key] ?? "idle";
                 return (
                   <div key={key} className={styles.deviceRow}>
                     <div className={styles.deviceInfo}>
@@ -214,22 +247,45 @@ export default function DeviceDiscoveryCard() {
                         </Caption1>
                       </div>
                     </div>
-                    <Button
-                      size="small"
-                      appearance="subtle"
-                      icon={
-                        isCopied ? (
-                          <ClipboardCheckmarkRegular />
-                        ) : (
-                          <ClipboardRegular />
-                        )
-                      }
-                      onClick={() => handleCopyIp(device)}
-                    >
-                      {isCopied
-                        ? t("controls.device_discovery.copied")
-                        : t("controls.device_discovery.copy_ip")}
-                    </Button>
+                    <div className={styles.deviceActions}>
+                      <Button
+                        size="small"
+                        appearance="secondary"
+                        icon={
+                          sendState === "sent" ? (
+                            <Checkmark20Regular />
+                          ) : (
+                            <Send20Regular />
+                          )
+                        }
+                        disabled={sendState === "sending"}
+                        onClick={() => handleSendSettings(device)}
+                      >
+                        {sendState === "sending"
+                          ? t("controls.device_discovery.sending")
+                          : sendState === "sent"
+                          ? t("controls.device_discovery.sent")
+                          : sendState === "error"
+                          ? t("controls.device_discovery.send_error")
+                          : t("controls.device_discovery.send")}
+                      </Button>
+                      <Button
+                        size="small"
+                        appearance="subtle"
+                        icon={
+                          isCopied ? (
+                            <ClipboardCheckmarkRegular />
+                          ) : (
+                            <ClipboardRegular />
+                          )
+                        }
+                        onClick={() => handleCopyIp(device)}
+                      >
+                        {isCopied
+                          ? t("controls.device_discovery.copied")
+                          : t("controls.device_discovery.copy_ip")}
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
