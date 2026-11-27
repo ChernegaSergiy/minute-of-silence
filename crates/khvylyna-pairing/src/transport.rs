@@ -110,7 +110,7 @@ pub async fn send(stream: &mut TcpStream, code: &str, payload: &[u8]) -> io::Res
         .await
         .map_err(io_error)?;
     if !secret.open_ack(&ack).map_err(io_error)? {
-        return Err(io_error(ProtocolError::AuthenticationFailed));
+        return Err(io_error(ProtocolError::TransferRejected));
     }
     Ok(())
 }
@@ -207,6 +207,34 @@ mod tests {
         .await
         .expect("transfer timeout")
         .expect("send");
+        server.await.expect("server");
+    }
+
+    #[tokio::test]
+    async fn rejected_ack_is_reported_distinctly() {
+        let window = test_window();
+        let code = window
+            .lock()
+            .expect("lock")
+            .code(now_ms())
+            .expect("code")
+            .to_owned();
+        let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+        let address = listener.local_addr().expect("address");
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.expect("accept");
+            let (payload, secret) = receive(&mut stream, window).await.expect("receive");
+            assert_eq!(payload.as_slice(), b"private settings");
+            respond(&mut stream, secret, false).await.expect("respond");
+        });
+        let mut stream = TcpStream::connect(address).await.expect("connect");
+        let error = send(&mut stream, &code, b"private settings")
+            .await
+            .expect_err("rejected transfer");
+        assert_eq!(
+            error.to_string(),
+            ProtocolError::TransferRejected.to_string()
+        );
         server.await.expect("server");
     }
 

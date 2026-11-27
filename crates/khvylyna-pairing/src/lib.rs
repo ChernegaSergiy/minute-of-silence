@@ -39,6 +39,8 @@ pub enum ProtocolError {
     WindowUnavailable,
     /// The code or authenticated message did not verify.
     AuthenticationFailed,
+    /// The receiver authenticated the sender but rejected the payload.
+    TransferRejected,
     /// Randomness, key derivation, or authenticated encryption failed.
     ChannelFailed,
 }
@@ -53,6 +55,7 @@ impl fmt::Display for ProtocolError {
             Self::PayloadTooLarge => "Pairing payload exceeds the negotiated limit",
             Self::WindowUnavailable => "The pairing code is no longer available",
             Self::AuthenticationFailed => "Pairing authentication failed",
+            Self::TransferRejected => "The receiver rejected the settings payload",
             Self::ChannelFailed => "The protected transfer failed",
         };
         formatter.write_str(message)
