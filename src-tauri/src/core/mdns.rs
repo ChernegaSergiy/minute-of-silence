@@ -11,6 +11,7 @@ use std::{
 };
 
 use khvylyna_core::{DeviceKind, DiscoveredDevice};
+use socket2::{Domain, Protocol, Socket, Type};
 use tokio::{net::UdpSocket, time};
 
 /// Standard IPv4 mDNS multicast group address (RFC 6762).
@@ -169,7 +170,7 @@ impl Drop for AndroidMulticastGuard {
 }
 
 async fn run_responder(app_version: String) -> std::io::Result<()> {
-    let socket = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, MDNS_PORT)).await?;
+    let socket = UdpSocket::from_std(bind_mdns_socket(MDNS_PORT)?)?;
     socket.join_multicast_v4(MDNS_MULTICAST_ADDR, Ipv4Addr::UNSPECIFIED)?;
     #[cfg(target_os = "android")]
     let _multicast_guard = AndroidMulticastGuard::acquire()?;
@@ -228,6 +229,16 @@ async fn run_responder(app_version: String) -> std::io::Result<()> {
             log::debug!("mDNS responder send error: {err}");
         }
     }
+}
+
+fn bind_mdns_socket(port: u16) -> std::io::Result<std::net::UdpSocket> {
+    let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+    socket.set_reuse_address(true)?;
+    #[cfg(unix)]
+    socket.set_reuse_port(true)?;
+    socket.bind(&SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port).into())?;
+    socket.set_nonblocking(true)?;
+    Ok(socket.into())
 }
 
 /// Return `true` if `packet` is a DNS query asking for `service_type` (PTR or ANY).
@@ -681,6 +692,14 @@ fn read_dns_name(packet: &[u8], start: usize) -> Option<(String, usize)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mdns_sockets_can_share_a_port() -> std::io::Result<()> {
+        let first = bind_mdns_socket(0)?;
+        let second = bind_mdns_socket(first.local_addr()?.port())?;
+        assert_eq!(first.local_addr()?.port(), second.local_addr()?.port());
+        Ok(())
+    }
 
     #[test]
     fn build_ptr_query_encodes_service_type() {
