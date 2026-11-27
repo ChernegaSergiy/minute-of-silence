@@ -130,8 +130,21 @@ export async function discoverDevices(): Promise<DiscoveredDevice[]> {
   return invoke<DiscoveredDevice[]>("discover_devices");
 }
 
-export async function sendSettingsToDevice(ip: string, port: number): Promise<void> {
-  return invoke<void>("send_settings_to_device", { ip, port });
+export async function sendSettingsToDevice(ip: string, port: number, pairingCode = ""): Promise<void> {
+  return invoke<void>("send_settings_to_device", { ip, port, pairingCode });
+}
+
+export type ReceivingPairingCode = {
+  code: string;
+  expiresInMs: number;
+};
+
+export async function getReceivingPairingCode(): Promise<ReceivingPairingCode | null> {
+  return invoke<ReceivingPairingCode | null>("get_receiving_pairing_code");
+}
+
+export function onPairingCodeChanged(callback: () => void): Promise<UnlistenFn> {
+  return listen("pairing-code-changed", callback);
 }
 
 export async function getReceivingSettingsEnabled(): Promise<boolean> {
