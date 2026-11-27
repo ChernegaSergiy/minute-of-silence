@@ -221,7 +221,7 @@ async fn handle_connection(
     if let Err(error) = app.emit(PAIRING_CODE_CHANGED_EVENT, ()) {
         log::warn!("Failed to report pairing status: {error}");
     }
-    let (payload, response_key) = match received {
+    let (payload, secret) = match received {
         Ok(Ok(result)) => result,
         Ok(Err(error)) => {
             log::debug!("Rejected unauthenticated settings transfer from {peer_addr}: {error}");
@@ -265,7 +265,7 @@ async fn handle_connection(
 
     match time::timeout(
         TRANSFER_TIMEOUT,
-        transport::respond(&mut stream, response_key, accepted),
+        transport::respond(&mut stream, secret, accepted),
     )
     .await
     {
@@ -282,6 +282,8 @@ fn sanitize_sender_name(raw: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use khvylyna_pairing::now_ms;
+    use rand::rngs::OsRng;
     use tokio::io::AsyncReadExt;
 
     #[tokio::test]
@@ -363,12 +365,12 @@ mod tests {
             .expect("bind loopback");
         let port = listener.local_addr().expect("local addr").port();
         let window = Arc::new(Mutex::new(
-            PairingWindow::new(std::time::Instant::now()).expect("pairing window"),
+            PairingWindow::new(now_ms(), &mut OsRng).expect("pairing window"),
         ));
         let code = window
             .lock()
             .expect("pairing lock")
-            .code(std::time::Instant::now())
+            .code(now_ms())
             .expect("pairing code")
             .to_string();
         let bundle = khvylyna_core::ExportBundle {

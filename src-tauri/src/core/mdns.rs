@@ -2,7 +2,7 @@
 //!
 //! All peers (ESP32 hardware devices, desktop apps, and Android apps) advertise
 //! and discover each other via the unified DNS-SD service `_khvylyna._tcp.local`
-//! carrying PTR, SRV, TXT (`kind=`, `name=`, `ver=`), and A records.
+//! carrying PTR, SRV, TXT (`kind=`, `name=`, `ver=`, `proto=`), and A records.
 
 use std::{
     collections::{BTreeMap, HashMap},
@@ -315,12 +315,18 @@ pub fn build_dnssd_response(
     encode_dns_name(&mut srv_rdata, &host_fqdn);
     append_rr(&mut packet, &instance_fqdn, DNS_TYPE_SRV, &srv_rdata);
 
-    // TXT: kind=..., name=..., ver=...
+    // TXT: kind=..., name=..., ver=..., proto=...
     let mut txt_rdata = Vec::new();
     let kind_entry = format!("kind={}", device_kind_str(kind));
     let name_entry = format!("name={display_name}");
     let ver_entry = format!("ver={app_version}");
-    for entry in [kind_entry.as_str(), name_entry.as_str(), ver_entry.as_str()] {
+    let proto_entry = format!("proto={}", khvylyna_pairing::protocol::VERSION);
+    for entry in [
+        kind_entry.as_str(),
+        name_entry.as_str(),
+        ver_entry.as_str(),
+        proto_entry.as_str(),
+    ] {
         let bytes = entry.as_bytes();
         let len = bytes.len().min(255);
         txt_rdata.push(len as u8);
@@ -504,6 +510,12 @@ pub fn parse_dnssd_response(packet: &[u8], service_type: &str) -> Vec<Discovered
         };
 
         let attrs = txts.get(&instance);
+        let protocol_ok = attrs.and_then(|m| m.get("proto")).is_none_or(|value| {
+            value.trim().parse::<u8>().ok() == Some(khvylyna_pairing::protocol::VERSION)
+        });
+        if !protocol_ok {
+            continue;
+        }
         let kind = attrs
             .and_then(|m| m.get("kind"))
             .map(|v| parse_device_kind(v))

@@ -1,140 +1,179 @@
-//! Time-limited, single-use receiver pairing window.
+//! Short-lived, single-use receiver pairing window with online-attempt limits.
 
-use std::time::{Duration, Instant};
+use alloc::{string::String, vec::Vec};
+use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroizing;
 
-use crate::{PairingError, Receiver, ReceiverExchange, generate_code};
+use crate::{
+    ProtocolError,
+    pake::{PairingAttempt, generate_code, receiver_response},
+};
 
-const MAX_ATTEMPTS: usize = 5;
-const CODE_LIFETIME: Duration = Duration::from_secs(120);
+/// Maximum number of PAKE attempts accepted for one code.
+pub const MAX_ATTEMPTS: usize = 5;
+/// Code lifetime in milliseconds.
+pub const CODE_LIFETIME_MS: u64 = 120_000;
 
-/// A code and its receiver state, valid for a limited time and number of attempts.
+/// A displayed code and the state needed to authenticate one sender.
 pub struct PairingWindow {
     code: Zeroizing<String>,
-    receiver: Receiver,
-    expires_at: Instant,
+    expires_at_ms: u64,
     attempts: usize,
     consumed: bool,
 }
 
 impl PairingWindow {
-    /// Creates a fresh code that expires two minutes after the supplied time.
-    pub fn new(now: Instant) -> Result<Self, PairingError> {
-        let code = generate_code()?;
-        let receiver = Receiver::new(&code)?;
+    /// Creates a fresh code that expires two minutes after `now_ms`.
+    pub fn new<R: RngCore + CryptoRng>(now_ms: u64, rng: &mut R) -> Result<Self, ProtocolError> {
+        let code = generate_code(rng)?;
         Ok(Self {
             code,
-            receiver,
-            expires_at: now + CODE_LIFETIME,
+            expires_at_ms: now_ms.saturating_add(CODE_LIFETIME_MS),
             attempts: 0,
             consumed: false,
         })
     }
 
     /// Returns the code only while the window can accept another attempt.
-    pub fn code(&self, now: Instant) -> Option<&str> {
-        if self.available(now) {
+    pub fn code(&self, now_ms: u64) -> Option<&str> {
+        if self.available(now_ms) {
             Some(&self.code)
         } else {
             None
         }
     }
 
-    /// Returns the remaining code lifetime while pairing is available.
-    pub fn remaining(&self, now: Instant) -> Option<Duration> {
-        self.code(now)?;
-        Some(self.expires_at.saturating_duration_since(now))
+    /// Returns the remaining code lifetime in milliseconds.
+    pub fn remaining(&self, now_ms: u64) -> Option<u64> {
+        self.code(now_ms)?;
+        Some(self.expires_at_ms.saturating_sub(now_ms))
     }
 
-    /// Consumes one attempt and begins authenticating a sender.
-    pub fn start(
+    /// Consumes one attempt and responds to the sender's CPace packet.
+    pub fn start<R: RngCore + CryptoRng>(
         &mut self,
         request: &[u8],
-        now: Instant,
-    ) -> Result<(ReceiverExchange, Vec<u8>), PairingError> {
-        if !self.available(now) {
-            return Err(PairingError::WindowUnavailable);
+        now_ms: u64,
+        max_payload: u16,
+        rng: &mut R,
+    ) -> Result<(PairingAttempt, Vec<u8>), ProtocolError> {
+        if !self.available(now_ms) {
+            return Err(ProtocolError::WindowUnavailable);
         }
         self.attempts += 1;
-        self.receiver.start(request)
+        receiver_response(&self.code, request, max_payload, rng)
     }
 
-    /// Verifies the sender and consumes the code after the first successful exchange.
+    /// Consumes the code after the sender proved knowledge of it.
     pub fn finish(
         &mut self,
-        exchange: ReceiverExchange,
-        finalization: &[u8],
-        now: Instant,
-    ) -> Result<Zeroizing<Vec<u8>>, PairingError> {
-        if self.consumed || now >= self.expires_at {
-            return Err(PairingError::WindowUnavailable);
+        attempt: PairingAttempt,
+        now_ms: u64,
+    ) -> Result<crate::channel::SessionSecret, ProtocolError> {
+        if self.consumed || now_ms >= self.expires_at_ms {
+            return Err(ProtocolError::WindowUnavailable);
         }
-        let key = exchange.finish(finalization)?;
         self.consumed = true;
-        Ok(key)
+        Ok(attempt.into_secret())
     }
 
-    fn available(&self, now: Instant) -> bool {
-        !self.consumed && now < self.expires_at && self.attempts < MAX_ATTEMPTS
+    fn available(&self, now_ms: u64) -> bool {
+        !self.consumed && now_ms < self.expires_at_ms && self.attempts < MAX_ATTEMPTS
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SenderExchange;
+    use crate::pake::SenderExchange;
+    use alloc::string::ToString;
+    use rand_core::{CryptoRng, RngCore};
+
+    struct TestRng(u8);
+
+    impl RngCore for TestRng {
+        fn next_u32(&mut self) -> u32 {
+            u32::from_le_bytes([self.0, self.0, self.0, self.0])
+        }
+
+        fn next_u64(&mut self) -> u64 {
+            u64::from_le_bytes([self.0; 8])
+        }
+
+        fn fill_bytes(&mut self, dest: &mut [u8]) {
+            for byte in dest {
+                *byte = self.0;
+            }
+        }
+
+        fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+            self.fill_bytes(dest);
+            Ok(())
+        }
+    }
+
+    impl CryptoRng for TestRng {}
+
+    fn window() -> PairingWindow {
+        PairingWindow::new(0, &mut TestRng(7)).expect("window")
+    }
 
     #[test]
     fn code_expires_at_the_deadline() {
-        let now = Instant::now();
-        let window = PairingWindow::new(now).expect("window");
-        assert!(
-            window
-                .code(now + CODE_LIFETIME - Duration::from_nanos(1))
-                .is_some()
-        );
-        assert!(window.code(now + CODE_LIFETIME).is_none());
-        assert_eq!(window.remaining(now), Some(CODE_LIFETIME));
-        assert_eq!(window.remaining(now + CODE_LIFETIME), None);
+        let window = window();
+        assert!(window.code(CODE_LIFETIME_MS - 1).is_some());
+        assert!(window.code(CODE_LIFETIME_MS).is_none());
+        assert_eq!(window.remaining(0), Some(CODE_LIFETIME_MS));
+        assert_eq!(window.remaining(CODE_LIFETIME_MS), None);
     }
 
     #[test]
     fn failed_requests_are_limited() {
-        let now = Instant::now();
-        let mut window = PairingWindow::new(now).expect("window");
+        let mut window = window();
         for _ in 0..MAX_ATTEMPTS {
-            assert!(window.start(&[], now).is_err());
+            assert!(window.start(&[], 0, 4096, &mut TestRng(1)).is_err());
         }
-        assert!(window.code(now).is_none());
-        assert!(matches!(
-            window.start(&[], now),
-            Err(PairingError::WindowUnavailable)
-        ));
+        assert!(window.code(0).is_none());
+        assert_eq!(
+            window.start(&[], 0, 4096, &mut TestRng(1)).err(),
+            Some(ProtocolError::WindowUnavailable)
+        );
     }
 
     #[test]
     fn only_one_successful_exchange_can_consume_the_code() {
-        let now = Instant::now();
-        let mut window = PairingWindow::new(now).expect("window");
-        let code = window.code(now).expect("code").to_string();
-        let (first_sender, first_request) = SenderExchange::start(&code).expect("sender");
-        let (second_sender, second_request) = SenderExchange::start(&code).expect("sender");
-        let (first_receiver, first_response) = window.start(&first_request, now).expect("receiver");
-        let (second_receiver, second_response) =
-            window.start(&second_request, now).expect("receiver");
-        let (first_confirmation, _) = first_sender.finish(&code, &first_response).expect("sender");
-        let (second_confirmation, _) = second_sender
+        let mut window = window();
+        let code = window.code(0).expect("code").to_string();
+        let (first_sender, first_request) =
+            SenderExchange::start(&code, 4096, &mut TestRng(1)).expect("sender");
+        let (second_sender, second_request) =
+            SenderExchange::start(&code, 4096, &mut TestRng(2)).expect("sender");
+        let (first_attempt, first_response) = window
+            .start(&first_request, 0, 4096, &mut TestRng(3))
+            .expect("first attempt");
+        let (second_attempt, second_response) = window
+            .start(&second_request, 0, 4096, &mut TestRng(4))
+            .expect("second attempt");
+        let first_secret = first_sender.finish(&code, &first_response).expect("finish");
+        let second_secret = second_sender
             .finish(&code, &second_response)
-            .expect("sender");
-        assert!(
-            window
-                .finish(first_receiver, &first_confirmation, now)
-                .is_ok()
+            .expect("finish");
+        first_attempt
+            .verify_confirm(&first_secret.seal_confirm(&mut TestRng(5)).expect("confirm"))
+            .expect("verified");
+        second_attempt
+            .verify_confirm(
+                &second_secret
+                    .seal_confirm(&mut TestRng(6))
+                    .expect("confirm"),
+            )
+            .expect("verified");
+
+        assert!(window.finish(first_attempt, 0).is_ok());
+        assert!(window.code(0).is_none());
+        assert_eq!(
+            window.finish(second_attempt, 0).err(),
+            Some(ProtocolError::WindowUnavailable)
         );
-        assert!(window.code(now).is_none());
-        assert!(matches!(
-            window.finish(second_receiver, &second_confirmation, now),
-            Err(PairingError::WindowUnavailable)
-        ));
     }
 }

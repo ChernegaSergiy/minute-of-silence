@@ -1,11 +1,9 @@
 //! Session-scoped lifecycle for receiving settings over the local network.
 
-use std::{
-    sync::{Arc, Mutex as StdMutex},
-    time::Instant,
-};
+use std::sync::{Arc, Mutex as StdMutex};
 
-use khvylyna_pairing::window::PairingWindow;
+use khvylyna_pairing::{now_ms, window::PairingWindow};
+use rand::rngs::OsRng;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{Mutex, watch};
@@ -50,10 +48,10 @@ impl ReceivingState {
             .as_ref()
             .filter(|session| !session.task.is_finished())?;
         let pairing = session.pairing.lock().ok()?;
-        let now = Instant::now();
+        let now = now_ms();
         Some(PairingCodeInfo {
             code: pairing.code(now)?.to_owned(),
-            expires_in_ms: pairing.remaining(now)?.as_millis() as u64,
+            expires_in_ms: pairing.remaining(now)?,
         })
     }
 
@@ -68,7 +66,7 @@ impl ReceivingState {
                 return Ok(true);
             }
             current.take();
-            let pairing = tokio::task::spawn_blocking(|| PairingWindow::new(Instant::now()))
+            let pairing = tokio::task::spawn_blocking(|| PairingWindow::new(now_ms(), &mut OsRng))
                 .await
                 .map_err(|error| {
                     crate::AppError::Platform(format!("Pairing setup failed: {error}"))

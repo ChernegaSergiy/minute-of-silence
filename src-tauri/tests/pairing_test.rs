@@ -1,20 +1,21 @@
 use std::{
     sync::{Arc, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
-use khvylyna_pairing::{transport, window::PairingWindow};
+use khvylyna_pairing::{now_ms, transport, window::PairingWindow};
+use rand::rngs::OsRng;
 use tokio::net::{TcpListener, TcpStream};
 
 #[tokio::test]
 async fn pairing_code_accepts_only_one_encrypted_transfer() {
     let window = Arc::new(Mutex::new(
-        PairingWindow::new(Instant::now()).expect("window"),
+        PairingWindow::new(now_ms(), &mut OsRng).expect("window"),
     ));
     let code = window
         .lock()
         .expect("lock")
-        .code(Instant::now())
+        .code(now_ms())
         .expect("code")
         .to_string();
     let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
