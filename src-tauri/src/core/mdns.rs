@@ -112,16 +112,24 @@ fn sanitize_dns_label(raw: &str) -> String {
     }
 }
 
-/// Detect the primary non-loopback local IPv4 address without sending any network packets.
-pub fn detect_local_ipv4() -> Option<Ipv4Addr> {
+/// Return the local IPv4 address of the interface that reaches `peer`.
+///
+/// A UDP `connect` only consults the routing table and sends nothing, so an on-link route to
+/// the peer is enough; no default route is required.
+pub fn local_ipv4_towards(peer: Ipv4Addr) -> Option<Ipv4Addr> {
     let socket = std::net::UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)).ok()?;
-    socket
-        .connect(SocketAddrV4::new(Ipv4Addr::new(192, 0, 2, 1), 80))
-        .ok()?;
+    socket.connect(SocketAddrV4::new(peer, MDNS_PORT)).ok()?;
     match socket.local_addr().ok()?.ip() {
-        IpAddr::V4(ip) if !ip.is_loopback() && !ip.is_unspecified() => Some(ip),
+        IpAddr::V4(ip) if !ip.is_unspecified() => Some(ip),
         _ => None,
     }
+}
+
+/// Return `true` if `ip` is assigned to one of this machine's network interfaces.
+///
+/// Binding only succeeds for addresses that belong to a local interface.
+pub fn is_local_ipv4(ip: Ipv4Addr) -> bool {
+    std::net::UdpSocket::bind(SocketAddrV4::new(ip, 0)).is_ok()
 }
 
 /// Spawn a background mDNS responder advertising this instance via `_khvylyna._tcp.local`.
@@ -167,7 +175,10 @@ async fn run_responder(app_version: String) -> std::io::Result<()> {
             continue;
         }
 
-        let Some(local_ip) = detect_local_ipv4() else {
+        let IpAddr::V4(src_ip) = src.ip() else {
+            continue;
+        };
+        let Some(local_ip) = local_ipv4_towards(src_ip).filter(|ip| !ip.is_loopback()) else {
             continue;
         };
 
@@ -301,12 +312,11 @@ pub async fn discover_devices_with_timeout(
     timeout: Duration,
 ) -> crate::Result<Vec<DiscoveredDevice>> {
     let found = query_dnssd_udp(timeout).await?;
-    let local_ip = detect_local_ipv4();
     let mut by_endpoint: BTreeMap<(Ipv4Addr, u16), DiscoveredDevice> = BTreeMap::new();
 
     for device in found {
         if let Ok(ip) = device.ip.parse::<Ipv4Addr>() {
-            if local_ip == Some(ip) && device.port == DEFAULT_PEER_PORT {
+            if device.port == DEFAULT_PEER_PORT && is_local_ipv4(ip) {
                 continue;
             }
             by_endpoint.entry((ip, device.port)).or_insert(device);
@@ -740,5 +750,15 @@ mod tests {
             "0.12.1",
         );
         assert!(!is_dnssd_query_for(&response, SERVICE_TYPE));
+    }
+
+    #[test]
+    fn local_ipv4_helpers_recognise_loopback_and_reject_foreign_addresses() {
+        assert_eq!(
+            local_ipv4_towards(Ipv4Addr::LOCALHOST),
+            Some(Ipv4Addr::LOCALHOST)
+        );
+        assert!(is_local_ipv4(Ipv4Addr::LOCALHOST));
+        assert!(!is_local_ipv4(Ipv4Addr::new(192, 0, 2, 1)));
     }
 }
