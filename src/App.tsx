@@ -577,7 +577,8 @@ export default function App() {
       handleSettingsImported(imported.settings);
       setPersonalDates(imported.personalDates);
       setIncomingOffer(null);
-    } catch {
+    } catch (error) {
+      console.error("Failed to apply incoming settings offer:", error);
       setOfferError(true);
     } finally {
       setApplyingOffer(false);
