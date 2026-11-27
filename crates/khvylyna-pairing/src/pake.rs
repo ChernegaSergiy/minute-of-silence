@@ -254,6 +254,14 @@ mod tests {
     }
 
     #[test]
+    fn zero_max_payload_is_rejected_before_cpace_starts() {
+        assert_eq!(
+            SenderExchange::start("123456", 0, &mut TestRng::new(&[1; 128])).err(),
+            Some(ProtocolError::PayloadTooLarge)
+        );
+    }
+
+    #[test]
     fn generated_codes_are_six_ascii_digits() {
         for seed in 0..16 {
             let code = generate_code(&mut TestRng::new(&[seed; 4])).expect("code");
