@@ -10,6 +10,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type {
   AppInitialState,
+  DiscoveredDevice,
   ExportBundle,
   NotificationPermission,
   PersonalDate,
@@ -121,6 +122,12 @@ export async function stopTestCeremony(): Promise<void> {
 
 export async function getLogContents(): Promise<string> {
   return invoke<string>("get_log_contents");
+}
+
+// Device discovery
+
+export async function discoverDevices(): Promise<DiscoveredDevice[]> {
+  return invoke<DiscoveredDevice[]>("discover_devices");
 }
 
 // Event listeners
