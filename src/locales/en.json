@@ -21,7 +21,8 @@
     "reminder": "REMINDER",
     "audio_mode": "AUDIO",
     "system": "SYSTEM",
-    "data": "DATA"
+    "data": "DATA",
+    "devices": "NETWORK DEVICES"
   },
   "status": {
     "last_ceremony": "Last ceremony",
@@ -191,6 +192,22 @@
       "success": "Imported!",
       "empty": "Clipboard is empty",
       "error": "Import failed"
+    },
+    "device_discovery": {
+      "label": "Device discovery",
+      "description": "Find Minute of Silence devices on your local network via mDNS.",
+      "scan": "Scan",
+      "scanning": "Scanning...",
+      "empty": "No devices found. Make sure devices are connected to the same local network.",
+      "error": "Device discovery failed.",
+      "copy_ip": "Copy IP",
+      "copied": "Copied!",
+      "kind": {
+        "hardware": "ESP32 Device",
+        "desktop": "Desktop",
+        "android": "Android",
+        "unknown": "Device"
+      }
     }
   },
   "buttons": {
