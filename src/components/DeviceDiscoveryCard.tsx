@@ -81,6 +81,9 @@ const useStyles = makeStyles({
     columnGap: tokens.spacingHorizontalS,
     minWidth: 0,
     flex: "1 1 180px",
+    "@media (max-width: 480px)": {
+      flex: "0 1 auto",
+    },
   },
   deviceIcon: {
     display: "flex",
