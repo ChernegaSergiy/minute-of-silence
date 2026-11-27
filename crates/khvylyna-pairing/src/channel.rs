@@ -196,7 +196,7 @@ mod tests {
     impl CryptoRng for TestRng {}
 
     #[test]
-    fn each_direction_and_purpose_uses_a_distinct_one_shot_key() {
+    fn each_direction_and_purpose_uses_a_distinct_key() {
         let secret = SessionSecret::new([7; 32], [9; 32]);
         let confirm = secret.seal_confirm(&mut TestRng(1)).expect("confirm");
         let data = secret
