@@ -29,6 +29,7 @@ import {
   Save20Regular,
   Settings20Regular,
   Stop20Regular,
+  Warning20Regular,
   CalendarMonth20Regular,
   bundleIcon,
   Settings24Filled,
@@ -850,6 +851,7 @@ export default function App() {
           onUpdatingChange={setIsInstallingUpdate}
         />
         <Dialog
+          modalType="alert"
           open={incomingOffer !== null && !status.ceremonyActive && !showOverlay}
           onOpenChange={(_event, data) => {
             if (!data.open && !applyingOffer) {
@@ -857,9 +859,11 @@ export default function App() {
             }
           }}
         >
-          <DialogSurface>
+          <DialogSurface style={{ maxWidth: "500px", width: "90%" }}>
             <DialogBody>
-              <DialogTitle>{t("controls.device_discovery.incoming_title")}</DialogTitle>
+              <DialogTitle style={{ marginBottom: tokens.spacingVerticalS }}>
+                {t("controls.device_discovery.incoming_title")}
+              </DialogTitle>
               <DialogContent>
                 <Text block>
                   {t("controls.device_discovery.incoming_body", {
@@ -868,21 +872,32 @@ export default function App() {
                   })}
                 </Text>
                 {isDirty && (
-                  <Text
-                    block
+                  <div
                     style={{
-                      color: tokens.colorPaletteYellowForeground1,
-                      marginTop: tokens.spacingVerticalS,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      columnGap: tokens.spacingHorizontalS,
+                      marginTop: tokens.spacingVerticalM,
+                      color: tokens.colorNeutralForeground2,
+                      fontSize: tokens.fontSizeBase200,
                     }}
                   >
-                    {t("controls.device_discovery.incoming_dirty_warning")}
-                  </Text>
+                    <Warning20Regular
+                      style={{
+                        color: tokens.colorPaletteYellowForeground1,
+                        flexShrink: 0,
+                        marginTop: "1px",
+                      }}
+                    />
+                    <span>{t("controls.device_discovery.incoming_dirty_warning")}</span>
+                  </div>
                 )}
                 {offerError && (
                   <Text
                     block
+                    size={200}
                     style={{
-                      color: tokens.colorPaletteRedForeground1,
+                      color: tokens.colorPaletteRedBorderActive,
                       marginTop: tokens.spacingVerticalS,
                     }}
                   >
@@ -892,18 +907,20 @@ export default function App() {
               </DialogContent>
               <DialogActions>
                 <Button
-                  appearance="secondary"
-                  disabled={applyingOffer}
-                  onClick={handleDeclineIncomingOffer}
-                >
-                  {t("controls.device_discovery.incoming_decline")}
-                </Button>
-                <Button
                   appearance="primary"
+                  style={{ whiteSpace: "nowrap" }}
                   disabled={applyingOffer}
                   onClick={handleAcceptIncomingOffer}
                 >
                   {t("controls.device_discovery.incoming_accept")}
+                </Button>
+                <Button
+                  appearance="secondary"
+                  style={{ whiteSpace: "nowrap" }}
+                  disabled={applyingOffer}
+                  onClick={handleDeclineIncomingOffer}
+                >
+                  {t("controls.device_discovery.incoming_decline")}
                 </Button>
               </DialogActions>
             </DialogBody>
