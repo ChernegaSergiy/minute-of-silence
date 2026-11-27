@@ -67,11 +67,11 @@ Alternatively, you can download the `.msi` or `.exe` installer from the [Release
 
 ```bash
 # Debian package
-sudo dpkg -i Minute.of.Silence_0.12.1_amd64.deb
+sudo dpkg -i Minute.of.Silence_0.12.2_amd64.deb
 
 # AppImage
-chmod +x Minute.of.Silence_0.12.1_amd64.AppImage
-./Minute.of.Silence_0.12.1_amd64.AppImage
+chmod +x Minute.of.Silence_0.12.2_amd64.AppImage
+./Minute.of.Silence_0.12.2_amd64.AppImage
 ```
 
 ## Building from Source
