@@ -14,6 +14,7 @@ import type {
   ExportBundle,
   NotificationPermission,
   PersonalDate,
+  ReceivingPairingCode,
   Settings,
   StatusSnapshot,
 } from "../types";
@@ -133,11 +134,6 @@ export async function discoverDevices(): Promise<DiscoveredDevice[]> {
 export async function sendSettingsToDevice(ip: string, port: number, pairingCode: string): Promise<void> {
   return invoke<void>("send_settings_to_device", { ip, port, pairingCode });
 }
-
-export type ReceivingPairingCode = {
-  code: string;
-  expiresInMs: number;
-};
 
 export async function getReceivingPairingCode(): Promise<ReceivingPairingCode | null> {
   return invoke<ReceivingPairingCode | null>("get_receiving_pairing_code");
