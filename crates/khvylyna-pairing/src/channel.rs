@@ -1,4 +1,4 @@
-//! HKDF-SHA256 key schedule and one-shot AES-256-GCM messages.
+//! HKDF-SHA256 key schedule and AES-256-GCM messages with per-purpose keys and fresh nonces.
 
 use aes_gcm::{
     Aes256Gcm, Nonce,
@@ -49,7 +49,7 @@ impl SessionSecret {
         Self(secret)
     }
 
-    /// Encrypts one confirmation message using a fresh random nonce.
+    /// Encrypts the confirmation message with a fresh nonce and purpose-specific key.
     pub fn seal_confirm<R: RngCore + CryptoRng>(
         &self,
         rng: &mut R,
@@ -57,7 +57,7 @@ impl SessionSecret {
         self.seal(AAD_CONFIRM, CONFIRM_PLAINTEXT, rng)
     }
 
-    /// Encrypts one settings payload using a fresh random nonce.
+    /// Encrypts a settings payload with a fresh nonce and purpose-specific key.
     pub fn seal_data<R: RngCore + CryptoRng>(
         &self,
         payload: &[u8],
@@ -66,7 +66,7 @@ impl SessionSecret {
         self.seal(AAD_DATA, payload, rng)
     }
 
-    /// Encrypts one accept/reject result using a fresh random nonce.
+    /// Encrypts an accept/reject result with a fresh nonce and purpose-specific key.
     pub fn seal_ack<R: RngCore + CryptoRng>(
         &self,
         accepted: bool,
