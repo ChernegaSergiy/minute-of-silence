@@ -195,6 +195,7 @@ pub fn run() {
                 let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
                 tauri::async_runtime::spawn(core::scheduler::run(runtime));
             }
+            core::mdns::spawn_responder(app.package_info().version.to_string());
 
             // --- 5. Auto Update Check ---
             #[cfg(desktop)]

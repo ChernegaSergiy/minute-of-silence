@@ -30,6 +30,9 @@ pub const DEFAULT_HOSTNAME: &str = "khvylyna.local";
 /// Default HTTP communication port exposed by the hardware device.
 pub const DEFAULT_DEVICE_PORT: u16 = 80;
 
+/// Default peer port advertised by desktop/Android instances over DNS-SD.
+pub const DEFAULT_PEER_PORT: u16 = 49152;
+
 /// Total time window to wait for mDNS responses on the local network.
 pub const DISCOVERY_TIMEOUT: Duration = Duration::from_millis(1500);
 
@@ -48,8 +51,241 @@ const DNS_TYPE_TXT: u16 = 16;
 /// DNS record type for service location (`SRV`).
 const DNS_TYPE_SRV: u16 = 33;
 
+/// DNS wildcard record type (`ANY`).
+const DNS_TYPE_ANY: u16 = 255;
+
 /// DNS class `IN` with the mDNS unicast-response (`QU`) bit set (RFC 6762 §5.4).
 const MDNS_QCLASS_IN_QU: u16 = 0x8001;
+
+/// DNS class `IN` (Internet).
+const DNS_CLASS_IN: u16 = 0x0001;
+
+/// Default mDNS resource record TTL in seconds.
+const MDNS_TTL_SECS: u32 = 120;
+
+/// Return the [`DeviceKind`] corresponding to the current build target.
+pub fn current_device_kind() -> DeviceKind {
+    if cfg!(target_os = "android") {
+        DeviceKind::Android
+    } else {
+        DeviceKind::Desktop
+    }
+}
+
+/// Convert [`DeviceKind`] into its DNS-SD TXT `kind=` string value.
+fn device_kind_str(kind: DeviceKind) -> &'static str {
+    match kind {
+        DeviceKind::Hardware => "hardware",
+        DeviceKind::Desktop => "desktop",
+        DeviceKind::Android => "android",
+        DeviceKind::Unknown => "unknown",
+    }
+}
+
+/// Determine a human-readable display name for this local instance.
+pub fn local_device_name() -> String {
+    let env_name = std::env::var("HOSTNAME")
+        .or_else(|_| std::env::var("COMPUTERNAME"))
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
+    env_name.unwrap_or_else(|| {
+        if cfg!(target_os = "android") {
+            "Minute of Silence Android".to_string()
+        } else {
+            "Minute of Silence Desktop".to_string()
+        }
+    })
+}
+
+/// Sanitize a display name into a valid single DNS label (ASCII alphanumeric + `-`, max 63 bytes).
+fn sanitize_dns_label(raw: &str) -> String {
+    let mut out = String::new();
+    for ch in raw.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+        } else if (ch == '-' || ch == '_' || ch == ' ') && !out.ends_with('-') && !out.is_empty() {
+            out.push('-');
+        }
+        if out.len() >= 48 {
+            break;
+        }
+    }
+    let trimmed = out.trim_matches('-');
+    if trimmed.is_empty() {
+        "khvylyna-peer".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Detect the primary non-loopback local IPv4 address without sending any network packets.
+pub fn detect_local_ipv4() -> Option<Ipv4Addr> {
+    let socket = std::net::UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)).ok()?;
+    socket
+        .connect(SocketAddrV4::new(Ipv4Addr::new(192, 0, 2, 1), 80))
+        .ok()?;
+    match socket.local_addr().ok()?.ip() {
+        IpAddr::V4(ip) if !ip.is_loopback() && !ip.is_unspecified() => Some(ip),
+        _ => None,
+    }
+}
+
+/// Spawn a background mDNS responder advertising this instance via `_khvylyna._tcp.local`.
+///
+/// If UDP port 5353 cannot be bound (for example when exclusively held by another mDNS daemon),
+/// the responder logs an informational message and exits gracefully.
+pub fn spawn_responder(app_version: String) {
+    tauri::async_runtime::spawn(async move {
+        if let Err(err) = run_responder(app_version).await {
+            log::info!("mDNS peer responder unavailable: {err}");
+        }
+    });
+}
+
+async fn run_responder(app_version: String) -> std::io::Result<()> {
+    let socket = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, MDNS_PORT)).await?;
+    socket.join_multicast_v4(MDNS_MULTICAST_ADDR, Ipv4Addr::UNSPECIFIED)?;
+
+    let display_name = local_device_name();
+    let instance_label = sanitize_dns_label(&display_name);
+    let kind = current_device_kind();
+
+    log::info!(
+        "mDNS peer responder active: {} ({}) on {}",
+        display_name,
+        device_kind_str(kind),
+        SERVICE_TYPE
+    );
+
+    let mut buf = [0u8; 1500];
+    let multicast_dest = SocketAddr::V4(SocketAddrV4::new(MDNS_MULTICAST_ADDR, MDNS_PORT));
+
+    loop {
+        let (len, src) = socket.recv_from(&mut buf).await?;
+        let packet = &buf[..len];
+        if !is_dnssd_query_for(packet, SERVICE_TYPE) {
+            continue;
+        }
+
+        let Some(local_ip) = detect_local_ipv4() else {
+            continue;
+        };
+
+        let response = build_dnssd_response(
+            &instance_label,
+            &display_name,
+            kind,
+            local_ip,
+            DEFAULT_PEER_PORT,
+            &app_version,
+        );
+
+        let dest = if src.port() != MDNS_PORT {
+            src
+        } else {
+            multicast_dest
+        };
+        if let Err(err) = socket.send_to(&response, dest).await {
+            log::debug!("mDNS responder send error: {err}");
+        }
+    }
+}
+
+/// Return `true` if `packet` is a DNS query asking for `service_type` (PTR or ANY).
+pub fn is_dnssd_query_for(packet: &[u8], service_type: &str) -> bool {
+    if packet.len() < 12 {
+        return false;
+    }
+
+    let flags = u16::from_be_bytes([packet[2], packet[3]]);
+    // Must be a query (QR bit == 0)
+    if (flags & 0x8000) != 0 {
+        return false;
+    }
+
+    let qdcount = u16::from_be_bytes([packet[4], packet[5]]);
+    let expected = service_type.trim_end_matches('.');
+    let mut offset = 12;
+
+    for _ in 0..qdcount {
+        let Some((name, next)) = read_dns_name(packet, offset) else {
+            return false;
+        };
+        if next + 4 > packet.len() {
+            return false;
+        }
+        let qtype = u16::from_be_bytes([packet[next], packet[next + 1]]);
+        if name.eq_ignore_ascii_case(expected) && (qtype == DNS_TYPE_PTR || qtype == DNS_TYPE_ANY) {
+            return true;
+        }
+        offset = next + 4;
+    }
+
+    false
+}
+
+/// Build a wire-format mDNS DNS-SD response advertising this peer on [`SERVICE_TYPE`].
+pub fn build_dnssd_response(
+    instance_label: &str,
+    display_name: &str,
+    kind: DeviceKind,
+    ip: Ipv4Addr,
+    port: u16,
+    app_version: &str,
+) -> Vec<u8> {
+    let instance_fqdn = format!("{instance_label}.{SERVICE_TYPE}");
+    let host_fqdn = format!("{instance_label}.local");
+
+    let mut packet = Vec::with_capacity(256);
+    packet.extend_from_slice(&[
+        0x00, 0x00, // Transaction ID = 0
+        0x84, 0x00, // Flags: QR=1, AA=1
+        0x00, 0x00, // QDCOUNT = 0
+        0x00, 0x01, // ANCOUNT = 1 (PTR)
+        0x00, 0x00, // NSCOUNT = 0
+        0x00, 0x03, // ARCOUNT = 3 (SRV, TXT, A)
+    ]);
+
+    // PTR: _khvylyna._tcp.local -> <instance>._khvylyna._tcp.local
+    let mut ptr_rdata = Vec::new();
+    encode_dns_name(&mut ptr_rdata, &instance_fqdn);
+    append_rr(&mut packet, SERVICE_TYPE, DNS_TYPE_PTR, &ptr_rdata);
+
+    // SRV: <instance>._khvylyna._tcp.local -> (0, 0, port, <instance>.local)
+    let mut srv_rdata = vec![0x00, 0x00, 0x00, 0x00];
+    srv_rdata.extend_from_slice(&port.to_be_bytes());
+    encode_dns_name(&mut srv_rdata, &host_fqdn);
+    append_rr(&mut packet, &instance_fqdn, DNS_TYPE_SRV, &srv_rdata);
+
+    // TXT: kind=..., name=..., ver=...
+    let mut txt_rdata = Vec::new();
+    let kind_entry = format!("kind={}", device_kind_str(kind));
+    let name_entry = format!("name={display_name}");
+    let ver_entry = format!("ver={app_version}");
+    for entry in [kind_entry.as_str(), name_entry.as_str(), ver_entry.as_str()] {
+        let bytes = entry.as_bytes();
+        let len = bytes.len().min(255);
+        txt_rdata.push(len as u8);
+        txt_rdata.extend_from_slice(&bytes[..len]);
+    }
+    append_rr(&mut packet, &instance_fqdn, DNS_TYPE_TXT, &txt_rdata);
+
+    // A: <instance>.local -> IPv4
+    append_rr(&mut packet, &host_fqdn, DNS_TYPE_A, &ip.octets());
+
+    packet
+}
+
+fn append_rr(buf: &mut Vec<u8>, name: &str, rtype: u16, rdata: &[u8]) {
+    encode_dns_name(buf, name);
+    buf.extend_from_slice(&rtype.to_be_bytes());
+    buf.extend_from_slice(&DNS_CLASS_IN.to_be_bytes());
+    buf.extend_from_slice(&MDNS_TTL_SECS.to_be_bytes());
+    buf.extend_from_slice(&(rdata.len() as u16).to_be_bytes());
+    buf.extend_from_slice(rdata);
+}
 
 /// Discover Minute of Silence devices (hardware, desktop, Android) on the local network.
 ///
@@ -94,7 +330,14 @@ pub async fn discover_devices_with_timeout(
         merge_device(&mut by_endpoint, ip, legacy);
     }
 
-    Ok(by_endpoint.into_values().collect())
+    let local_ip = detect_local_ipv4();
+    let devices = by_endpoint
+        .into_iter()
+        .filter(|((ip, port), _)| !(local_ip == Some(*ip) && *port == DEFAULT_PEER_PORT))
+        .map(|(_, device)| device)
+        .collect();
+
+    Ok(devices)
 }
 
 /// Insert `candidate` into `map`, preferring entries with richer DNS-SD metadata.
@@ -710,5 +953,48 @@ mod tests {
 
         assert_eq!(map.len(), 1);
         assert_eq!(map[&(ip, 80)].name.as_deref(), Some("Living Room"));
+    }
+
+    #[test]
+    fn dnssd_response_round_trips_through_parser() {
+        let packet = build_dnssd_response(
+            "pixel-8",
+            "Pixel 8",
+            DeviceKind::Android,
+            Ipv4Addr::new(192, 168, 1, 77),
+            DEFAULT_PEER_PORT,
+            "0.12.1",
+        );
+
+        let devices = parse_dnssd_response(&packet, SERVICE_TYPE);
+        assert_eq!(
+            devices,
+            vec![DiscoveredDevice {
+                hostname: "pixel-8.local".to_string(),
+                ip: "192.168.1.77".to_string(),
+                port: DEFAULT_PEER_PORT,
+                kind: DeviceKind::Android,
+                name: Some("Pixel 8".to_string()),
+            }]
+        );
+    }
+
+    #[test]
+    fn is_dnssd_query_for_matches_ptr_query_and_ignores_responses() {
+        let ptr_query = build_ptr_query(SERVICE_TYPE);
+        assert!(is_dnssd_query_for(&ptr_query, SERVICE_TYPE));
+
+        let a_query = build_a_query(DEFAULT_HOSTNAME);
+        assert!(!is_dnssd_query_for(&a_query, SERVICE_TYPE));
+
+        let response = build_dnssd_response(
+            "workstation",
+            "Workstation",
+            DeviceKind::Desktop,
+            Ipv4Addr::new(10, 0, 0, 5),
+            DEFAULT_PEER_PORT,
+            "0.12.1",
+        );
+        assert!(!is_dnssd_query_for(&response, SERVICE_TYPE));
     }
 }
