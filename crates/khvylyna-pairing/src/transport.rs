@@ -84,6 +84,9 @@ fn negotiated_limit(offer: &[u8], local_max: u16) -> Result<u16, ProtocolError> 
 
 /// Authenticates the receiver before encrypting and sending one payload.
 pub async fn send(stream: &mut TcpStream, code: &str, payload: &[u8]) -> io::Result<()> {
+    if payload.len() > MAX_PAYLOAD as usize {
+        return Err(io_error(ProtocolError::PayloadTooLarge));
+    }
     write_frame(stream, FrameKind::Hello, &MAX_PAYLOAD.to_be_bytes()).await?;
     let answer = read_frame(stream, 0).await.map_err(io_error)?;
     if answer.0.kind != FrameKind::HelloAck {
@@ -234,6 +237,29 @@ mod tests {
             .await
             .expect("server timeout")
             .expect("server");
+    }
+
+    #[tokio::test]
+    async fn oversized_payload_is_rejected_before_any_frame_is_sent() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
+        let address = listener.local_addr().expect("address");
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.expect("accept");
+            let mut byte = [0u8; 1];
+            let read = tokio::time::timeout(Duration::from_millis(250), stream.read(&mut byte))
+                .await
+                .expect("read timeout")
+                .expect("read");
+            assert_eq!(read, 0);
+        });
+        let mut stream = TcpStream::connect(address).await.expect("connect");
+        let payload = vec![0u8; MAX_PAYLOAD as usize + 1];
+        let error = send(&mut stream, "123456", &payload)
+            .await
+            .expect_err("oversized payload");
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        drop(stream);
+        server.await.expect("server");
     }
 
     #[tokio::test]
