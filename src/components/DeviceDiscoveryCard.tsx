@@ -183,7 +183,7 @@ export default function DeviceDiscoveryCard() {
   const [receivingBusy, setReceivingBusy] = useState(true);
   const [receivingError, setReceivingError] = useState(false);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
-  const [pairingLoading, setPairingLoading] = useState(false);
+  const [pairingLoading, setPairingLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
   const [error, setError] = useState(false);
@@ -305,6 +305,7 @@ export default function DeviceDiscoveryCard() {
     const revision = ++receivingRevisionRef.current;
     setReceivingBusy(true);
     setReceivingError(false);
+    setPairingLoading(enabled);
     try {
       const current = await setReceivingSettingsEnabled(enabled);
       if (revision === receivingRevisionRef.current) setReceivingEnabled(current);
