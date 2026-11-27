@@ -254,6 +254,25 @@
       "deprecated": "Deprecated",
       "security": "Security"
     },
+    "0.12.2": {
+      "android_support": "Android support with the ceremony constructor, test ceremonies and reminders.",
+      "adaptive_navigation": "Responsive navigation, vertically stacked form fields and adaptive action buttons for narrow screens.",
+      "compact_desktop_navigation": "Compact icon-only navigation in desktop windows narrower than 600 px.",
+      "background_ceremony_service": "Background ceremony playback with the screen off, supported by a foreground service and a scheduled app wake-up before the ceremony.",
+      "android_schedule_restore": "Restore the Android ceremony schedule after a device restart or app update when autostart is enabled.",
+      "android_audio_controls": "Android media volume and mute controls, with temporary audio focus to let compatible players pause during the ceremony.",
+      "android_notification_permission": "Android notification permission request and an in-app warning with a shortcut to system settings when notifications are blocked.",
+      "android_branding": "Ukrainian and English Android app names, adaptive launcher icons with themed icon support, and a dedicated upright trident icon for notifications.",
+      "touch_selection_disabled": "Disable browser tap highlighting and selection of non-editable interface text on touch devices, while preserving text selection in input fields.",
+      "overlay_desktop_only": "The visual overlay is shown only on desktop; its settings are hidden on Android.",
+      "overlay_progress_sync": "Keep the visual overlay animation synchronized with the ceremony's actual progress when it appears or reappears.",
+      "personal_date_overlap_fix": "Prevent personal date form controls from overflowing their containers and overlapping adjacent fields or the Add button in narrow windows.",
+      "personal_date_add_button_wrap": "Expand the Add button to the full row width when it wraps below the personal date fields.",
+      "personal_date_add_button_alignment": "Align the Add button vertically with the personal date fields by removing its extra bottom margin.",
+      "overlay_title_centering": "Keep the visual overlay title and subtitle centered when their text wraps onto multiple lines.",
+      "settings_actions_wrap": "Allow the settings copy and paste buttons to wrap below their descriptions when space is limited, preventing the descriptions from collapsing into narrow columns.",
+      "compensation_rounding_fix": "The ceremony start compensation now rounds the sub-second part up, so the main part cannot start later than 09:00:00."
+    },
     "0.12.1": {
       "test_ceremony_stop_button": "The Test button turns into a Stop button while a test ceremony is playing, so the test can be stopped before it ends. A real ceremony is never stopped this way.",
       "metronome_start_compensation_fix": "The metronome now starts exactly at 09:00 after the announcement or the bell. The ceremony starts one second earlier to account for the pause before the metronome.",
