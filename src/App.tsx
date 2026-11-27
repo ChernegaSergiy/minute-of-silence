@@ -907,20 +907,20 @@ export default function App() {
               </DialogContent>
               <DialogActions>
                 <Button
-                  appearance="primary"
-                  style={{ whiteSpace: "nowrap" }}
-                  disabled={applyingOffer}
-                  onClick={handleAcceptIncomingOffer}
-                >
-                  {t("controls.device_discovery.incoming_accept")}
-                </Button>
-                <Button
                   appearance="secondary"
                   style={{ whiteSpace: "nowrap" }}
                   disabled={applyingOffer}
                   onClick={handleDeclineIncomingOffer}
                 >
                   {t("controls.device_discovery.incoming_decline")}
+                </Button>
+                <Button
+                  appearance="primary"
+                  style={{ whiteSpace: "nowrap" }}
+                  disabled={applyingOffer}
+                  onClick={handleAcceptIncomingOffer}
+                >
+                  {t("controls.device_discovery.incoming_accept")}
                 </Button>
               </DialogActions>
             </DialogBody>
