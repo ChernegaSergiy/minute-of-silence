@@ -70,6 +70,7 @@ impl ReceivingState {
             let (shutdown, mut stopped) = watch::channel(false);
             let listener_shutdown = stopped.clone();
             let listener_app = app.clone();
+            let listener_pairing = Arc::clone(&pairing);
             let notify_app = app.clone();
             let supervisor_shutdown = shutdown.clone();
             let task = tokio::spawn(async move {
@@ -77,6 +78,7 @@ impl ReceivingState {
                     listener,
                     listener_app,
                     listener_shutdown,
+                    listener_pairing,
                 ));
                 let mut responder_task = tokio::spawn(mdns::run_responder(responder, version));
                 tokio::select! {

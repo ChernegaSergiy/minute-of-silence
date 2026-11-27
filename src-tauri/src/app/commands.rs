@@ -629,7 +629,8 @@ pub async fn send_settings_to_device(
     state: State<'_, AppState>,
     ip: String,
     port: u16,
+    pairing_code: String,
 ) -> Result<()> {
     let json = export_settings(app, state)?;
-    crate::core::peer_sync::send_bundle(&ip, port, &json).await
+    crate::core::peer_sync::send_bundle(&ip, port, &json, &pairing_code).await
 }
