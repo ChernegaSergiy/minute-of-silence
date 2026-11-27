@@ -202,6 +202,7 @@
       "error": "Device discovery failed.",
       "copy_ip": "Copy IP",
       "copied": "Copied!",
+      "copy_error": "Copy failed",
       "send": "Send",
       "send_tooltip": "Send settings to this device",
       "sending": "Sending...",
