@@ -24,7 +24,13 @@ import {
 } from "@fluentui/react-icons";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { DeviceKind, DiscoveredDevice } from "../types";
-import { discoverDevices, sendSettingsToDevice } from "../utils/api";
+import {
+  discoverDevices,
+  getReceivingSettingsEnabled,
+  onReceivingSettingsStopped,
+  sendSettingsToDevice,
+  setReceivingSettingsEnabled,
+} from "../utils/api";
 import { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
@@ -159,13 +165,56 @@ export default function DeviceDiscoveryCard() {
   const styles = useStyles();
   const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
   const [receivingEnabled, setReceivingEnabled] = useState(false);
+  const [receivingBusy, setReceivingBusy] = useState(true);
+  const [receivingError, setReceivingError] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
   const [error, setError] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<CopyFeedback | null>(null);
   const [sendStates, setSendStates] = useState<Record<string, SendState>>({});
   const copyTimerRef = useRef<number | null>(null);
+  const receivingRevisionRef = useRef(0);
   const sendTimersRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    let active = true;
+    let unlisten: (() => void) | undefined;
+    const refresh = async (stopped: boolean) => {
+      const revision = ++receivingRevisionRef.current;
+      try {
+        const enabled = await getReceivingSettingsEnabled();
+        if (!active || revision !== receivingRevisionRef.current) return;
+        setReceivingEnabled(enabled);
+        if (stopped && !enabled) setReceivingError(true);
+      } catch (error) {
+        if (active) setReceivingError(true);
+        console.error("Failed to get settings receiving status:", error);
+      } finally {
+        if (active && revision === receivingRevisionRef.current) setReceivingBusy(false);
+      }
+    };
+    void onReceivingSettingsStopped(() => {
+      void refresh(true);
+    }).then((stopListening) => {
+      if (!active) {
+        stopListening();
+        return;
+      }
+      unlisten = stopListening;
+      void refresh(false);
+    }).catch((error) => {
+      if (active) {
+        setReceivingError(true);
+        setReceivingBusy(false);
+      }
+      console.error("Failed to listen for settings receiver status:", error);
+    });
+    return () => {
+      active = false;
+      receivingRevisionRef.current++;
+      unlisten?.();
+    };
+  }, []);
 
   useEffect(() => {
     const timers = sendTimersRef.current;
@@ -175,6 +224,21 @@ export default function DeviceDiscoveryCard() {
       }
       Object.values(timers).forEach((id) => window.clearTimeout(id));
     };
+  }, []);
+
+  const handleReceivingChange = useCallback(async (enabled: boolean) => {
+    const revision = ++receivingRevisionRef.current;
+    setReceivingBusy(true);
+    setReceivingError(false);
+    try {
+      const current = await setReceivingSettingsEnabled(enabled);
+      if (revision === receivingRevisionRef.current) setReceivingEnabled(current);
+    } catch (error) {
+      if (revision === receivingRevisionRef.current) setReceivingError(true);
+      console.error("Failed to change settings receiving:", error);
+    } finally {
+      if (revision === receivingRevisionRef.current) setReceivingBusy(false);
+    }
   }, []);
 
   const handleScan = useCallback(async () => {
@@ -245,17 +309,23 @@ export default function DeviceDiscoveryCard() {
       </Text>
       <div className={styles.headerRow}>
         <div className={styles.labelGroup}>
-          <Text weight="medium">Дозволити отримання налаштувань</Text>
+          <Text weight="medium">{t("controls.device_discovery.receive_label")}</Text>
           <div className={styles.description}>
-            Дозволяє іншим пристроям у локальній мережі знаходити цей пристрій і надсилати налаштування.
+            {t("controls.device_discovery.receive_description")}
           </div>
         </div>
         <Switch
-          aria-label="Дозволити отримання налаштувань"
+          aria-label={t("controls.device_discovery.receive_label")}
           checked={receivingEnabled}
-          onChange={(_, data) => setReceivingEnabled(data.checked)}
+          disabled={receivingBusy}
+          onChange={(_, data) => { void handleReceivingChange(data.checked); }}
         />
       </div>
+      {receivingError && (
+        <Caption1 className={styles.errorText}>
+          {t("controls.device_discovery.receive_error")}
+        </Caption1>
+      )}
       <Divider />
       <div className={styles.headerRow}>
         <div className={styles.labelGroup}>
