@@ -58,6 +58,9 @@ impl SenderExchange {
         if !is_valid_code(code) {
             return Err(ProtocolError::InvalidCode);
         }
+        if max_payload == 0 {
+            return Err(ProtocolError::PayloadTooLarge);
+        }
         let ad = additional_data(max_payload);
         let exchange = CPace::step1_with_rng(
             code.as_bytes(),
