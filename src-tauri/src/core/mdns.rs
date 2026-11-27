@@ -510,7 +510,7 @@ pub fn parse_dnssd_response(packet: &[u8], service_type: &str) -> Vec<Discovered
         };
 
         let attrs = txts.get(&instance);
-        let protocol_ok = attrs.and_then(|m| m.get("proto")).is_none_or(|value| {
+        let protocol_ok = attrs.and_then(|m| m.get("proto")).is_some_and(|value| {
             value.trim().parse::<u8>().ok() == Some(khvylyna_pairing::protocol::VERSION)
         });
         if !protocol_ok {
