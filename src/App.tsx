@@ -371,7 +371,10 @@ export default function App() {
     const offer = await getPendingSettingsOffer();
     if (revision !== offerRevisionRef.current) return;
     setIncomingOffer(offer);
-    if (offer) void bringWindowToFront().catch(() => {});
+    if (offer) {
+      setOfferError(false);
+      void bringWindowToFront().catch(() => {});
+    }
   }, []);
 
   const applyStatusSnapshot = useCallback((nextStatus: StatusSnapshot, revision: number) => {
