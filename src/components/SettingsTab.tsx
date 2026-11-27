@@ -44,6 +44,7 @@ import {
   unskipNext,
 } from "../utils/api";
 import { t } from "../utils/i18n";
+import DeviceDiscoveryCard from "./DeviceDiscoveryCard";
 import {
   blocksToSlots,
   normalizeSlots,
@@ -835,6 +836,8 @@ export default function SettingsTab({
           </Button>
         </div>
       </Card>
+
+      <DeviceDiscoveryCard />
 
       <Card className={styles.statusCard}>
         <div className={styles.infoRow}>
