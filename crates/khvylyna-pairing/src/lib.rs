@@ -8,7 +8,7 @@ use opaque_ke::{
     CredentialResponse, ServerLogin, ServerLoginStartParameters, ServerRegistration, ServerSetup,
     key_exchange::tripledh::TripleDh,
 };
-use rand::rngs::OsRng;
+use rand::{RngCore, rngs::OsRng};
 use zeroize::Zeroizing;
 
 const IDENTITY: &[u8] = b"khvylyna-settings-transfer-v1";
@@ -47,6 +47,22 @@ fn validate_code(code: &str) -> Result<(), PairingError> {
         Ok(())
     } else {
         Err(PairingError::InvalidCode)
+    }
+}
+
+/// Generates an unbiased six-digit code using the operating system's secure RNG.
+pub fn generate_code() -> Result<Zeroizing<String>, PairingError> {
+    const CODE_SPACE: u32 = 1_000_000;
+    const LIMIT: u32 = u32::MAX - (u32::MAX % CODE_SPACE);
+    let mut rng = OsRng;
+    loop {
+        let mut bytes = [0u8; 4];
+        rng.try_fill_bytes(&mut bytes)
+            .map_err(|_| PairingError::ExchangeFailed)?;
+        let value = u32::from_le_bytes(bytes);
+        if value < LIMIT {
+            return Ok(Zeroizing::new(format!("{:06}", value % CODE_SPACE)));
+        }
     }
 }
 
@@ -211,6 +227,14 @@ mod tests {
                 SenderExchange::start(code),
                 Err(PairingError::InvalidCode)
             ));
+        }
+    }
+
+    #[test]
+    fn generated_codes_have_six_ascii_digits() {
+        for _ in 0..100 {
+            let code = generate_code().expect("secure random code");
+            assert_eq!(validate_code(&code), Ok(()));
         }
     }
 }
