@@ -21,8 +21,8 @@ pub use error::ConfigError;
 
 pub use models::{
     AnnouncementVoice, AnthemVoice, AppInitialState, AudioPreset, CONFIG_SCHEMA_VERSION,
-    PersonalDate, PresetBlock, Settings, StatusSnapshot, UiTheme, VoiceCapabilities,
-    validate_blocks,
+    DiscoveredDevice, PersonalDate, PresetBlock, Settings, StatusSnapshot, UiTheme,
+    VoiceCapabilities, validate_blocks,
 };
 
 pub use scheduler::{
