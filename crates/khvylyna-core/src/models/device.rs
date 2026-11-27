@@ -20,7 +20,7 @@ pub enum DeviceKind {
     Unknown,
 }
 
-/// Discovered standalone Minute of Silence hardware device on the local network.
+/// Discovered Minute of Silence device on the local network.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
@@ -32,4 +32,10 @@ pub struct DiscoveredDevice {
     pub ip: String,
     /// Port for device communication (e.g. 80 for HTTP).
     pub port: u16,
+    /// Category of the discovered device (hardware ESP32, desktop, Android, etc.).
+    #[serde(default)]
+    pub kind: DeviceKind,
+    /// Optional human-readable device name advertised via DNS-SD TXT record.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }

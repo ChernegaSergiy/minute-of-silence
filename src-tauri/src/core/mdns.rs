@@ -10,7 +10,7 @@ use std::{
     time::Duration,
 };
 
-use khvylyna_core::DiscoveredDevice;
+use khvylyna_core::{DeviceKind, DiscoveredDevice};
 use tokio::{net::UdpSocket, time};
 
 /// Standard IPv4 mDNS multicast group address (RFC 6762).
@@ -68,6 +68,8 @@ pub async fn discover_devices_with_timeout(
             hostname: hostname.to_string(),
             ip: ip.to_string(),
             port: DEFAULT_DEVICE_PORT,
+            kind: DeviceKind::Hardware,
+            name: None,
         })
         .collect();
 

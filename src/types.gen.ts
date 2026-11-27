@@ -25,7 +25,12 @@ voices: Array<VoiceCapabilities>, supportsVisualOverlay: boolean, supportsMediaR
 export type AudioPreset = "voice_metronome" | "metronome_only" | "voice_silence_bell" | "voice_silence" | "voice_metronome_anthem" | "voice_metronome_ending" | "metronome_anthem" | "bell_silence_bell" | "bell_metronome_bell" | "silence";
 
 /**
- * Discovered standalone Minute of Silence hardware device on the local network.
+ * Category of a discovered Minute of Silence device on the local network.
+ */
+export type DeviceKind = "hardware" | "desktop" | "android" | "unknown";
+
+/**
+ * Discovered Minute of Silence device on the local network.
  */
 export type DiscoveredDevice = { 
 /**
@@ -39,7 +44,15 @@ ip: string,
 /**
  * Port for device communication (e.g. 80 for HTTP).
  */
-port: number, };
+port: number, 
+/**
+ * Category of the discovered device (hardware ESP32, desktop, Android, etc.).
+ */
+kind: DeviceKind, 
+/**
+ * Optional human-readable device name advertised via DNS-SD TXT record.
+ */
+name?: string | null, };
 
 /**
  * A portable export bundle that carries both application settings and personal dates.
