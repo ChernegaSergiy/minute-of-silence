@@ -5,6 +5,7 @@ import {
   Caption1,
   Card,
   Divider,
+  Switch,
   Text,
   Tooltip,
   makeStyles,
@@ -157,6 +158,7 @@ type CopyFeedback = { key: string; status: "copied" | "error" };
 export default function DeviceDiscoveryCard() {
   const styles = useStyles();
   const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
+  const [receivingEnabled, setReceivingEnabled] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
   const [error, setError] = useState(false);
@@ -241,6 +243,20 @@ export default function DeviceDiscoveryCard() {
       <Text size={100} weight="semibold" block>
         {t("sections.devices")}
       </Text>
+      <div className={styles.headerRow}>
+        <div className={styles.labelGroup}>
+          <Text weight="medium">Дозволити отримання налаштувань</Text>
+          <div className={styles.description}>
+            Дозволяє іншим пристроям у локальній мережі знаходити цей пристрій і надсилати налаштування.
+          </div>
+        </div>
+        <Switch
+          aria-label="Дозволити отримання налаштувань"
+          checked={receivingEnabled}
+          onChange={(_, data) => setReceivingEnabled(data.checked)}
+        />
+      </div>
+      <Divider />
       <div className={styles.headerRow}>
         <div className={styles.labelGroup}>
           <Text weight="medium">{t("controls.device_discovery.label")}</Text>
