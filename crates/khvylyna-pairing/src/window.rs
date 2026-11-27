@@ -141,6 +141,28 @@ mod tests {
     }
 
     #[test]
+    fn expired_finish_does_not_consume_the_code() {
+        let mut window = window();
+        let code = window.code(0).expect("code").to_string();
+        let (sender, request) =
+            SenderExchange::start(&code, 4096, &mut TestRng(1)).expect("sender");
+        let (attempt, response) = window
+            .start(&request, 0, 4096, &mut TestRng(2))
+            .expect("attempt");
+        let secret = sender.finish(&code, &response).expect("sender finish");
+        let confirm = secret
+            .seal_confirm(&mut TestRng(3))
+            .expect("confirm");
+        let confirmed = attempt.verify_confirm(&confirm).expect("verified");
+
+        assert_eq!(
+            window.finish(confirmed, CODE_LIFETIME_MS).err(),
+            Some(ProtocolError::WindowUnavailable)
+        );
+        assert!(window.code(0).is_some());
+    }
+
+    #[test]
     fn only_one_successful_exchange_can_consume_the_code() {
         let mut window = window();
         let code = window.code(0).expect("code").to_string();
