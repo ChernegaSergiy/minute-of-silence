@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.net.wifi.WifiManager
 import android.os.Build
 import androidx.annotation.Keep
 import org.json.JSONObject
@@ -17,6 +18,7 @@ class CeremonyDevice private constructor(private val context: Context) {
 
   private var focusRequest: AudioFocusRequest? = null
   private var focusCeremonyId: String? = null
+  private var multicastLock: WifiManager.MulticastLock? = null
 
   private val focusListener = AudioManager.OnAudioFocusChangeListener { }
 
@@ -56,6 +58,8 @@ class CeremonyDevice private constructor(private val context: Context) {
       "stopAudio" -> audioPlayer.stop()
       "getAudioDuration" -> result.put("durationMs", audioPlayer.durationMs(args.getString("name")))
       "postReminder" -> CeremonyNotifications.postReminder(context, args.getString("title"), args.getString("body"))
+      "acquireMdnsMulticast" -> acquireMdnsMulticast()
+      "releaseMdnsMulticast" -> releaseMdnsMulticast()
       "postPersonalDates" -> {
         val labelsJson = args.getJSONArray("labels")
         val labels = List(labelsJson.length()) { index -> labelsJson.getString(index) }
@@ -64,6 +68,19 @@ class CeremonyDevice private constructor(private val context: Context) {
       else -> error("Unknown ceremony command: $command")
     }
     return if (result.length() == 0) "null" else result.toString()
+  }
+
+  @Synchronized
+  private fun acquireMdnsMulticast() {
+    val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return
+    val lock = multicastLock ?: wifiManager.createMulticastLock("minute-of-silence-mdns")
+      .also { multicastLock = it }
+    lock.acquire()
+  }
+
+  @Synchronized
+  private fun releaseMdnsMulticast() {
+    multicastLock?.release()
   }
 
   @Synchronized

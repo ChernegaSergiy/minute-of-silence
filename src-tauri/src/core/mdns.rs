@@ -144,9 +144,35 @@ pub fn spawn_responder(app_version: String) {
     });
 }
 
+#[cfg(target_os = "android")]
+struct AndroidMulticastGuard;
+
+#[cfg(target_os = "android")]
+impl AndroidMulticastGuard {
+    fn acquire() -> std::io::Result<Self> {
+        crate::platform::android::device::call::<()>("acquireMdnsMulticast", serde_json::json!({}))
+            .map_err(std::io::Error::other)?;
+        Ok(Self)
+    }
+}
+
+#[cfg(target_os = "android")]
+impl Drop for AndroidMulticastGuard {
+    fn drop(&mut self) {
+        if let Err(error) = crate::platform::android::device::call::<()>(
+            "releaseMdnsMulticast",
+            serde_json::json!({}),
+        ) {
+            log::warn!("Failed to release the Android mDNS multicast lock: {error}");
+        }
+    }
+}
+
 async fn run_responder(app_version: String) -> std::io::Result<()> {
     let socket = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, MDNS_PORT)).await?;
     socket.join_multicast_v4(MDNS_MULTICAST_ADDR, Ipv4Addr::UNSPECIFIED)?;
+    #[cfg(target_os = "android")]
+    let _multicast_guard = AndroidMulticastGuard::acquire()?;
 
     let display_name = local_device_name();
     let base_label = sanitize_dns_label(&display_name);
