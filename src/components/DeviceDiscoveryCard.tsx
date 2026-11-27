@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   Badge,
   Button,
@@ -160,6 +160,18 @@ export default function DeviceDiscoveryCard() {
   const [error, setError] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [sendStates, setSendStates] = useState<Record<string, SendState>>({});
+  const copyTimerRef = useRef<number | null>(null);
+  const sendTimersRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const timers = sendTimersRef.current;
+    return () => {
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
+      Object.values(timers).forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
 
   const handleScan = useCallback(async () => {
     setScanning(true);
@@ -180,8 +192,12 @@ export default function DeviceDiscoveryCard() {
     const key = `${device.ip}:${device.port}`;
     try {
       await writeText(device.ip);
+      if (copyTimerRef.current !== null) {
+        window.clearTimeout(copyTimerRef.current);
+      }
       setCopiedKey(key);
-      window.setTimeout(() => {
+      copyTimerRef.current = window.setTimeout(() => {
+        copyTimerRef.current = null;
         setCopiedKey((current) => (current === key ? null : current));
       }, 2000);
     } catch {
@@ -191,18 +207,25 @@ export default function DeviceDiscoveryCard() {
 
   const handleSendSettings = useCallback(async (device: DiscoveredDevice) => {
     const key = `${device.ip}:${device.port}`;
+    const existingTimer = sendTimersRef.current[key];
+    if (existingTimer !== undefined) {
+      window.clearTimeout(existingTimer);
+      delete sendTimersRef.current[key];
+    }
     setSendStates((prev) => ({ ...prev, [key]: "sending" }));
     try {
       await sendSettingsToDevice(device.ip, device.port);
       setSendStates((prev) => ({ ...prev, [key]: "sent" }));
-      window.setTimeout(() => {
+      sendTimersRef.current[key] = window.setTimeout(() => {
+        delete sendTimersRef.current[key];
         setSendStates((prev) =>
           prev[key] === "sent" ? { ...prev, [key]: "idle" } : prev,
         );
       }, 3000);
     } catch {
       setSendStates((prev) => ({ ...prev, [key]: "error" }));
-      window.setTimeout(() => {
+      sendTimersRef.current[key] = window.setTimeout(() => {
+        delete sendTimersRef.current[key];
         setSendStates((prev) =>
           prev[key] === "error" ? { ...prev, [key]: "idle" } : prev,
         );
