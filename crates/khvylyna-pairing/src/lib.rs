@@ -1,6 +1,7 @@
 //! Password-authenticated key exchange for a single settings-transfer session.
 
 pub mod channel;
+pub mod window;
 
 use opaque_ke::{
     CipherSuite, ClientLogin, ClientLoginFinishParameters, ClientRegistration,
@@ -29,6 +30,8 @@ pub enum PairingError {
     InvalidCode,
     /// The exchange failed or contained an invalid message.
     ExchangeFailed,
+    /// The code expired, was already used, or has no attempts left.
+    WindowUnavailable,
 }
 
 impl std::fmt::Display for PairingError {
@@ -36,6 +39,9 @@ impl std::fmt::Display for PairingError {
         match self {
             Self::InvalidCode => formatter.write_str("The pairing code must contain six digits"),
             Self::ExchangeFailed => formatter.write_str("The authenticated exchange failed"),
+            Self::WindowUnavailable => {
+                formatter.write_str("The pairing code is no longer available")
+            }
         }
     }
 }
