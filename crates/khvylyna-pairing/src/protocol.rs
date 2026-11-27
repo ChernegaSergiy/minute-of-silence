@@ -86,8 +86,6 @@ pub fn parse_header(buf: &[u8], negotiated_max: u16) -> Result<FrameHeader, Prot
     }
     let version = buf[MAGIC.len()];
     let suite = buf[MAGIC.len() + 1];
-    let kind = FrameKind::try_from(buf[MAGIC.len() + 2])?;
-    let len = u16::from_be_bytes([buf[MAGIC.len() + 3], buf[MAGIC.len() + 4]]) as usize;
 
     if version != VERSION {
         return Err(ProtocolError::UnsupportedVersion);
@@ -95,6 +93,9 @@ pub fn parse_header(buf: &[u8], negotiated_max: u16) -> Result<FrameHeader, Prot
     if suite != SUITE_CPACE_RISTRETTO_AES256_GCM {
         return Err(ProtocolError::UnsupportedSuite);
     }
+    let kind = FrameKind::try_from(buf[MAGIC.len() + 2])?;
+    let len = u16::from_be_bytes([buf[MAGIC.len() + 3], buf[MAGIC.len() + 4]]) as usize;
+
     let limit = match kind {
         FrameKind::Hello
         | FrameKind::HelloAck
@@ -174,6 +175,26 @@ mod tests {
             parse_header(&bytes, DESKTOP_MAX_PAYLOAD),
             Err(ProtocolError::UnsupportedVersion)
         );
+        bytes[MAGIC.len()] = VERSION;
+        bytes[MAGIC.len() + 1] = SUITE_CPACE_RISTRETTO_AES256_GCM + 1;
+        assert_eq!(
+            parse_header(&bytes, DESKTOP_MAX_PAYLOAD),
+            Err(ProtocolError::UnsupportedSuite)
+        );
+    }
+
+    #[test]
+    fn version_and_suite_are_checked_before_the_frame_kind() {
+        let mut bytes = [0u8; HEADER_LEN];
+        write_header(FrameKind::Hello, 2, &mut bytes).expect("header");
+        bytes[MAGIC.len() + 2] = u8::MAX;
+
+        bytes[MAGIC.len()] = VERSION + 1;
+        assert_eq!(
+            parse_header(&bytes, DESKTOP_MAX_PAYLOAD),
+            Err(ProtocolError::UnsupportedVersion)
+        );
+
         bytes[MAGIC.len()] = VERSION;
         bytes[MAGIC.len() + 1] = SUITE_CPACE_RISTRETTO_AES256_GCM + 1;
         assert_eq!(
