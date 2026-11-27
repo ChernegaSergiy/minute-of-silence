@@ -1,6 +1,12 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   Button,
+  Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
+  DialogSurface,
+  DialogTitle,
   FluentProvider,
   NavDrawer,
   NavDrawerBody,
@@ -8,6 +14,7 @@ import {
   Spinner,
   Tab,
   TabList,
+  Text,
   mergeClasses,
   makeStyles,
   shorthands,
@@ -41,12 +48,15 @@ import {
   getInitialState,
   getPlatform,
   getStatus,
+  importSettings,
   onCeremonyEnd,
   onCeremonyStart,
+  onIncomingSettingsOffer,
   saveSettings,
   stopTestCeremony,
   syncNtpNow,
   triggerCeremonyNow,
+  type IncomingSettingsOffer,
 } from "./utils/api";
 import type { PersonalDate, Settings, StatusSnapshot, VoiceCapabilities } from "./types";
 import { t } from "./utils/i18n";
@@ -344,6 +354,9 @@ export default function App() {
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [updateDismissed, setUpdateDismissed] = useState(false);
   const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
+  const [incomingOffer, setIncomingOffer] = useState<IncomingSettingsOffer | null>(null);
+  const [applyingOffer, setApplyingOffer] = useState(false);
+  const [offerError, setOfferError] = useState(false);
   const isIdle = useIdle(15000); // 15 seconds idle timeout
   const initRef = useRef(false);
   const hasImportedRef = useRef(false);
@@ -494,6 +507,26 @@ export default function App() {
     return () => media.removeEventListener("change", updateTheme);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    let unlisten: (() => void) | null = null;
+    void onIncomingSettingsOffer((offer) => {
+      if (!active) return;
+      setOfferError(false);
+      setIncomingOffer(offer);
+    }).then((fn) => {
+      if (active) {
+        unlisten = fn;
+      } else {
+        fn();
+      }
+    });
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, []);
+
   // Trigger the update dialog when user is idle
   useEffect(() => {
     if (!updateInfo || updateDismissed) return;
@@ -534,6 +567,27 @@ export default function App() {
     setInitialSettings(imported);
     setVolumeValue(imported.volume);
   }, [applyStatusSnapshot]);
+
+  const handleAcceptIncomingOffer = useCallback(async () => {
+    if (!incomingOffer) return;
+    setApplyingOffer(true);
+    setOfferError(false);
+    try {
+      const imported = await importSettings(incomingOffer.json);
+      handleSettingsImported(imported.settings);
+      setPersonalDates(imported.personalDates);
+      setIncomingOffer(null);
+    } catch {
+      setOfferError(true);
+    } finally {
+      setApplyingOffer(false);
+    }
+  }, [incomingOffer, handleSettingsImported]);
+
+  const handleDeclineIncomingOffer = useCallback(() => {
+    setIncomingOffer(null);
+    setOfferError(false);
+  }, []);
 
   const handleSyncNtp = useCallback(async () => {
     setSyncing(true);
@@ -793,6 +847,55 @@ export default function App() {
           }}
           onUpdatingChange={setIsInstallingUpdate}
         />
+        <Dialog
+          open={incomingOffer !== null}
+          onOpenChange={(_event, data) => {
+            if (!data.open && !applyingOffer) {
+              handleDeclineIncomingOffer();
+            }
+          }}
+        >
+          <DialogSurface>
+            <DialogBody>
+              <DialogTitle>{t("controls.device_discovery.incoming_title")}</DialogTitle>
+              <DialogContent>
+                <Text block>
+                  {t("controls.device_discovery.incoming_body", {
+                    sender: incomingOffer?.senderName ?? "",
+                    ip: incomingOffer?.senderIp ?? "",
+                  })}
+                </Text>
+                {offerError && (
+                  <Text
+                    block
+                    style={{
+                      color: tokens.colorPaletteRedForeground1,
+                      marginTop: tokens.spacingVerticalS,
+                    }}
+                  >
+                    {t("controls.device_discovery.incoming_error")}
+                  </Text>
+                )}
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  appearance="secondary"
+                  disabled={applyingOffer}
+                  onClick={handleDeclineIncomingOffer}
+                >
+                  {t("controls.device_discovery.incoming_decline")}
+                </Button>
+                <Button
+                  appearance="primary"
+                  disabled={applyingOffer}
+                  onClick={handleAcceptIncomingOffer}
+                >
+                  {t("controls.device_discovery.incoming_accept")}
+                </Button>
+              </DialogActions>
+            </DialogBody>
+          </DialogSurface>
+        </Dialog>
       </FluentProvider>
 
       {supportsVisualOverlay && (
