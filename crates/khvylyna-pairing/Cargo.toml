@@ -1,0 +1,12 @@
+[package]
+name = "khvylyna-pairing"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license-file = "../../LICENSE"
+
+[dependencies]
+argon2 = "0.5"
+opaque-ke = { version = "3.0", default-features = false, features = ["argon2", "ristretto255-voprf", "std"] }
+rand = { version = "0.8", default-features = false, features = ["getrandom"] }
+zeroize = "1"
