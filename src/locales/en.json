@@ -196,6 +196,7 @@
     "device_discovery": {
       "receive_label": "Allow receiving settings",
       "receive_description": "Allows other devices on the local network to find this device and send settings.",
+      "receive_error": "Could not change the receiving state, or the receiving service stopped.",
       "label": "Device discovery",
       "description": "Find Minute of Silence devices on your local network via mDNS.",
       "scan": "Scan",
