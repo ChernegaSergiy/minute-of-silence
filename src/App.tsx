@@ -513,6 +513,7 @@ export default function App() {
     void onIncomingSettingsOffer((offer) => {
       if (!active) return;
       setOfferError(false);
+      void bringWindowToFront().catch(() => {});
       setIncomingOffer(offer);
     }).then((fn) => {
       if (active) {
