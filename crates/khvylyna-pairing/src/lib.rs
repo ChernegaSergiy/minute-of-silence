@@ -98,6 +98,11 @@ mod tests {
     fn now_ms_tracks_wall_clock_across_sleep() {
         let before = now_ms();
         sleep(Duration::from_millis(10));
+        let wall = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system clock")
+            .as_millis() as u64;
         assert!(now_ms() >= before + 10);
+        assert!(now_ms().abs_diff(wall) < 1_000);
     }
 }
