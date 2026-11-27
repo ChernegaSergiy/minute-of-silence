@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import {
   Badge,
   Button,
@@ -6,6 +6,7 @@ import {
   Card,
   Divider,
   Text,
+  Tooltip,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
@@ -46,8 +47,9 @@ const useStyles = makeStyles({
     minWidth: 0,
   },
   description: {
-    fontSize: tokens.fontSizeBase200,
+    fontSize: tokens.fontSizeBase100,
     color: tokens.colorNeutralForeground3,
+    marginTop: tokens.spacingVerticalXXS,
   },
   statusText: {
     color: tokens.colorNeutralForeground3,
@@ -65,8 +67,13 @@ const useStyles = makeStyles({
     alignItems: "center",
     justifyContent: "space-between",
     columnGap: tokens.spacingHorizontalM,
-    rowGap: tokens.spacingVerticalXS,
-    flexWrap: "wrap",
+    rowGap: tokens.spacingVerticalS,
+    paddingTop: tokens.spacingVerticalXS,
+    paddingBottom: tokens.spacingVerticalXS,
+    "@media (max-width: 480px)": {
+      flexDirection: "column",
+      alignItems: "stretch",
+    },
   },
   deviceInfo: {
     display: "flex",
@@ -84,18 +91,34 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     minWidth: 0,
+    overflow: "hidden",
   },
   deviceTitleRow: {
     display: "flex",
     alignItems: "center",
     columnGap: tokens.spacingHorizontalXS,
+    rowGap: tokens.spacingVerticalXXS,
     flexWrap: "wrap",
+  },
+  deviceEndpoint: {
+    color: tokens.colorNeutralForeground3,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   deviceActions: {
     display: "flex",
     alignItems: "center",
     columnGap: tokens.spacingHorizontalXS,
-    flexWrap: "wrap",
+    flexShrink: 0,
+    "@media (max-width: 480px)": {
+      width: "100%",
+    },
+  },
+  sendButton: {
+    "@media (max-width: 480px)": {
+      flex: 1,
+    },
   },
   spinIcon: {
     animationName: {
@@ -223,70 +246,83 @@ export default function DeviceDiscoveryCard() {
             </Caption1>
           ) : (
             <div className={styles.deviceList}>
-              {devices.map((device) => {
+              {devices.map((device, index) => {
                 const key = `${device.ip}:${device.port}`;
                 const isCopied = copiedKey === key;
                 const sendState: SendState = sendStates[key] ?? "idle";
                 return (
-                  <div key={key} className={styles.deviceRow}>
-                    <div className={styles.deviceInfo}>
-                      <span className={styles.deviceIcon}>
-                        {renderKindIcon(device.kind)}
-                      </span>
-                      <div className={styles.deviceMeta}>
-                        <div className={styles.deviceTitleRow}>
-                          <Text weight="medium">
-                            {device.name ?? device.hostname}
-                          </Text>
-                          <Badge appearance="tint" size="small">
-                            {t(`controls.device_discovery.kind.${device.kind}`)}
-                          </Badge>
+                  <Fragment key={key}>
+                    {index > 0 && <Divider appearance="subtle" />}
+                    <div className={styles.deviceRow}>
+                      <div className={styles.deviceInfo}>
+                        <span className={styles.deviceIcon}>
+                          {renderKindIcon(device.kind)}
+                        </span>
+                        <div className={styles.deviceMeta}>
+                          <div className={styles.deviceTitleRow}>
+                            <Text weight="medium">
+                              {device.name ?? device.hostname}
+                            </Text>
+                            <Badge appearance="tint" size="small">
+                              {t(`controls.device_discovery.kind.${device.kind}`)}
+                            </Badge>
+                          </div>
+                          <Caption1 className={styles.deviceEndpoint}>
+                            {formatEndpoint(device)} · {device.hostname}
+                          </Caption1>
                         </div>
-                        <Caption1 className={styles.statusText}>
-                          {formatEndpoint(device)} · {device.hostname}
-                        </Caption1>
+                      </div>
+                      <div className={styles.deviceActions}>
+                        <Tooltip
+                          content={t("controls.device_discovery.send_tooltip")}
+                          relationship="description"
+                        >
+                          <Button
+                            className={styles.sendButton}
+                            appearance="secondary"
+                            icon={
+                              sendState === "sent" ? (
+                                <Checkmark20Regular />
+                              ) : (
+                                <Send20Regular />
+                              )
+                            }
+                            disabled={sendState === "sending"}
+                            onClick={() => handleSendSettings(device)}
+                          >
+                            {sendState === "sending"
+                              ? t("controls.device_discovery.sending")
+                              : sendState === "sent"
+                              ? t("controls.device_discovery.sent")
+                              : sendState === "error"
+                              ? t("controls.device_discovery.send_error")
+                              : t("controls.device_discovery.send")}
+                          </Button>
+                        </Tooltip>
+                        <Tooltip
+                          content={
+                            isCopied
+                              ? t("controls.device_discovery.copied")
+                              : t("controls.device_discovery.copy_ip")
+                          }
+                          relationship="label"
+                        >
+                          <Button
+                            appearance="subtle"
+                            icon={
+                              isCopied ? (
+                                <ClipboardCheckmarkRegular />
+                              ) : (
+                                <ClipboardRegular />
+                              )
+                            }
+                            aria-label={t("controls.device_discovery.copy_ip")}
+                            onClick={() => handleCopyIp(device)}
+                          />
+                        </Tooltip>
                       </div>
                     </div>
-                    <div className={styles.deviceActions}>
-                      <Button
-                        size="small"
-                        appearance="secondary"
-                        icon={
-                          sendState === "sent" ? (
-                            <Checkmark20Regular />
-                          ) : (
-                            <Send20Regular />
-                          )
-                        }
-                        disabled={sendState === "sending"}
-                        onClick={() => handleSendSettings(device)}
-                      >
-                        {sendState === "sending"
-                          ? t("controls.device_discovery.sending")
-                          : sendState === "sent"
-                          ? t("controls.device_discovery.sent")
-                          : sendState === "error"
-                          ? t("controls.device_discovery.send_error")
-                          : t("controls.device_discovery.send")}
-                      </Button>
-                      <Button
-                        size="small"
-                        appearance="subtle"
-                        icon={
-                          isCopied ? (
-                            <ClipboardCheckmarkRegular />
-                          ) : (
-                            <ClipboardRegular />
-                          )
-                        }
-                        onClick={() => handleCopyIp(device)}
-                      >
-                        {isCopied
-                          ? t("controls.device_discovery.copied")
-                          : t("controls.device_discovery.copy_ip")}
-                      </Button>
-                    </div>
-                  </div>
+                  </Fragment>
                 );
               })}
             </div>
