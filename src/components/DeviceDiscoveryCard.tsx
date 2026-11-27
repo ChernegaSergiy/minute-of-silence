@@ -46,6 +46,15 @@ const useStyles = makeStyles({
   card: {
     marginBottom: tokens.spacingVerticalM,
   },
+  dialogSurface: {
+    maxWidth: "500px",
+    width: "90%",
+  },
+  codeInput: {
+    width: "100%",
+    marginTop: tokens.spacingVerticalM,
+    fontVariantNumeric: "tabular-nums",
+  },
   headerRow: {
     display: "flex",
     alignItems: "center",
@@ -576,7 +585,7 @@ export default function DeviceDiscoveryCard() {
         }
       }}
     >
-      <DialogSurface style={{ maxWidth: "500px", width: "90%" }}>
+      <DialogSurface className={styles.dialogSurface}>
         <form onSubmit={(event) => { event.preventDefault(); void handlePairingSubmit(); }}>
           <DialogBody>
             <DialogTitle>{t("controls.device_discovery.pairing_title")}</DialogTitle>
@@ -597,7 +606,8 @@ export default function DeviceDiscoveryCard() {
                 maxLength={6}
                 autoComplete="one-time-code"
                 disabled={pairingSubmitting}
-                style={{ marginTop: tokens.spacingVerticalM }}
+                autoFocus
+                className={styles.codeInput}
               />
               {pairingError && (
                 <Text block className={styles.errorText} style={{ marginTop: tokens.spacingVerticalS }}>
