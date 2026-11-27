@@ -179,7 +179,7 @@ export default function DeviceDiscoveryCard() {
   const handleCopyIp = useCallback(async (device: DiscoveredDevice) => {
     const key = `${device.ip}:${device.port}`;
     try {
-      await writeText(formatEndpoint(device));
+      await writeText(device.ip);
       setCopiedKey(key);
       window.setTimeout(() => {
         setCopiedKey((current) => (current === key ? null : current));
