@@ -108,8 +108,8 @@ impl SessionSecret {
         rng: &mut R,
     ) -> Result<Vec<u8>, ProtocolError> {
         let key = self.derive_key(label)?;
-        let cipher = Aes256Gcm::new_from_slice(key.as_ref())
-            .map_err(|_| ProtocolError::ChannelFailed)?;
+        let cipher =
+            Aes256Gcm::new_from_slice(key.as_ref()).map_err(|_| ProtocolError::ChannelFailed)?;
         let mut nonce = [0u8; NONCE_LEN];
         rng.try_fill_bytes(&mut nonce)
             .map_err(|_| ProtocolError::ChannelFailed)?;
@@ -133,8 +133,8 @@ impl SessionSecret {
         let mut nonce = [0u8; NONCE_LEN];
         nonce.copy_from_slice(&message[..NONCE_LEN]);
         let key = self.derive_key(label)?;
-        let cipher = Aes256Gcm::new_from_slice(key.as_ref())
-            .map_err(|_| ProtocolError::ChannelFailed)?;
+        let cipher =
+            Aes256Gcm::new_from_slice(key.as_ref()).map_err(|_| ProtocolError::ChannelFailed)?;
         let mut plaintext = Zeroizing::new(message[NONCE_LEN..].to_vec());
         cipher
             .decrypt_in_place(&Nonce::from(nonce), label, &mut *plaintext)

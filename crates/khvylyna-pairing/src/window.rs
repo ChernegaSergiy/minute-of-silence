@@ -150,9 +150,7 @@ mod tests {
             .start(&request, 0, 4096, &mut TestRng(2))
             .expect("attempt");
         let secret = sender.finish(&code, &response).expect("sender finish");
-        let confirm = secret
-            .seal_confirm(&mut TestRng(3))
-            .expect("confirm");
+        let confirm = secret.seal_confirm(&mut TestRng(3)).expect("confirm");
         let confirmed = attempt.verify_confirm(&confirm).expect("verified");
 
         assert_eq!(

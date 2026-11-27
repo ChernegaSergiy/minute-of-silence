@@ -109,10 +109,7 @@ pub struct ConfirmedAttempt(SessionSecret);
 
 impl PairingAttempt {
     /// Verifies the sender's confirmation and releases a finish-only token.
-    pub fn verify_confirm(
-        self,
-        message: &[u8],
-    ) -> Result<ConfirmedAttempt, ProtocolError> {
+    pub fn verify_confirm(self, message: &[u8]) -> Result<ConfirmedAttempt, ProtocolError> {
         self.secret.open_confirm(message)?;
         Ok(ConfirmedAttempt(self.secret))
     }
