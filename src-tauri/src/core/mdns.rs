@@ -141,7 +141,7 @@ async fn run_responder(app_version: String) -> std::io::Result<()> {
     socket.join_multicast_v4(MDNS_MULTICAST_ADDR, Ipv4Addr::UNSPECIFIED)?;
 
     let display_name = local_device_name();
-    let instance_label = sanitize_dns_label(&display_name);
+    let base_label = sanitize_dns_label(&display_name);
     let kind = current_device_kind();
 
     log::info!(
@@ -171,6 +171,8 @@ async fn run_responder(app_version: String) -> std::io::Result<()> {
             continue;
         };
 
+        let octets = local_ip.octets();
+        let instance_label = format!("{base_label}-{:02x}{:02x}", octets[2], octets[3]);
         let response = build_dnssd_response(
             &instance_label,
             &display_name,
