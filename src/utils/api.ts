@@ -130,7 +130,7 @@ export async function discoverDevices(): Promise<DiscoveredDevice[]> {
   return invoke<DiscoveredDevice[]>("discover_devices");
 }
 
-export async function sendSettingsToDevice(ip: string, port: number, pairingCode = ""): Promise<void> {
+export async function sendSettingsToDevice(ip: string, port: number, pairingCode: string): Promise<void> {
   return invoke<void>("send_settings_to_device", { ip, port, pairingCode });
 }
 

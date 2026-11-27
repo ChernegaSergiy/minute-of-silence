@@ -4,7 +4,14 @@ import {
   Button,
   Caption1,
   Card,
+  Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
+  DialogSurface,
+  DialogTitle,
   Divider,
+  Input,
   Switch,
   Text,
   Tooltip,
@@ -176,6 +183,10 @@ export default function DeviceDiscoveryCard() {
   const [error, setError] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<CopyFeedback | null>(null);
   const [sendStates, setSendStates] = useState<Record<string, SendState>>({});
+  const [pairingDevice, setPairingDevice] = useState<DiscoveredDevice | null>(null);
+  const [enteredCode, setEnteredCode] = useState("");
+  const [pairingError, setPairingError] = useState<"invalid" | "failed" | null>(null);
+  const [pairingSubmitting, setPairingSubmitting] = useState(false);
   const copyTimerRef = useRef<number | null>(null);
   const receivingRevisionRef = useRef(0);
   const sendTimersRef = useRef<Record<string, number>>({});
@@ -332,7 +343,7 @@ export default function DeviceDiscoveryCard() {
     }, 2000);
   }, []);
 
-  const handleSendSettings = useCallback(async (device: DiscoveredDevice) => {
+  const handleSendSettings = useCallback(async (device: DiscoveredDevice, code: string) => {
     const key = `${device.ip}:${device.port}`;
     const existingTimer = sendTimersRef.current[key];
     if (existingTimer !== undefined) {
@@ -341,7 +352,7 @@ export default function DeviceDiscoveryCard() {
     }
     setSendStates((prev) => ({ ...prev, [key]: "sending" }));
     try {
-      await sendSettingsToDevice(device.ip, device.port);
+      await sendSettingsToDevice(device.ip, device.port, code);
       setSendStates((prev) => ({ ...prev, [key]: "sent" }));
       sendTimersRef.current[key] = window.setTimeout(() => {
         delete sendTimersRef.current[key];
@@ -349,6 +360,7 @@ export default function DeviceDiscoveryCard() {
           prev[key] === "sent" ? { ...prev, [key]: "idle" } : prev,
         );
       }, 3000);
+      return true;
     } catch {
       setSendStates((prev) => ({ ...prev, [key]: "error" }));
       sendTimersRef.current[key] = window.setTimeout(() => {
@@ -357,10 +369,33 @@ export default function DeviceDiscoveryCard() {
           prev[key] === "error" ? { ...prev, [key]: "idle" } : prev,
         );
       }, 3000);
+      return false;
     }
   }, []);
 
+  const handlePairingSubmit = useCallback(async () => {
+    if (!pairingDevice || pairingSubmitting) return;
+    if (!/^[0-9]{6}$/.test(enteredCode)) {
+      setPairingError("invalid");
+      return;
+    }
+    setPairingSubmitting(true);
+    setPairingError(null);
+    try {
+      const sent = await handleSendSettings(pairingDevice, enteredCode);
+      if (sent) {
+        setPairingDevice(null);
+        setEnteredCode("");
+      } else {
+        setPairingError("failed");
+      }
+    } finally {
+      setPairingSubmitting(false);
+    }
+  }, [enteredCode, handleSendSettings, pairingDevice, pairingSubmitting]);
+
   return (
+    <>
     <Card className={styles.card}>
       <Text size={100} weight="semibold" block>
         {t("sections.devices")}
@@ -482,7 +517,11 @@ export default function DeviceDiscoveryCard() {
                               )
                             }
                             disabled={sendState === "sending"}
-                            onClick={() => handleSendSettings(device)}
+                            onClick={() => {
+                              setEnteredCode("");
+                              setPairingError(null);
+                              setPairingDevice(device);
+                            }}
                           >
                             {sendState === "sending"
                               ? t("controls.device_discovery.sending")
@@ -519,5 +558,70 @@ export default function DeviceDiscoveryCard() {
         </>
       )}
     </Card>
+    <Dialog
+      modalType="alert"
+      open={pairingDevice !== null}
+      onOpenChange={(_event, data) => {
+        if (!data.open && !pairingSubmitting) {
+          setPairingDevice(null);
+          setEnteredCode("");
+          setPairingError(null);
+        }
+      }}
+    >
+      <DialogSurface style={{ maxWidth: "500px", width: "90%" }}>
+        <form onSubmit={(event) => { event.preventDefault(); void handlePairingSubmit(); }}>
+          <DialogBody>
+            <DialogTitle>{t("controls.device_discovery.pairing_title")}</DialogTitle>
+            <DialogContent>
+              <Text block>
+                {t("controls.device_discovery.pairing_description", {
+                  device: pairingDevice?.name ?? pairingDevice?.hostname ?? "",
+                })}
+              </Text>
+              <Input
+                aria-label={t("controls.device_discovery.pairing_code")}
+                value={enteredCode}
+                onChange={(_, data) => {
+                  setEnteredCode(data.value);
+                  setPairingError(null);
+                }}
+                inputMode="numeric"
+                maxLength={6}
+                autoComplete="one-time-code"
+                disabled={pairingSubmitting}
+                style={{ marginTop: tokens.spacingVerticalM }}
+              />
+              {pairingError && (
+                <Text block className={styles.errorText} style={{ marginTop: tokens.spacingVerticalS }}>
+                  {t(pairingError === "invalid"
+                    ? "controls.device_discovery.pairing_invalid_code"
+                    : "controls.device_discovery.pairing_failed")}
+                </Text>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button
+                appearance="secondary"
+                disabled={pairingSubmitting}
+                onClick={() => {
+                  setPairingDevice(null);
+                  setEnteredCode("");
+                  setPairingError(null);
+                }}
+              >
+                {t("buttons.cancel")}
+              </Button>
+              <Button appearance="primary" type="submit" disabled={pairingSubmitting}>
+                {pairingSubmitting
+                  ? t("controls.device_discovery.sending")
+                  : t("controls.device_discovery.send")}
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </form>
+      </DialogSurface>
+    </Dialog>
+    </>
   );
 }
