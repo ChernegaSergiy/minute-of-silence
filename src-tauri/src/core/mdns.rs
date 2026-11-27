@@ -1,10 +1,8 @@
-//! Local network mDNS / DNS-SD discovery for Minute of Silence devices.
+//! Local network mDNS / DNS-SD discovery and peer responder for Minute of Silence.
 //!
-//! Discovers both:
-//! - DNS-SD peers advertising `_khvylyna._tcp.local` (desktop apps, Android
-//!   devices, and upgraded hardware devices) with PTR/SRV/TXT/A records.
-//! - Legacy standalone ESP32 hardware devices advertising `khvylyna.local`
-//!   via plain mDNS A-record responses and OS mDNS resolution.
+//! All peers (ESP32 hardware devices, desktop apps, and Android apps) advertise
+//! and discover each other via the unified DNS-SD service `_khvylyna._tcp.local`
+//! carrying PTR, SRV, TXT (`kind=`, `name=`, `ver=`), and A records.
 
 use std::{
     collections::{BTreeMap, HashMap},
@@ -23,12 +21,6 @@ pub const MDNS_PORT: u16 = 5353;
 
 /// DNS-SD service type advertised by Minute of Silence peers.
 pub const SERVICE_TYPE: &str = "_khvylyna._tcp.local";
-
-/// Default hostname advertised by standalone Minute of Silence hardware devices.
-pub const DEFAULT_HOSTNAME: &str = "khvylyna.local";
-
-/// Default HTTP communication port exposed by the hardware device.
-pub const DEFAULT_DEVICE_PORT: u16 = 80;
 
 /// Default peer port advertised by desktop/Android instances over DNS-SD.
 pub const DEFAULT_PEER_PORT: u16 = 49152;
@@ -99,7 +91,7 @@ pub fn local_device_name() -> String {
     })
 }
 
-/// Sanitize a display name into a valid single DNS label (ASCII alphanumeric + `-`, max 63 bytes).
+/// Sanitize a display name into a valid single DNS label (ASCII alphanumeric + `-`, max 48 bytes).
 fn sanitize_dns_label(raw: &str) -> String {
     let mut out = String::new();
     for ch in raw.chars() {
@@ -289,96 +281,40 @@ fn append_rr(buf: &mut Vec<u8>, name: &str, rtype: u16, rdata: &[u8]) {
 
 /// Discover Minute of Silence devices (hardware, desktop, Android) on the local network.
 ///
-/// Runs a raw UDP mDNS probe (both `_khvylyna._tcp.local` PTR and `khvylyna.local` A)
-/// and the OS host resolver in parallel within [`DISCOVERY_TIMEOUT`], deduplicating
-/// results by `(ip, port)` and preferring richer DNS-SD metadata when both match.
+/// Sends a DNS-SD PTR query for [`SERVICE_TYPE`] to `224.0.0.251:5353` and collects
+/// responses within [`DISCOVERY_TIMEOUT`], deduplicating by `(ip, port)` and excluding
+/// this local instance.
 pub async fn discover_devices() -> crate::Result<Vec<DiscoveredDevice>> {
-    discover_devices_with_timeout(DEFAULT_HOSTNAME, DISCOVERY_TIMEOUT).await
+    discover_devices_with_timeout(DISCOVERY_TIMEOUT).await
 }
 
-/// Discover devices advertising [`SERVICE_TYPE`] or `hostname` within `timeout`.
+/// Discover devices advertising [`SERVICE_TYPE`] within `timeout`.
 pub async fn discover_devices_with_timeout(
-    hostname: &str,
     timeout: Duration,
 ) -> crate::Result<Vec<DiscoveredDevice>> {
-    let (udp_result, os_ips) = tokio::join!(
-        query_mdns_udp(hostname, timeout),
-        lookup_os_mdns(hostname, timeout)
-    );
-
+    let found = query_dnssd_udp(timeout).await?;
+    let local_ip = detect_local_ipv4();
     let mut by_endpoint: BTreeMap<(Ipv4Addr, u16), DiscoveredDevice> = BTreeMap::new();
 
-    match udp_result {
-        Ok(found) => {
-            for device in found {
-                if let Ok(ip) = device.ip.parse::<Ipv4Addr>() {
-                    merge_device(&mut by_endpoint, ip, device);
-                }
+    for device in found {
+        if let Ok(ip) = device.ip.parse::<Ipv4Addr>() {
+            if local_ip == Some(ip) && device.port == DEFAULT_PEER_PORT {
+                continue;
             }
-        }
-        Err(err) => log::warn!("UDP mDNS probe failed: {err}"),
-    }
-
-    for ip in os_ips {
-        let legacy = DiscoveredDevice {
-            hostname: hostname.to_string(),
-            ip: ip.to_string(),
-            port: DEFAULT_DEVICE_PORT,
-            kind: DeviceKind::Hardware,
-            name: None,
-        };
-        merge_device(&mut by_endpoint, ip, legacy);
-    }
-
-    let local_ip = detect_local_ipv4();
-    let devices = by_endpoint
-        .into_iter()
-        .filter(|((ip, port), _)| !(local_ip == Some(*ip) && *port == DEFAULT_PEER_PORT))
-        .map(|(_, device)| device)
-        .collect();
-
-    Ok(devices)
-}
-
-/// Insert `candidate` into `map`, preferring entries with richer DNS-SD metadata.
-fn merge_device(
-    map: &mut BTreeMap<(Ipv4Addr, u16), DiscoveredDevice>,
-    ip: Ipv4Addr,
-    candidate: DiscoveredDevice,
-) {
-    let key = (ip, candidate.port);
-    match map.get(&key) {
-        Some(existing) if device_richness(existing) >= device_richness(&candidate) => {}
-        _ => {
-            map.insert(key, candidate);
+            by_endpoint.entry((ip, device.port)).or_insert(device);
         }
     }
+
+    Ok(by_endpoint.into_values().collect())
 }
 
-fn device_richness(device: &DiscoveredDevice) -> u8 {
-    let mut score = 0;
-    if device.kind != DeviceKind::Unknown {
-        score += 1;
-    }
-    if device.name.is_some() {
-        score += 2;
-    }
-    score
-}
-
-/// Send DNS-SD PTR and legacy A-record mDNS queries over UDP and collect matching devices.
-async fn query_mdns_udp(
-    hostname: &str,
-    timeout: Duration,
-) -> std::io::Result<Vec<DiscoveredDevice>> {
+/// Send a DNS-SD PTR mDNS query over UDP and collect matching devices until `timeout`.
+async fn query_dnssd_udp(timeout: Duration) -> std::io::Result<Vec<DiscoveredDevice>> {
     let socket = UdpSocket::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)).await?;
     let dest = SocketAddrV4::new(MDNS_MULTICAST_ADDR, MDNS_PORT);
-
     let ptr_query = build_ptr_query(SERVICE_TYPE);
-    let a_query = build_a_query(hostname);
 
     socket.send_to(&ptr_query, dest).await?;
-    socket.send_to(&a_query, dest).await?;
 
     let mut found = Vec::new();
     let mut buf = [0u8; 1500];
@@ -392,17 +328,7 @@ async fn query_mdns_udp(
 
         match time::timeout(remaining, socket.recv_from(&mut buf)).await {
             Ok(Ok((len, _src))) => {
-                let packet = &buf[..len];
-                found.extend(parse_dnssd_response(packet, SERVICE_TYPE));
-                for ip in parse_a_response(packet, hostname) {
-                    found.push(DiscoveredDevice {
-                        hostname: hostname.to_string(),
-                        ip: ip.to_string(),
-                        port: DEFAULT_DEVICE_PORT,
-                        kind: DeviceKind::Hardware,
-                        name: None,
-                    });
-                }
+                found.extend(parse_dnssd_response(&buf[..len], SERVICE_TYPE));
             }
             Ok(Err(err)) => {
                 log::debug!("mDNS recv error: {err}");
@@ -415,33 +341,9 @@ async fn query_mdns_udp(
     Ok(found)
 }
 
-/// Attempt resolution via the operating system's mDNS/DNS resolver (Bonjour, Avahi, Windows mDNS).
-async fn lookup_os_mdns(hostname: &str, timeout: Duration) -> Vec<Ipv4Addr> {
-    let target = format!("{hostname}:{DEFAULT_DEVICE_PORT}");
-    match time::timeout(timeout, tokio::net::lookup_host(target)).await {
-        Ok(Ok(addrs)) => addrs
-            .filter_map(|addr: SocketAddr| match addr.ip() {
-                IpAddr::V4(v4) if !v4.is_loopback() && !v4.is_unspecified() => Some(v4),
-                _ => None,
-            })
-            .collect(),
-        _ => Vec::new(),
-    }
-}
-
-/// Build a wire-format mDNS A-record query packet for `hostname` with the QU bit set.
-pub fn build_a_query(hostname: &str) -> Vec<u8> {
-    build_query(hostname, DNS_TYPE_A)
-}
-
 /// Build a wire-format mDNS PTR-record query packet for `service_type` with the QU bit set.
 pub fn build_ptr_query(service_type: &str) -> Vec<u8> {
-    build_query(service_type, DNS_TYPE_PTR)
-}
-
-fn build_query(name: &str, qtype: u16) -> Vec<u8> {
     let mut packet = Vec::with_capacity(64);
-    // Header: ID=0, Flags=0 (standard query), QDCOUNT=1, ANCOUNT=0, NSCOUNT=0, ARCOUNT=0
     packet.extend_from_slice(&[
         0x00, 0x00, // Transaction ID (0 in mDNS)
         0x00, 0x00, // Flags: standard query
@@ -451,8 +353,8 @@ fn build_query(name: &str, qtype: u16) -> Vec<u8> {
         0x00, 0x00, // ARCOUNT = 0
     ]);
 
-    encode_dns_name(&mut packet, name);
-    packet.extend_from_slice(&qtype.to_be_bytes());
+    encode_dns_name(&mut packet, service_type);
+    packet.extend_from_slice(&DNS_TYPE_PTR.to_be_bytes());
     packet.extend_from_slice(&MDNS_QCLASS_IN_QU.to_be_bytes());
     packet
 }
@@ -467,26 +369,6 @@ fn encode_dns_name(buf: &mut Vec<u8>, name: &str) {
         buf.extend_from_slice(label.as_bytes());
     }
     buf.push(0x00);
-}
-
-/// Parse an mDNS/DNS response packet and extract all IPv4 `A` records matching `expected_hostname`.
-pub fn parse_a_response(packet: &[u8], expected_hostname: &str) -> Vec<Ipv4Addr> {
-    let Some(records) = parse_response_records(packet) else {
-        return Vec::new();
-    };
-    let expected = expected_hostname.trim_end_matches('.');
-    let mut results = Vec::new();
-
-    for rr in records {
-        if rr.rtype == DNS_TYPE_A && rr.rdata.len() == 4 && rr.name.eq_ignore_ascii_case(expected) {
-            let ip = Ipv4Addr::new(rr.rdata[0], rr.rdata[1], rr.rdata[2], rr.rdata[3]);
-            if !ip.is_unspecified() && !ip.is_loopback() {
-                results.push(ip);
-            }
-        }
-    }
-
-    results
 }
 
 /// Parse a DNS-SD mDNS response packet and extract all resolved services matching `service_type`.
@@ -687,7 +569,6 @@ fn skip_dns_name(packet: &[u8], mut offset: usize) -> Option<usize> {
             return Some(offset + 1);
         }
         if (len & 0xC0) == 0xC0 {
-            // Compression pointer consumes 2 bytes in the current stream and terminates the name
             return (offset + 2 <= packet.len()).then_some(offset + 2);
         }
         if (len & 0xC0) != 0 {
@@ -757,34 +638,6 @@ fn read_dns_name(packet: &[u8], start: usize) -> Option<(String, usize)> {
 mod tests {
     use super::*;
 
-    fn push_rr(buf: &mut Vec<u8>, name: &str, rtype: u16, rdata: &[u8]) {
-        encode_dns_name(buf, name);
-        buf.extend_from_slice(&rtype.to_be_bytes());
-        buf.extend_from_slice(&0x0001u16.to_be_bytes()); // CLASS IN
-        buf.extend_from_slice(&120u32.to_be_bytes()); // TTL 120
-        buf.extend_from_slice(&(rdata.len() as u16).to_be_bytes());
-        buf.extend_from_slice(rdata);
-    }
-
-    #[test]
-    fn build_a_query_encodes_khvylyna_local() {
-        let query = build_a_query(DEFAULT_HOSTNAME);
-        let expected: Vec<u8> = vec![
-            0x00, 0x00, // ID
-            0x00, 0x00, // Flags
-            0x00, 0x01, // QDCOUNT=1
-            0x00, 0x00, // ANCOUNT=0
-            0x00, 0x00, // NSCOUNT=0
-            0x00, 0x00, // ARCOUNT=0
-            0x08, b'k', b'h', b'v', b'y', b'l', b'y', b'n', b'a', // "khvylyna"
-            0x05, b'l', b'o', b'c', b'a', b'l', // "local"
-            0x00, // terminator
-            0x00, 0x01, // QTYPE = A
-            0x80, 0x01, // QCLASS = IN | QU
-        ];
-        assert_eq!(query, expected);
-    }
-
     #[test]
     fn build_ptr_query_encodes_service_type() {
         let query = build_ptr_query(SERVICE_TYPE);
@@ -796,125 +649,24 @@ mod tests {
     }
 
     #[test]
-    fn parse_a_response_extracts_ipv4_uncompressed() {
-        let mut resp = vec![
-            0x00, 0x00, // ID
-            0x84, 0x00, // Flags: QR=1, AA=1
-            0x00, 0x00, // QDCOUNT=0
-            0x00, 0x01, // ANCOUNT=1
-            0x00, 0x00, // NSCOUNT=0
-            0x00, 0x00, // ARCOUNT=0
-        ];
-        push_rr(&mut resp, DEFAULT_HOSTNAME, DNS_TYPE_A, &[192, 168, 1, 105]);
-
-        let ips = parse_a_response(&resp, DEFAULT_HOSTNAME);
-        assert_eq!(ips, vec![Ipv4Addr::new(192, 168, 1, 105)]);
+    fn parse_dnssd_response_ignores_query_packets() {
+        let query = build_ptr_query(SERVICE_TYPE);
+        assert!(parse_dnssd_response(&query, SERVICE_TYPE).is_empty());
     }
 
     #[test]
-    fn parse_a_response_handles_dns_compression_pointer() {
-        let mut resp = vec![
-            0x00, 0x00, // ID
-            0x84, 0x00, // Flags: QR=1, AA=1
-            0x00, 0x01, // QDCOUNT=1
-            0x00, 0x01, // ANCOUNT=1
-            0x00, 0x00, // NSCOUNT=0
-            0x00, 0x00, // ARCOUNT=0
-        ];
-        // Question at offset 12 (0x0C)
-        resp.extend_from_slice(&[
-            0x08, b'K', b'h', b'v', b'y', b'l', b'y', b'n', b'a', 0x05, b'l', b'o', b'c', b'a',
-            b'l', 0x00, 0x00, 0x01, 0x00, 0x01,
-        ]);
-        // Answer pointing back to offset 0x0C
-        resp.extend_from_slice(&[
-            0xC0, 0x0C, // Pointer to "Khvylyna.local"
-            0x00, 0x01, // TYPE A
-            0x00, 0x01, // CLASS IN
-            0x00, 0x00, 0x00, 0x78, // TTL
-            0x00, 0x04, // RDLENGTH 4
-            10, 0, 0, 42, // IPv4
-        ]);
+    fn parse_dnssd_response_handles_malformed_and_cyclic_pointers_safely() {
+        assert!(parse_dnssd_response(&[0x00, 0x01, 0x84], SERVICE_TYPE).is_empty());
 
-        let ips = parse_a_response(&resp, DEFAULT_HOSTNAME);
-        assert_eq!(ips, vec![Ipv4Addr::new(10, 0, 0, 42)]);
-    }
-
-    #[test]
-    fn parse_a_response_ignores_query_packets() {
-        let query = build_a_query(DEFAULT_HOSTNAME);
-        assert!(parse_a_response(&query, DEFAULT_HOSTNAME).is_empty());
-    }
-
-    #[test]
-    fn parse_a_response_ignores_unrelated_hostname() {
-        let mut resp = vec![
-            0x00, 0x00, 0x84, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
-        ];
-        push_rr(&mut resp, "other.local", DNS_TYPE_A, &[192, 168, 1, 99]);
-        assert!(parse_a_response(&resp, DEFAULT_HOSTNAME).is_empty());
-    }
-
-    #[test]
-    fn parse_a_response_handles_malformed_and_cyclic_pointers_safely() {
-        // Too short
-        assert!(parse_a_response(&[0x00, 0x01, 0x84], DEFAULT_HOSTNAME).is_empty());
-
-        // Self-referencing pointer loop at offset 12
         let cyclic = vec![
             0x00, 0x00, 0x84, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x0C,
-            0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x04, 192, 168, 1, 1,
+            0x00, 0x0C, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x02, 0xC0, 0x0C,
         ];
-        assert!(parse_a_response(&cyclic, DEFAULT_HOSTNAME).is_empty());
+        assert!(parse_dnssd_response(&cyclic, SERVICE_TYPE).is_empty());
     }
 
     #[test]
-    fn parse_dnssd_response_extracts_peer_with_kind_and_name() {
-        let instance = "office-pc._khvylyna._tcp.local";
-        let host = "office-pc.local";
-
-        let mut resp = vec![
-            0x00, 0x00, // ID
-            0x84, 0x00, // Flags: QR=1, AA=1
-            0x00, 0x00, // QDCOUNT=0
-            0x00, 0x01, // ANCOUNT=1 (PTR)
-            0x00, 0x00, // NSCOUNT=0
-            0x00, 0x03, // ARCOUNT=3 (SRV, TXT, A)
-        ];
-
-        let mut ptr_rdata = Vec::new();
-        encode_dns_name(&mut ptr_rdata, instance);
-        push_rr(&mut resp, SERVICE_TYPE, DNS_TYPE_PTR, &ptr_rdata);
-
-        let mut srv_rdata = vec![0x00, 0x00, 0x00, 0x00]; // priority=0, weight=0
-        srv_rdata.extend_from_slice(&49152u16.to_be_bytes());
-        encode_dns_name(&mut srv_rdata, host);
-        push_rr(&mut resp, instance, DNS_TYPE_SRV, &srv_rdata);
-
-        let mut txt_rdata = Vec::new();
-        for kv in ["kind=desktop", "name=Office Laptop", "ver=0.12.1"] {
-            txt_rdata.push(kv.len() as u8);
-            txt_rdata.extend_from_slice(kv.as_bytes());
-        }
-        push_rr(&mut resp, instance, DNS_TYPE_TXT, &txt_rdata);
-
-        push_rr(&mut resp, host, DNS_TYPE_A, &[192, 168, 0, 50]);
-
-        let devices = parse_dnssd_response(&resp, SERVICE_TYPE);
-        assert_eq!(
-            devices,
-            vec![DiscoveredDevice {
-                hostname: host.to_string(),
-                ip: "192.168.0.50".to_string(),
-                port: 49152,
-                kind: DeviceKind::Desktop,
-                name: Some("Office Laptop".to_string()),
-            }]
-        );
-    }
-
-    #[test]
-    fn parse_dnssd_response_classifies_android_and_hardware_kinds() {
+    fn parse_dnssd_response_classifies_all_device_kinds() {
         assert_eq!(parse_device_kind("android"), DeviceKind::Android);
         assert_eq!(parse_device_kind("Android"), DeviceKind::Android);
         assert_eq!(parse_device_kind("hardware"), DeviceKind::Hardware);
@@ -924,59 +676,43 @@ mod tests {
     }
 
     #[test]
-    fn merge_device_prefers_dnssd_metadata_over_legacy_a_record() {
-        let mut map = BTreeMap::new();
-        let ip = Ipv4Addr::new(192, 168, 1, 105);
-
-        merge_device(
-            &mut map,
-            ip,
-            DiscoveredDevice {
-                hostname: DEFAULT_HOSTNAME.to_string(),
-                ip: ip.to_string(),
-                port: 80,
-                kind: DeviceKind::Hardware,
-                name: None,
-            },
-        );
-        merge_device(
-            &mut map,
-            ip,
-            DiscoveredDevice {
-                hostname: DEFAULT_HOSTNAME.to_string(),
-                ip: ip.to_string(),
-                port: 80,
-                kind: DeviceKind::Hardware,
-                name: Some("Living Room".to_string()),
-            },
-        );
-
-        assert_eq!(map.len(), 1);
-        assert_eq!(map[&(ip, 80)].name.as_deref(), Some("Living Room"));
-    }
-
-    #[test]
-    fn dnssd_response_round_trips_through_parser() {
-        let packet = build_dnssd_response(
-            "pixel-8",
-            "Pixel 8",
-            DeviceKind::Android,
-            Ipv4Addr::new(192, 168, 1, 77),
-            DEFAULT_PEER_PORT,
-            "0.12.1",
-        );
-
-        let devices = parse_dnssd_response(&packet, SERVICE_TYPE);
-        assert_eq!(
-            devices,
-            vec![DiscoveredDevice {
-                hostname: "pixel-8.local".to_string(),
-                ip: "192.168.1.77".to_string(),
-                port: DEFAULT_PEER_PORT,
-                kind: DeviceKind::Android,
-                name: Some("Pixel 8".to_string()),
-            }]
-        );
+    fn dnssd_response_round_trips_for_android_desktop_and_hardware() {
+        for (label, display, kind, ip, port) in [
+            (
+                "pixel-8",
+                "Pixel 8",
+                DeviceKind::Android,
+                Ipv4Addr::new(192, 168, 1, 77),
+                DEFAULT_PEER_PORT,
+            ),
+            (
+                "office-pc",
+                "Office Laptop",
+                DeviceKind::Desktop,
+                Ipv4Addr::new(192, 168, 0, 50),
+                DEFAULT_PEER_PORT,
+            ),
+            (
+                "khvylyna",
+                "Khvylyna ESP32",
+                DeviceKind::Hardware,
+                Ipv4Addr::new(192, 168, 1, 105),
+                80,
+            ),
+        ] {
+            let packet = build_dnssd_response(label, display, kind, ip, port, "0.12.1");
+            let devices = parse_dnssd_response(&packet, SERVICE_TYPE);
+            assert_eq!(
+                devices,
+                vec![DiscoveredDevice {
+                    hostname: format!("{label}.local"),
+                    ip: ip.to_string(),
+                    port,
+                    kind,
+                    name: Some(display.to_string()),
+                }]
+            );
+        }
     }
 
     #[test]
@@ -984,8 +720,8 @@ mod tests {
         let ptr_query = build_ptr_query(SERVICE_TYPE);
         assert!(is_dnssd_query_for(&ptr_query, SERVICE_TYPE));
 
-        let a_query = build_a_query(DEFAULT_HOSTNAME);
-        assert!(!is_dnssd_query_for(&a_query, SERVICE_TYPE));
+        let other_query = build_ptr_query("_http._tcp.local");
+        assert!(!is_dnssd_query_for(&other_query, SERVICE_TYPE));
 
         let response = build_dnssd_response(
             "workstation",
