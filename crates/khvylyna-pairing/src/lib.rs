@@ -62,20 +62,22 @@ impl fmt::Display for ProtocolError {
 #[cfg(feature = "std")]
 impl std::error::Error for ProtocolError {}
 
-/// Milliseconds since the first call on this process.
+/// Unix time in milliseconds, used for wall-clock pairing code expiry.
 #[cfg(feature = "std")]
 pub fn now_ms() -> u64 {
-    use std::sync::OnceLock;
-    use std::time::Instant;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-    static START: OnceLock<Instant> = OnceLock::new();
-    START.get_or_init(Instant::now).elapsed().as_millis() as u64
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use alloc::string::ToString;
+    use std::{thread::sleep, time::Duration};
 
     #[test]
     fn errors_have_stable_human_readable_messages() {
@@ -87,5 +89,12 @@ mod tests {
             ProtocolError::AuthenticationFailed.to_string(),
             "Pairing authentication failed"
         );
+    }
+
+    #[test]
+    fn now_ms_tracks_wall_clock_across_sleep() {
+        let before = now_ms();
+        sleep(Duration::from_millis(10));
+        assert!(now_ms() >= before + 10);
     }
 }
