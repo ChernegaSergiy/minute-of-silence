@@ -24,10 +24,7 @@ import { t } from "../utils/i18n";
 
 const useStyles = makeStyles({
   card: {
-    padding: "16px",
-    display: "flex",
-    flexDirection: "column",
-    rowGap: "12px",
+    marginBottom: tokens.spacingVerticalM,
   },
   headerRow: {
     display: "flex",
@@ -36,6 +33,8 @@ const useStyles = makeStyles({
     columnGap: tokens.spacingHorizontalM,
     rowGap: tokens.spacingVerticalS,
     flexWrap: "wrap",
+    paddingTop: tokens.spacingVerticalSNudge,
+    paddingBottom: tokens.spacingVerticalSNudge,
   },
   labelGroup: {
     display: "flex",
