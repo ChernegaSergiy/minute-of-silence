@@ -1,0 +1,17 @@
+{
+  "ack": "05060708090a0b0c0d0e0f10274b892c80e4c5a27ee8032b4e7531d242",
+  "ackSeed": 5,
+  "code": "123456",
+  "confirm": "030405060708090a0b0c0d0eeda51e9792566624632b6d899aa4cf0d59be25b69fcc10b898a269d84c70c24d2822d5b351ab27522d930651a3",
+  "confirmSeed": 3,
+  "data": "0405060708090a0b0c0d0e0fc7a7d02e593e1a4b6f515f2633858af853cb72f6b82b06b06705c219bcf59962",
+  "dataSeed": 4,
+  "maxPayload": 2048,
+  "pakeInit": "0102030405060708090a0b0c0d0e0f10a0987eb10ecf0189fbefcf016cbbc0a3ec2544684f4e01400751b1f706606f7c",
+  "pakeResponse": "2a0741d5a84a9f4de52c68f4bdf57d242618de08fa7c75ca59890bff5050c941",
+  "plaintext": "707269766174652073657474696e6773",
+  "receiverSeed": 2,
+  "senderSeed": 1,
+  "suite": 1,
+  "version": 1
+}

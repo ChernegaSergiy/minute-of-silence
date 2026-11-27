@@ -10,9 +10,11 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type {
   AppInitialState,
+  DiscoveredDevice,
   ExportBundle,
   NotificationPermission,
   PersonalDate,
+  ReceivingPairingCode,
   Settings,
   StatusSnapshot,
 } from "../types";
@@ -121,6 +123,59 @@ export async function stopTestCeremony(): Promise<void> {
 
 export async function getLogContents(): Promise<string> {
   return invoke<string>("get_log_contents");
+}
+
+// Device discovery & peer sync
+
+export async function discoverDevices(): Promise<DiscoveredDevice[]> {
+  return invoke<DiscoveredDevice[]>("discover_devices");
+}
+
+export async function sendSettingsToDevice(ip: string, port: number, pairingCode: string): Promise<void> {
+  return invoke<void>("send_settings_to_device", { ip, port, pairingCode });
+}
+
+export async function getReceivingPairingCode(): Promise<ReceivingPairingCode | null> {
+  return invoke<ReceivingPairingCode | null>("get_receiving_pairing_code");
+}
+
+export function onPairingCodeChanged(callback: () => void): Promise<UnlistenFn> {
+  return listen("pairing-code-changed", callback);
+}
+
+export async function getReceivingSettingsEnabled(): Promise<boolean> {
+  return invoke<boolean>("get_receiving_settings_enabled");
+}
+
+export async function setReceivingSettingsEnabled(enabled: boolean): Promise<boolean> {
+  return invoke<boolean>("set_receiving_settings_enabled", { enabled });
+}
+
+export function onReceivingSettingsStopped(callback: () => void): Promise<UnlistenFn> {
+  return listen("device-receiving-stopped", callback);
+}
+
+export const INCOMING_SETTINGS_EVENT = "incoming-settings-offer";
+
+export type IncomingSettingsOffer = {
+  id: number;
+  senderName: string;
+  senderIp: string;
+  json: string;
+};
+
+export function onIncomingSettingsOffer(
+  callback: () => void,
+): Promise<UnlistenFn> {
+  return listen(INCOMING_SETTINGS_EVENT, callback);
+}
+
+export async function getPendingSettingsOffer(): Promise<IncomingSettingsOffer | null> {
+  return invoke<IncomingSettingsOffer | null>("get_pending_settings_offer");
+}
+
+export async function dismissPendingSettingsOffer(id: number): Promise<void> {
+  return invoke<void>("dismiss_pending_settings_offer", { id });
 }
 
 // Event listeners

@@ -21,7 +21,8 @@
     "reminder": "REMINDER",
     "audio_mode": "AUDIO",
     "system": "SYSTEM",
-    "data": "DATA"
+    "data": "DATA",
+    "devices": "NETWORK DEVICES"
   },
   "status": {
     "last_ceremony": "Last ceremony",
@@ -191,6 +192,45 @@
       "success": "Imported!",
       "empty": "Clipboard is empty",
       "error": "Import failed"
+    },
+    "device_discovery": {
+      "receive_label": "Allow receiving settings",
+      "receive_description": "Allows other devices on the local network to find this device and send settings.",
+      "receive_error": "Could not change the receiving state, or the receiving service stopped.",
+      "pairing_code": "Pairing code",
+      "pairing_code_description": "The code is single-use and valid for two minutes. Enter it on the device sending the settings.",
+      "pairing_code_unavailable": "The code is unavailable. Turn receiving off and on to create a new one.",
+      "pairing_title": "Confirm device",
+      "pairing_description": "Enter the code from \"{{device}}\" to send settings.",
+      "pairing_invalid_code": "Enter a six-digit code.",
+      "pairing_failed": "Could not securely send settings. Check the code and whether the other device supports secure transfers.",
+      "pairing_unavailable": "This device does not support secure settings transfer.",
+      "label": "Device discovery",
+      "description": "Find Minute of Silence devices on your local network via mDNS.",
+      "scan": "Scan",
+      "scanning": "Scanning...",
+      "empty": "No devices found. Make sure devices are connected to the same local network.",
+      "error": "Device discovery failed.",
+      "copy_ip": "Copy IP",
+      "copied": "Copied!",
+      "copy_error": "Copy failed",
+      "send": "Send",
+      "send_tooltip": "Send settings to this device",
+      "sending": "Sending...",
+      "sent": "Sent!",
+      "send_error": "Send failed",
+      "incoming_title": "Incoming settings",
+      "incoming_body": "Device \"{{sender}}\" ({{ip}}) wants to send you settings and personal dates. Apply them?",
+      "incoming_dirty_warning": "You have unsaved changes in Settings — they will be overwritten.",
+      "incoming_accept": "Accept",
+      "incoming_decline": "Decline",
+      "incoming_error": "Failed to apply received settings.",
+      "kind": {
+        "hardware": "ESP32 Device",
+        "desktop": "Desktop",
+        "android": "Android",
+        "unknown": "Device"
+      }
     }
   },
   "buttons": {

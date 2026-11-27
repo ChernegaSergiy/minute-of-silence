@@ -570,3 +570,67 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
         }
     }
 }
+
+// Device discovery
+
+/// Returns whether receiving settings is enabled for this session.
+#[tauri::command]
+pub async fn get_receiving_settings_enabled(
+    receiving: State<'_, crate::core::receiving::ReceivingState>,
+) -> Result<bool> {
+    Ok(receiving.is_enabled().await)
+}
+
+/// Returns the current receiving session's pairing code, if available.
+#[tauri::command]
+pub async fn get_receiving_pairing_code(
+    receiving: State<'_, crate::core::receiving::ReceivingState>,
+) -> Result<Option<crate::core::receiving::PairingCodeInfo>> {
+    Ok(receiving.pairing_code().await)
+}
+
+/// Enables or disables the session-scoped settings receiver.
+#[tauri::command]
+pub async fn set_receiving_settings_enabled(
+    app: AppHandle,
+    receiving: State<'_, crate::core::receiving::ReceivingState>,
+    enabled: bool,
+) -> Result<bool> {
+    receiving.set_enabled(&app, enabled).await
+}
+
+/// Returns the oldest incoming offer without removing it.
+#[tauri::command]
+pub fn get_pending_settings_offer(
+    queue: State<'_, crate::core::peer_sync::IncomingOfferQueue>,
+) -> Option<crate::core::peer_sync::IncomingSettingsOffer> {
+    queue.next()
+}
+
+/// Removes the matching incoming offer after the user has made a decision.
+#[tauri::command]
+pub fn dismiss_pending_settings_offer(
+    queue: State<'_, crate::core::peer_sync::IncomingOfferQueue>,
+    id: u64,
+) {
+    queue.dismiss(id);
+}
+
+/// Discover Minute of Silence devices (hardware, desktop, Android) on the local network via mDNS.
+#[tauri::command]
+pub async fn discover_devices() -> Result<Vec<khvylyna_core::DiscoveredDevice>> {
+    crate::core::mdns::discover_devices().await
+}
+
+/// Export current settings and personal dates and send them to a discovered peer over HTTP.
+#[tauri::command]
+pub async fn send_settings_to_device(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    ip: String,
+    port: u16,
+    pairing_code: String,
+) -> Result<()> {
+    let json = export_settings(app, state)?;
+    crate::core::peer_sync::send_bundle(&ip, port, &json, &pairing_code).await
+}

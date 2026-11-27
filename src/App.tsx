@@ -1,6 +1,12 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   Button,
+  Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
+  DialogSurface,
+  DialogTitle,
   FluentProvider,
   NavDrawer,
   NavDrawerBody,
@@ -8,6 +14,7 @@ import {
   Spinner,
   Tab,
   TabList,
+  Text,
   mergeClasses,
   makeStyles,
   shorthands,
@@ -22,6 +29,7 @@ import {
   Save20Regular,
   Settings20Regular,
   Stop20Regular,
+  Warning20Regular,
   CalendarMonth20Regular,
   bundleIcon,
   Settings24Filled,
@@ -38,15 +46,20 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import {
   bringWindowToFront,
+  dismissPendingSettingsOffer,
   getInitialState,
+  getPendingSettingsOffer,
   getPlatform,
   getStatus,
+  importSettings,
   onCeremonyEnd,
   onCeremonyStart,
+  onIncomingSettingsOffer,
   saveSettings,
   stopTestCeremony,
   syncNtpNow,
   triggerCeremonyNow,
+  type IncomingSettingsOffer,
 } from "./utils/api";
 import type { PersonalDate, Settings, StatusSnapshot, VoiceCapabilities } from "./types";
 import { t } from "./utils/i18n";
@@ -344,10 +357,25 @@ export default function App() {
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [updateDismissed, setUpdateDismissed] = useState(false);
   const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
+  const [incomingOffer, setIncomingOffer] = useState<IncomingSettingsOffer | null>(null);
+  const [applyingOffer, setApplyingOffer] = useState(false);
+  const [offerError, setOfferError] = useState(false);
   const isIdle = useIdle(15000); // 15 seconds idle timeout
   const initRef = useRef(false);
   const hasImportedRef = useRef(false);
   const statusRevisionRef = useRef(0);
+  const offerRevisionRef = useRef(0);
+
+  const refreshIncomingOffer = useCallback(async () => {
+    const revision = ++offerRevisionRef.current;
+    const offer = await getPendingSettingsOffer();
+    if (revision !== offerRevisionRef.current) return;
+    setIncomingOffer(offer);
+    if (offer) {
+      setOfferError(false);
+      void bringWindowToFront().catch(() => {});
+    }
+  }, []);
 
   const applyStatusSnapshot = useCallback((nextStatus: StatusSnapshot, revision: number) => {
     if (revision !== statusRevisionRef.current) return;
@@ -494,6 +522,33 @@ export default function App() {
     return () => media.removeEventListener("change", updateTheme);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    let unlisten: (() => void) | null = null;
+    void onIncomingSettingsOffer(() => {
+      if (!active) return;
+      void refreshIncomingOffer().catch((error) =>
+        console.error("Failed to refresh incoming settings offers:", error),
+      );
+    }).then((fn) => {
+      if (active) {
+        unlisten = fn;
+        void refreshIncomingOffer().catch((error) =>
+          console.error("Failed to load incoming settings offers:", error),
+        );
+      } else {
+        fn();
+      }
+    }).catch((error) => {
+      console.error("Failed to listen for incoming settings offers:", error);
+    });
+    return () => {
+      active = false;
+      offerRevisionRef.current++;
+      unlisten?.();
+    };
+  }, [refreshIncomingOffer]);
+
   // Trigger the update dialog when user is idle
   useEffect(() => {
     if (!updateInfo || updateDismissed) return;
@@ -534,6 +589,41 @@ export default function App() {
     setInitialSettings(imported);
     setVolumeValue(imported.volume);
   }, [applyStatusSnapshot]);
+
+  const handleAcceptIncomingOffer = useCallback(async () => {
+    if (!incomingOffer) return;
+    setApplyingOffer(true);
+    setOfferError(false);
+    try {
+      const imported = await importSettings(incomingOffer.json);
+      handleSettingsImported(imported.settings);
+      setPersonalDates(imported.personalDates);
+      await dismissPendingSettingsOffer(incomingOffer.id);
+      setIncomingOffer(null);
+      await refreshIncomingOffer();
+    } catch (error) {
+      console.error("Failed to apply incoming settings offer:", error);
+      setOfferError(true);
+    } finally {
+      setApplyingOffer(false);
+    }
+  }, [incomingOffer, handleSettingsImported, refreshIncomingOffer]);
+
+  const handleDeclineIncomingOffer = useCallback(async () => {
+    if (!incomingOffer) return;
+    setApplyingOffer(true);
+    setOfferError(false);
+    try {
+      await dismissPendingSettingsOffer(incomingOffer.id);
+      setIncomingOffer(null);
+      await refreshIncomingOffer();
+    } catch (error) {
+      console.error("Failed to dismiss incoming settings offer:", error);
+      setOfferError(true);
+    } finally {
+      setApplyingOffer(false);
+    }
+  }, [incomingOffer, refreshIncomingOffer]);
 
   const handleSyncNtp = useCallback(async () => {
     setSyncing(true);
@@ -793,6 +883,82 @@ export default function App() {
           }}
           onUpdatingChange={setIsInstallingUpdate}
         />
+        <Dialog
+          modalType="alert"
+          open={incomingOffer !== null && !status.ceremonyActive && !showOverlay}
+          onOpenChange={(_event, data) => {
+            if (!data.open && !applyingOffer) {
+              handleDeclineIncomingOffer();
+            }
+          }}
+        >
+          <DialogSurface style={{ maxWidth: "500px", width: "90%" }}>
+            <DialogBody>
+              <DialogTitle style={{ marginBottom: tokens.spacingVerticalS }}>
+                {t("controls.device_discovery.incoming_title")}
+              </DialogTitle>
+              <DialogContent>
+                <Text block>
+                  {t("controls.device_discovery.incoming_body", {
+                    sender: incomingOffer?.senderName ?? "",
+                    ip: incomingOffer?.senderIp ?? "",
+                  })}
+                </Text>
+                {isDirty && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      columnGap: tokens.spacingHorizontalS,
+                      marginTop: tokens.spacingVerticalM,
+                      color: tokens.colorNeutralForeground2,
+                      fontSize: tokens.fontSizeBase200,
+                    }}
+                  >
+                    <Warning20Regular
+                      style={{
+                        color: tokens.colorPaletteYellowForeground1,
+                        flexShrink: 0,
+                        marginTop: "1px",
+                      }}
+                    />
+                    <span>{t("controls.device_discovery.incoming_dirty_warning")}</span>
+                  </div>
+                )}
+                {offerError && (
+                  <Text
+                    block
+                    size={200}
+                    style={{
+                      color: tokens.colorPaletteRedBorderActive,
+                      marginTop: tokens.spacingVerticalS,
+                    }}
+                  >
+                    {t("controls.device_discovery.incoming_error")}
+                  </Text>
+                )}
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  appearance="secondary"
+                  style={{ whiteSpace: "nowrap" }}
+                  disabled={applyingOffer}
+                  onClick={handleDeclineIncomingOffer}
+                >
+                  {t("controls.device_discovery.incoming_decline")}
+                </Button>
+                <Button
+                  appearance="primary"
+                  style={{ whiteSpace: "nowrap" }}
+                  disabled={applyingOffer}
+                  onClick={handleAcceptIncomingOffer}
+                >
+                  {t("controls.device_discovery.incoming_accept")}
+                </Button>
+              </DialogActions>
+            </DialogBody>
+          </DialogSurface>
+        </Dialog>
       </FluentProvider>
 
       {supportsVisualOverlay && (

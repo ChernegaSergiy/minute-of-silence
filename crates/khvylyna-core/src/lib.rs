@@ -21,8 +21,8 @@ pub use error::ConfigError;
 
 pub use models::{
     AnnouncementVoice, AnthemVoice, AppInitialState, AudioPreset, CONFIG_SCHEMA_VERSION,
-    PersonalDate, PresetBlock, Settings, StatusSnapshot, UiTheme, VoiceCapabilities,
-    validate_blocks,
+    DeviceKind, DiscoveredDevice, PersonalDate, PresetBlock, Settings, StatusSnapshot, UiTheme,
+    VoiceCapabilities, validate_blocks,
 };
 
 pub use scheduler::{
@@ -339,6 +339,7 @@ mod tests {
         PersonalDate::export_all(&cfg).expect("failed to export PersonalDate");
         AppInitialState::export_all(&cfg).expect("failed to export AppInitialState");
         ExportBundle::export_all(&cfg).expect("failed to export ExportBundle");
+        DiscoveredDevice::export_all(&cfg).expect("failed to export DiscoveredDevice");
     }
 
     #[test]

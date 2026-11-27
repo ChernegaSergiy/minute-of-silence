@@ -1,10 +1,11 @@
 diff --git a/src-tauri/gen/android/app/src/main/AndroidManifest.xml b/src-tauri/gen/android/app/src/main/AndroidManifest.xml
 --- a/src-tauri/gen/android/app/src/main/AndroidManifest.xml
 +++ b/src-tauri/gen/android/app/src/main/AndroidManifest.xml
-@@ -8,9 +8,18 @@
+@@ -8,9 +8,19 @@
 +    <!-- minute-of-silence-ceremony:permissions -->
 +    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 +    <uses-permission android:name="android.permission.WAKE_LOCK" />
++    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 +    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 +    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 +    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -20,7 +21,7 @@ diff --git a/src-tauri/gen/android/app/src/main/AndroidManifest.xml b/src-tauri/
              android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
              android:launchMode="singleTask"
              android:label="@string/main_activity_title"
-@@ -33,5 +42,35 @@
+@@ -33,5 +43,35 @@
              android:name="android.support.FILE_PROVIDER_PATHS"
              android:resource="@xml/file_paths" />
          </provider>

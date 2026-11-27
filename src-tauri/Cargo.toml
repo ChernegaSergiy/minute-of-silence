@@ -29,6 +29,8 @@ tauri-plugin-log = "2.10"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.52", features = ["full"] }
+rand = "0.8"
+socket2 = { version = "0.6", features = ["all"] }
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 rsntp = "4.1"
@@ -46,6 +48,7 @@ png = "0.18.1"
 base64 = "0.23"
 tauri-plugin-clipboard-manager = "2.4"
 khvylyna-core = { path = "../crates/khvylyna-core" }
+khvylyna-pairing = { path = "../crates/khvylyna-pairing" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"

@@ -76,6 +76,15 @@ jobs:
         working-directory: src-tauri
         run: cargo test --all
 
+      - name: Check pairing crate
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/src-tauri/target
+        run: |
+          cargo fmt --manifest-path crates/khvylyna-pairing/Cargo.toml -- --check
+          cargo clippy --manifest-path crates/khvylyna-pairing/Cargo.toml --all-targets -- -D warnings
+          cargo test --manifest-path crates/khvylyna-pairing/Cargo.toml
+          cargo check --manifest-path crates/khvylyna-pairing/Cargo.toml --no-default-features
+
       - name: Verify generated TypeScript types
         if: runner.os == 'Linux'
         run: cargo test --manifest-path crates/khvylyna-core/Cargo.toml --features ts && git diff --exit-code src/types.gen.ts
