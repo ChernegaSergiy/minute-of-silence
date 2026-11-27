@@ -573,6 +573,24 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
 
 // Device discovery
 
+/// Returns whether receiving settings is enabled for this session.
+#[tauri::command]
+pub async fn get_receiving_settings_enabled(
+    receiving: State<'_, crate::core::receiving::ReceivingState>,
+) -> Result<bool> {
+    Ok(receiving.is_enabled().await)
+}
+
+/// Enables or disables the session-scoped settings receiver.
+#[tauri::command]
+pub async fn set_receiving_settings_enabled(
+    app: AppHandle,
+    receiving: State<'_, crate::core::receiving::ReceivingState>,
+    enabled: bool,
+) -> Result<bool> {
+    receiving.set_enabled(&app, enabled).await
+}
+
 /// Returns the oldest incoming offer without removing it.
 #[tauri::command]
 pub fn get_pending_settings_offer(

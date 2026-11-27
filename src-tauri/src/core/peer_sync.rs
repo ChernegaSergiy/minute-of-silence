@@ -7,6 +7,7 @@
 
 use std::{
     collections::VecDeque,
+    future::Future,
     io::ErrorKind,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     sync::{Arc, Mutex},
@@ -18,7 +19,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
-    sync::Semaphore,
+    sync::{Semaphore, watch},
+    task::JoinSet,
     time,
 };
 
@@ -197,26 +199,42 @@ fn is_retryable_accept_error(err: &std::io::Error) -> bool {
     false
 }
 
-/// Spawn a background HTTP listener on [`DEFAULT_PEER_PORT`] that receives `POST /api/bundle`.
-///
-/// Valid bundles are never applied silently; they are emitted to the frontend via
-/// [`INCOMING_SETTINGS_EVENT`] for explicit user confirmation.
-pub fn spawn_listener(app: AppHandle) {
-    tauri::async_runtime::spawn(async move {
-        if let Err(err) = run_listener(app).await {
-            log::info!("Peer settings listener unavailable on port {DEFAULT_PEER_PORT}: {err}");
-        }
-    });
+pub(crate) async fn bind_listener() -> std::io::Result<TcpListener> {
+    TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, DEFAULT_PEER_PORT)).await
 }
 
-async fn run_listener(app: AppHandle) -> std::io::Result<()> {
-    let listener =
-        TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, DEFAULT_PEER_PORT)).await?;
+pub(crate) async fn run_listener(
+    listener: TcpListener,
+    app: AppHandle,
+    shutdown: watch::Receiver<bool>,
+) -> std::io::Result<()> {
+    run_accept_loop(listener, shutdown, move |stream, peer_addr| {
+        handle_connection(stream, peer_addr, app.clone())
+    })
+    .await
+}
+
+async fn run_accept_loop<F, Connection>(
+    listener: TcpListener,
+    mut shutdown: watch::Receiver<bool>,
+    handle: F,
+) -> std::io::Result<()>
+where
+    F: Fn(TcpStream, SocketAddr) -> Connection,
+    Connection: Future<Output = ()> + Send + 'static,
+{
     let permits = Arc::new(Semaphore::new(MAX_CONCURRENT_CONNECTIONS));
+    let mut connections = JoinSet::new();
     log::info!("Peer settings listener active on port {DEFAULT_PEER_PORT}");
 
     loop {
-        let (mut stream, peer_addr) = match listener.accept().await {
+        let accepted = tokio::select! {
+            biased;
+            _ = shutdown.changed() => break,
+            Some(_) = connections.join_next(), if !connections.is_empty() => continue,
+            accepted = listener.accept() => accepted,
+        };
+        let (mut stream, peer_addr) = match accepted {
             Ok(pair) => pair,
             Err(err) if is_retryable_accept_error(&err) => {
                 log::warn!("Transient peer settings accept error: {err}");
@@ -231,12 +249,14 @@ async fn run_listener(app: AppHandle) -> std::io::Result<()> {
             continue;
         };
 
-        let app_handle = app.clone();
-        tauri::async_runtime::spawn(async move {
+        let connection = handle(stream, peer_addr);
+        connections.spawn(async move {
             let _permit = permit;
-            handle_connection(stream, peer_addr, app_handle).await;
+            connection.await;
         });
     }
+    connections.shutdown().await;
+    Ok(())
 }
 
 async fn handle_connection(mut stream: TcpStream, peer_addr: SocketAddr, app: AppHandle) {
@@ -439,6 +459,39 @@ pub fn parse_http_status(resp: &[u8]) -> Option<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn stopping_listener_closes_connections_and_releases_port() {
+        let listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("bind loopback");
+        let address = listener.local_addr().expect("listener address");
+        let (shutdown, receiver) = watch::channel(false);
+        let (accepted, mut received) = tokio::sync::mpsc::channel(1);
+        let server = tokio::spawn(run_accept_loop(listener, receiver, move |stream, _| {
+            let accepted = accepted.clone();
+            async move {
+                let _stream = stream;
+                let _ = accepted.send(()).await;
+                std::future::pending::<()>().await;
+            }
+        }));
+        let mut client = TcpStream::connect(address).await.expect("connect");
+        time::timeout(Duration::from_secs(2), received.recv())
+            .await
+            .expect("accepted in time")
+            .expect("connection accepted");
+        shutdown.send(true).expect("request shutdown");
+        time::timeout(Duration::from_secs(2), server)
+            .await
+            .expect("listener stopped in time")
+            .expect("listener task")
+            .expect("listener result");
+        let mut buffer = [0u8; 1];
+        assert_eq!(client.read(&mut buffer).await.expect("read EOF"), 0);
+        let rebound = TcpListener::bind(address).await.expect("port released");
+        drop(rebound);
+    }
 
     fn offer(sender: &str) -> IncomingSettingsOffer {
         IncomingSettingsOffer {

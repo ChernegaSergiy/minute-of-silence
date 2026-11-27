@@ -78,6 +78,7 @@ pub fn run() {
             let state = AppState::new_with_settings(handle.clone(), settings.clone());
             app.manage(state);
             app.manage(core::peer_sync::IncomingOfferQueue::default());
+            app.manage(core::receiving::ReceivingState::default());
             app.state::<AppState>().runtime.attach_app(handle.clone());
 
             // --- 2.0. Native schedule and autostart (Android) ---
@@ -196,8 +197,6 @@ pub fn run() {
                 let runtime = std::sync::Arc::clone(&app.state::<AppState>().runtime);
                 tauri::async_runtime::spawn(core::scheduler::run(runtime));
             }
-            core::mdns::spawn_responder(app.package_info().version.to_string());
-            core::peer_sync::spawn_listener(handle.clone());
 
             // --- 5. Auto Update Check ---
             #[cfg(desktop)]
@@ -284,6 +283,8 @@ pub fn run() {
             app::commands::send_settings_to_device,
             app::commands::get_pending_settings_offer,
             app::commands::dismiss_pending_settings_offer,
+            app::commands::get_receiving_settings_enabled,
+            app::commands::set_receiving_settings_enabled,
             app::apng::decode_apng_frames,
         ])
         .run(tauri::generate_context!())

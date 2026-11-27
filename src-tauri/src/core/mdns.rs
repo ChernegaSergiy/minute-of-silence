@@ -133,18 +133,6 @@ pub fn is_local_ipv4(ip: Ipv4Addr) -> bool {
     std::net::UdpSocket::bind(SocketAddrV4::new(ip, 0)).is_ok()
 }
 
-/// Spawn a background mDNS responder advertising this instance via `_khvylyna._tcp.local`.
-///
-/// If UDP port 5353 cannot be bound (for example when exclusively held by another mDNS daemon),
-/// the responder logs an informational message and exits gracefully.
-pub fn spawn_responder(app_version: String) {
-    tauri::async_runtime::spawn(async move {
-        if let Err(err) = run_responder(app_version).await {
-            log::info!("mDNS peer responder unavailable: {err}");
-        }
-    });
-}
-
 #[cfg(target_os = "android")]
 struct AndroidMulticastGuard;
 
@@ -169,11 +157,34 @@ impl Drop for AndroidMulticastGuard {
     }
 }
 
-async fn run_responder(app_version: String) -> std::io::Result<()> {
+pub(crate) struct PreparedResponder {
+    socket: UdpSocket,
+    #[cfg(target_os = "android")]
+    multicast_guard: AndroidMulticastGuard,
+}
+
+pub(crate) fn prepare_responder() -> std::io::Result<PreparedResponder> {
     let socket = UdpSocket::from_std(bind_mdns_socket(MDNS_PORT)?)?;
     socket.join_multicast_v4(MDNS_MULTICAST_ADDR, Ipv4Addr::UNSPECIFIED)?;
     #[cfg(target_os = "android")]
-    let _multicast_guard = AndroidMulticastGuard::acquire()?;
+    let multicast_guard = AndroidMulticastGuard::acquire()?;
+
+    Ok(PreparedResponder {
+        socket,
+        #[cfg(target_os = "android")]
+        multicast_guard,
+    })
+}
+
+pub(crate) async fn run_responder(
+    responder: PreparedResponder,
+    app_version: String,
+) -> std::io::Result<()> {
+    let PreparedResponder {
+        socket,
+        #[cfg(target_os = "android")]
+            multicast_guard: _multicast_guard,
+    } = responder;
 
     let display_name = local_device_name();
     let base_label = sanitize_dns_label(&display_name);
@@ -192,10 +203,7 @@ async fn run_responder(app_version: String) -> std::io::Result<()> {
     loop {
         let (len, src) = match socket.recv_from(&mut buf).await {
             Ok(v) => v,
-            Err(err) => {
-                log::debug!("mDNS responder recv error: {err}");
-                continue;
-            }
+            Err(err) => return Err(err),
         };
         let packet = &buf[..len];
         if !is_dnssd_query_for(packet, SERVICE_TYPE) {
