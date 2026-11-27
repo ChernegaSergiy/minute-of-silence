@@ -108,7 +108,8 @@ impl SessionSecret {
         rng: &mut R,
     ) -> Result<Vec<u8>, ProtocolError> {
         let key = self.derive_key(label)?;
-        let cipher = Aes256Gcm::new_from_slice(&key).map_err(|_| ProtocolError::ChannelFailed)?;
+        let cipher = Aes256Gcm::new_from_slice(key.as_ref())
+            .map_err(|_| ProtocolError::ChannelFailed)?;
         let mut nonce = [0u8; NONCE_LEN];
         rng.try_fill_bytes(&mut nonce)
             .map_err(|_| ProtocolError::ChannelFailed)?;
@@ -132,7 +133,8 @@ impl SessionSecret {
         let mut nonce = [0u8; NONCE_LEN];
         nonce.copy_from_slice(&message[..NONCE_LEN]);
         let key = self.derive_key(label)?;
-        let cipher = Aes256Gcm::new_from_slice(&key).map_err(|_| ProtocolError::ChannelFailed)?;
+        let cipher = Aes256Gcm::new_from_slice(key.as_ref())
+            .map_err(|_| ProtocolError::ChannelFailed)?;
         let mut plaintext = Zeroizing::new(message[NONCE_LEN..].to_vec());
         cipher
             .decrypt_in_place(&Nonce::from(nonce), label, &mut *plaintext)
@@ -140,10 +142,10 @@ impl SessionSecret {
         Ok(plaintext)
     }
 
-    fn derive_key(&self, label: &[u8]) -> Result<[u8; 32], ProtocolError> {
+    fn derive_key(&self, label: &[u8]) -> Result<Zeroizing<[u8; 32]>, ProtocolError> {
         let hkdf = Hkdf::<Sha256>::new(Some(HKDF_SALT), self.0.as_ref());
-        let mut key = [0u8; 32];
-        hkdf.expand(label, &mut key)
+        let mut key = Zeroizing::new([0u8; 32]);
+        hkdf.expand(label, &mut key[..])
             .map_err(|_| ProtocolError::ChannelFailed)?;
         Ok(key)
     }
