@@ -6,7 +6,9 @@
 //! `incoming-settings-offer` event so the user must explicitly confirm before applying.
 
 use std::{
+    io::ErrorKind,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::Arc,
     time::Duration,
 };
 
@@ -15,6 +17,7 @@ use tauri::{AppHandle, Emitter};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
+    sync::Semaphore,
     time,
 };
 
@@ -34,6 +37,12 @@ const MAX_BODY_BYTES: usize = 256 * 1024;
 
 /// Maximum accepted HTTP header section size (8 KiB).
 const MAX_HEADER_BYTES: usize = 8 * 1024;
+
+/// Maximum number of concurrent incoming peer connections handled at once.
+const MAX_CONCURRENT_CONNECTIONS: usize = 8;
+
+/// Maximum bytes read while waiting for the HTTP response status line.
+const MAX_STATUS_LINE_BYTES: usize = 512;
 
 /// Payload emitted to the frontend when a peer sends a valid settings bundle.
 #[derive(Debug, Clone, Serialize)]
@@ -80,15 +89,14 @@ pub async fn send_bundle(ip: &str, port: u16, json: &str) -> crate::Result<()> {
 
     let _ = stream.shutdown().await;
 
-    let mut resp_buf = [0u8; 512];
-    let n = time::timeout(TRANSFER_TIMEOUT, stream.read(&mut resp_buf))
+    let resp_buf = time::timeout(TRANSFER_TIMEOUT, read_http_status_line(&mut stream))
         .await
         .map_err(|_| {
             crate::AppError::Platform("Timed out waiting for device response".to_string())
         })?
         .map_err(|e| crate::AppError::Platform(format!("Failed to read device response: {e}")))?;
 
-    let status = parse_http_status(&resp_buf[..n]).ok_or_else(|| {
+    let status = parse_http_status(&resp_buf).ok_or_else(|| {
         crate::AppError::Platform("Malformed HTTP response from device".to_string())
     })?;
 
@@ -99,6 +107,48 @@ pub async fn send_bundle(ip: &str, port: u16, json: &str) -> crate::Result<()> {
             "Device rejected settings with HTTP {status}"
         )))
     }
+}
+
+async fn read_http_status_line(stream: &mut TcpStream) -> std::io::Result<Vec<u8>> {
+    let mut buf = Vec::with_capacity(128);
+    let mut chunk = [0u8; 128];
+    loop {
+        let n = stream.read(&mut chunk).await?;
+        if n == 0 {
+            break;
+        }
+        let remaining = MAX_STATUS_LINE_BYTES.saturating_sub(buf.len());
+        buf.extend_from_slice(&chunk[..n.min(remaining)]);
+        if buf.windows(2).any(|w| w == b"\r\n") || buf.len() >= MAX_STATUS_LINE_BYTES {
+            break;
+        }
+    }
+    Ok(buf)
+}
+
+fn is_retryable_accept_error(err: &std::io::Error) -> bool {
+    if matches!(
+        err.kind(),
+        ErrorKind::ConnectionReset
+            | ErrorKind::ConnectionAborted
+            | ErrorKind::Interrupted
+            | ErrorKind::WouldBlock
+            | ErrorKind::TimedOut
+    ) {
+        return true;
+    }
+
+    // Platform-specific file descriptor exhaustion (EMFILE/ENFILE on Unix, WSAEMFILE on Windows)
+    #[cfg(unix)]
+    if matches!(err.raw_os_error(), Some(23 | 24)) {
+        return true;
+    }
+    #[cfg(windows)]
+    if matches!(err.raw_os_error(), Some(10024)) {
+        return true;
+    }
+
+    false
 }
 
 /// Spawn a background HTTP listener on [`DEFAULT_PEER_PORT`] that receives `POST /api/bundle`.
@@ -116,19 +166,28 @@ pub fn spawn_listener(app: AppHandle) {
 async fn run_listener(app: AppHandle) -> std::io::Result<()> {
     let listener =
         TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, DEFAULT_PEER_PORT)).await?;
+    let permits = Arc::new(Semaphore::new(MAX_CONCURRENT_CONNECTIONS));
     log::info!("Peer settings listener active on port {DEFAULT_PEER_PORT}");
 
     loop {
-        let (stream, peer_addr) = match listener.accept().await {
+        let (mut stream, peer_addr) = match listener.accept().await {
             Ok(pair) => pair,
-            Err(err) => {
-                log::warn!("Peer settings accept failed: {err}");
+            Err(err) if is_retryable_accept_error(&err) => {
+                log::warn!("Transient peer settings accept error: {err}");
                 time::sleep(Duration::from_millis(100)).await;
                 continue;
             }
+            Err(err) => return Err(err),
         };
+
+        let Ok(permit) = Arc::clone(&permits).try_acquire_owned() else {
+            let _ = time::timeout(TRANSFER_TIMEOUT, write_http_status(&mut stream, 503)).await;
+            continue;
+        };
+
         let app_handle = app.clone();
         tauri::async_runtime::spawn(async move {
+            let _permit = permit;
             handle_connection(stream, peer_addr, app_handle).await;
         });
     }
@@ -202,6 +261,9 @@ async fn read_http_request(stream: &mut TcpStream) -> std::result::Result<Parsed
         }
         buf.extend_from_slice(&chunk[..n]);
         if let Some(pos) = find_header_end(&buf) {
+            if pos > MAX_HEADER_BYTES {
+                return Err(431);
+            }
             header_end = pos;
             break;
         }
@@ -280,6 +342,7 @@ async fn write_http_status(stream: &mut TcpStream, code: u16) -> std::io::Result
         408 => "Request Timeout",
         413 => "Payload Too Large",
         431 => "Request Header Fields Too Large",
+        503 => "Service Unavailable",
         _ => "Internal Server Error",
     };
     let response =
@@ -400,5 +463,16 @@ mod tests {
         assert!(is_allowed_peer_ip(Ipv4Addr::new(172, 16, 0, 1)));
         assert!(is_allowed_peer_ip(Ipv4Addr::new(169, 254, 1, 2)));
         assert!(!is_allowed_peer_ip(Ipv4Addr::new(8, 8, 8, 8)));
+    }
+
+    #[test]
+    fn sanitize_header_value_keeps_cyrillic_and_strips_controls() {
+        assert_eq!(sanitize_header_value("Ноутбук Сергія"), "Ноутбук Сергія");
+        assert_eq!(
+            sanitize_header_value("Evil\r\nX-Injected: true\0Name"),
+            "EvilX-Injected: trueName"
+        );
+        let long_name = "А".repeat(100);
+        assert_eq!(sanitize_header_value(&long_name).chars().count(), 64);
     }
 }
