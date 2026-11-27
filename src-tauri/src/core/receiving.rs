@@ -6,6 +6,7 @@ use std::{
 };
 
 use khvylyna_pairing::window::PairingWindow;
+use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{Mutex, watch};
 use tokio::task::JoinHandle;
@@ -18,6 +19,14 @@ struct Session {
     shutdown: watch::Sender<bool>,
     task: JoinHandle<()>,
     pairing: Arc<StdMutex<PairingWindow>>,
+}
+
+/// Current code and the remaining time during which it can be used.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairingCodeInfo {
+    code: String,
+    expires_in_ms: u64,
 }
 
 /// Owns the opt-in receiving session.
@@ -35,13 +44,17 @@ impl ReceivingState {
     }
 
     /// Returns the current code while the receiver can accept a pairing attempt.
-    pub async fn pairing_code(&self) -> Option<String> {
+    pub async fn pairing_code(&self) -> Option<PairingCodeInfo> {
         let current = self.0.lock().await;
         let session = current
             .as_ref()
             .filter(|session| !session.task.is_finished())?;
         let pairing = session.pairing.lock().ok()?;
-        pairing.code(Instant::now()).map(str::to_owned)
+        let now = Instant::now();
+        Some(PairingCodeInfo {
+            code: pairing.code(now)?.to_owned(),
+            expires_in_ms: pairing.remaining(now)?.as_millis() as u64,
+        })
     }
 
     /// Starts or stops receiving and returns the resulting state.

@@ -585,7 +585,7 @@ pub async fn get_receiving_settings_enabled(
 #[tauri::command]
 pub async fn get_receiving_pairing_code(
     receiving: State<'_, crate::core::receiving::ReceivingState>,
-) -> Result<Option<String>> {
+) -> Result<Option<crate::core::receiving::PairingCodeInfo>> {
     Ok(receiving.pairing_code().await)
 }
 

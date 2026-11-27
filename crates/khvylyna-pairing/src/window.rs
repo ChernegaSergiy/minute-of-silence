@@ -40,6 +40,12 @@ impl PairingWindow {
         }
     }
 
+    /// Returns the remaining code lifetime while pairing is available.
+    pub fn remaining(&self, now: Instant) -> Option<Duration> {
+        self.code(now)?;
+        Some(self.expires_at.saturating_duration_since(now))
+    }
+
     /// Consumes one attempt and begins authenticating a sender.
     pub fn start(
         &mut self,
@@ -88,6 +94,8 @@ mod tests {
                 .is_some()
         );
         assert!(window.code(now + CODE_LIFETIME).is_none());
+        assert_eq!(window.remaining(now), Some(CODE_LIFETIME));
+        assert_eq!(window.remaining(now + CODE_LIFETIME), None);
     }
 
     #[test]
