@@ -799,6 +799,37 @@ mod tests {
     }
 
     #[test]
+    fn incompatible_or_missing_protocol_txt_records_are_ignored() {
+        let label = "incompatible";
+        let ip = Ipv4Addr::new(192, 168, 1, 120);
+        let original = build_dnssd_response(
+            label,
+            "Incompatible",
+            DeviceKind::Desktop,
+            ip,
+            DEFAULT_PEER_PORT,
+            "0.12.1",
+        );
+        assert_eq!(parse_dnssd_response(&original, SERVICE_TYPE).len(), 1);
+        let offset = original
+            .windows(6)
+            .position(|window| window == b"proto=")
+            .expect("proto TXT entry");
+
+        let mut wrong_version = original.clone();
+        wrong_version[offset + 6] = b'0' + khvylyna_pairing::protocol::VERSION + 1;
+        assert!(parse_dnssd_response(&wrong_version, SERVICE_TYPE).is_empty());
+
+        let mut non_numeric = original.clone();
+        non_numeric[offset + 6] = b'x';
+        assert!(parse_dnssd_response(&non_numeric, SERVICE_TYPE).is_empty());
+
+        let mut missing = original;
+        missing[offset..offset + 6].copy_from_slice(b"other=");
+        assert!(parse_dnssd_response(&missing, SERVICE_TYPE).is_empty());
+    }
+
+    #[test]
     fn is_dnssd_query_for_matches_ptr_query_and_ignores_responses() {
         let ptr_query = build_ptr_query(SERVICE_TYPE);
         assert!(is_dnssd_query_for(&ptr_query, SERVICE_TYPE));
