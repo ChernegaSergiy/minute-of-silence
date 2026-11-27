@@ -284,10 +284,7 @@ async fn write_http_status(stream: &mut TcpStream, code: u16) -> std::io::Result
 }
 
 fn sanitize_header_value(raw: &str) -> String {
-    raw.chars()
-        .filter(|ch| !ch.is_control())
-        .take(64)
-        .collect()
+    raw.chars().filter(|ch| !ch.is_control()).take(64).collect()
 }
 
 /// Build an HTTP/1.1 `POST /api/bundle` request carrying a JSON payload.
