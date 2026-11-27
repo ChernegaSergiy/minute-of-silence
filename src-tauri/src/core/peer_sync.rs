@@ -114,7 +114,14 @@ async fn run_listener(app: AppHandle) -> std::io::Result<()> {
     log::info!("Peer settings listener active on port {DEFAULT_PEER_PORT}");
 
     loop {
-        let (stream, peer_addr) = listener.accept().await?;
+        let (stream, peer_addr) = match listener.accept().await {
+            Ok(pair) => pair,
+            Err(err) => {
+                log::warn!("Peer settings accept failed: {err}");
+                time::sleep(Duration::from_millis(100)).await;
+                continue;
+            }
+        };
         let app_handle = app.clone();
         tauri::async_runtime::spawn(async move {
             handle_connection(stream, peer_addr, app_handle).await;
