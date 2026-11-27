@@ -14,8 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Android support with the ceremony constructor, test ceremonies and reminders.
 - Responsive navigation, vertically stacked form fields and adaptive action buttons for narrow screens.
-- Compact icon-only navigation in desktop windows narrower than 600 px.
-- Background ceremony playback with the screen off, supported by a foreground service and a scheduled app wake-up before the ceremony.
+- Background ceremony playback with the screen off, supported by a foreground service and scheduled app wake-up before the ceremony.
 - Restore the Android ceremony schedule after a device restart or app update when autostart is enabled.
 - Android media volume and mute controls, with temporary audio focus to let compatible players pause during the ceremony.
 - Android notification permission request and an in-app warning with a shortcut to system settings when notifications are blocked.
@@ -23,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Disable browser tap highlighting and selection of non-editable interface text on touch devices, while preserving text selection in input fields.
-- The visual overlay is shown only on desktop; its settings are hidden on Android.
 
 ### Fixed
 - Keep the visual overlay animation synchronized with the ceremony's actual progress when it appears or reappears.
@@ -32,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Align the Add button vertically with the personal date fields by removing its extra bottom margin.
 - Keep the visual overlay title and subtitle centered when their text wraps onto multiple lines.
 - Allow the settings copy and paste buttons to wrap below their descriptions when space is limited, preventing the descriptions from collapsing into narrow columns.
-- The ceremony start compensation now rounds the sub-second part up, so the main part cannot start later than 09:00:00.
 
 ## [0.12.1] - 2026-11-17
 
