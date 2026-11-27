@@ -2702,6 +2702,7 @@ dependencies = [
  "opaque-ke",
  "rand 0.8.8",
  "ring",
+ "tokio",
  "zeroize",
 ]
 

@@ -1,6 +1,7 @@
 //! Password-authenticated key exchange for a single settings-transfer session.
 
 pub mod channel;
+pub mod transport;
 pub mod window;
 
 use opaque_ke::{
