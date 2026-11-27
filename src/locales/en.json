@@ -209,6 +209,7 @@
       "send_error": "Send failed",
       "incoming_title": "Incoming settings",
       "incoming_body": "Device \"{{sender}}\" ({{ip}}) wants to send you settings and personal dates. Apply them?",
+      "incoming_dirty_warning": "You have unsaved changes in Settings — they will be overwritten.",
       "incoming_accept": "Accept",
       "incoming_decline": "Decline",
       "incoming_error": "Failed to apply received settings.",
