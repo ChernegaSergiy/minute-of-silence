@@ -867,6 +867,17 @@ export default function App() {
                     ip: incomingOffer?.senderIp ?? "",
                   })}
                 </Text>
+                {isDirty && (
+                  <Text
+                    block
+                    style={{
+                      color: tokens.colorPaletteYellowForeground1,
+                      marginTop: tokens.spacingVerticalS,
+                    }}
+                  >
+                    {t("controls.device_discovery.incoming_dirty_warning")}
+                  </Text>
+                )}
                 {offerError && (
                   <Text
                     block
