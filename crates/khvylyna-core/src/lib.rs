@@ -21,7 +21,7 @@ pub use error::ConfigError;
 
 pub use models::{
     AnnouncementVoice, AnthemVoice, AppInitialState, AudioPreset, CONFIG_SCHEMA_VERSION,
-    DiscoveredDevice, PersonalDate, PresetBlock, Settings, StatusSnapshot, UiTheme,
+    DeviceKind, DiscoveredDevice, PersonalDate, PresetBlock, Settings, StatusSnapshot, UiTheme,
     VoiceCapabilities, validate_blocks,
 };
 
