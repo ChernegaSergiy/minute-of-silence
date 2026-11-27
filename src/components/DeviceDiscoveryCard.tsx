@@ -319,7 +319,7 @@ export default function DeviceDiscoveryCard() {
                                 <ClipboardRegular />
                               )
                             }
-                            aria-label={t("controls.device_discovery.copy_ip")}
+                            aria-label={isCopied ? t("controls.device_discovery.copied") : t("controls.device_discovery.copy_ip")}
                             onClick={() => handleCopyIp(device)}
                           />
                         </Tooltip>
