@@ -84,25 +84,20 @@ pub async fn receive(
         return Err(invalid_data());
     }
     let request = read_frame(stream, MAX_HANDSHAKE_BYTES).await?;
-    let start_window = Arc::clone(&window);
-    let (receiver, response) = tokio::task::spawn_blocking(move || {
-        let mut guard = start_window.lock().map_err(|_| invalid_data())?;
+    let (receiver, response) = {
+        let mut guard = window.lock().map_err(|_| invalid_data())?;
         guard
             .start(&request, Instant::now())
-            .map_err(|_| invalid_data())
-    })
-    .await
-    .map_err(|_| invalid_data())??;
+            .map_err(|_| invalid_data())?
+    };
     write_frame(stream, &response, MAX_HANDSHAKE_BYTES).await?;
     let confirmation = read_frame(stream, MAX_HANDSHAKE_BYTES).await?;
-    let key = tokio::task::spawn_blocking(move || {
+    let key = {
         let mut guard = window.lock().map_err(|_| invalid_data())?;
         guard
             .finish(receiver, &confirmation, Instant::now())
-            .map_err(|_| invalid_data())
-    })
-    .await
-    .map_err(|_| invalid_data())??;
+            .map_err(|_| invalid_data())?
+    };
     let (seal, open) = channel::derive_keys(&key, Role::Receiver).map_err(|_| invalid_data())?;
     let ciphertext = read_frame(stream, MAX_ENCRYPTED_BYTES).await?;
     let payload = open.open(&ciphertext).map_err(|_| invalid_data())?;
