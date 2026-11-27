@@ -1,16 +1,20 @@
 #[cfg(desktop)]
 use crate::core::settings::PresetBlock;
 use crate::platform::Platform;
-use crate::state::{ActiveCeremony, AppState, CeremonyKind, CeremonyPhase, CeremonyRuntime};
+#[cfg(not(target_os = "android"))]
+use crate::state::AppState;
+use crate::state::{ActiveCeremony, CeremonyKind, CeremonyPhase, CeremonyRuntime};
 #[cfg(desktop)]
 use rust_i18n::t;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
+use tauri::Emitter;
+#[cfg(not(target_os = "android"))]
+use tauri::Manager;
 #[cfg(desktop)]
 use tauri::WebviewWindowBuilder;
 #[cfg(desktop)]
 use tauri::{AppHandle, EventId, Listener};
-use tauri::{Emitter, Manager};
 
 static PREVIOUS_VOLUME: Mutex<Option<u8>> = Mutex::new(None);
 static WAS_MUTED: Mutex<Option<bool>> = Mutex::new(None);
