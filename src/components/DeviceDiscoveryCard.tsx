@@ -16,6 +16,7 @@ import {
   ClipboardCheckmarkRegular,
   ClipboardRegular,
   Desktop20Regular,
+  ErrorCircle20Regular,
   Phone20Regular,
   Send20Regular,
   Speaker220Regular,
@@ -151,6 +152,7 @@ function formatEndpoint(device: DiscoveredDevice): string {
 }
 
 type SendState = "idle" | "sending" | "sent" | "error";
+type CopyFeedback = { key: string; status: "copied" | "error" };
 
 export default function DeviceDiscoveryCard() {
   const styles = useStyles();
@@ -158,7 +160,7 @@ export default function DeviceDiscoveryCard() {
   const [scanning, setScanning] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
   const [error, setError] = useState(false);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<CopyFeedback | null>(null);
   const [sendStates, setSendStates] = useState<Record<string, SendState>>({});
   const copyTimerRef = useRef<number | null>(null);
   const sendTimersRef = useRef<Record<string, number>>({});
@@ -190,19 +192,20 @@ export default function DeviceDiscoveryCard() {
 
   const handleCopyIp = useCallback(async (device: DiscoveredDevice) => {
     const key = `${device.ip}:${device.port}`;
+    let status: CopyFeedback["status"] = "copied";
     try {
       await writeText(device.ip);
-      if (copyTimerRef.current !== null) {
-        window.clearTimeout(copyTimerRef.current);
-      }
-      setCopiedKey(key);
-      copyTimerRef.current = window.setTimeout(() => {
-        copyTimerRef.current = null;
-        setCopiedKey((current) => (current === key ? null : current));
-      }, 2000);
     } catch {
-      // Clipboard write errors are non-fatal
+      status = "error";
     }
+    if (copyTimerRef.current !== null) {
+      window.clearTimeout(copyTimerRef.current);
+    }
+    setCopyFeedback({ key, status });
+    copyTimerRef.current = window.setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopyFeedback((current) => (current?.key === key ? null : current));
+    }, 2000);
   }, []);
 
   const handleSendSettings = useCallback(async (device: DiscoveredDevice) => {
@@ -274,7 +277,14 @@ export default function DeviceDiscoveryCard() {
             <div className={styles.deviceList}>
               {devices.map((device, index) => {
                 const key = `${device.ip}:${device.port}`;
-                const isCopied = copiedKey === key;
+                const copyStatus =
+                  copyFeedback?.key === key ? copyFeedback.status : "idle";
+                const copyLabel =
+                  copyStatus === "copied"
+                    ? t("controls.device_discovery.copied")
+                    : copyStatus === "error"
+                    ? t("controls.device_discovery.copy_error")
+                    : t("controls.device_discovery.copy_ip");
                 const sendState: SendState = sendStates[key] ?? "idle";
                 return (
                   <Fragment key={key}>
@@ -325,24 +335,19 @@ export default function DeviceDiscoveryCard() {
                               : t("controls.device_discovery.send")}
                           </Button>
                         </Tooltip>
-                        <Tooltip
-                          content={
-                            isCopied
-                              ? t("controls.device_discovery.copied")
-                              : t("controls.device_discovery.copy_ip")
-                          }
-                          relationship="label"
-                        >
+                        <Tooltip content={copyLabel} relationship="label">
                           <Button
                             appearance="subtle"
                             icon={
-                              isCopied ? (
+                              copyStatus === "copied" ? (
                                 <ClipboardCheckmarkRegular />
+                              ) : copyStatus === "error" ? (
+                                <ErrorCircle20Regular />
                               ) : (
                                 <ClipboardRegular />
                               )
                             }
-                            aria-label={isCopied ? t("controls.device_discovery.copied") : t("controls.device_discovery.copy_ip")}
+                            aria-label={copyLabel}
                             onClick={() => handleCopyIp(device)}
                           />
                         </Tooltip>
