@@ -262,6 +262,14 @@ mod tests {
     }
 
     #[test]
+    fn generate_code_rejects_out_of_range_words() {
+        let mut bytes = u32::MAX.to_le_bytes().to_vec();
+        bytes.extend_from_slice(&123456u32.to_le_bytes());
+        let code = generate_code(&mut TestRng::new(&bytes)).expect("code");
+        assert_eq!(&*code, "123456");
+    }
+
+    #[test]
     fn generated_codes_are_six_ascii_digits() {
         for seed in 0..16 {
             let code = generate_code(&mut TestRng::new(&[seed; 4])).expect("code");
