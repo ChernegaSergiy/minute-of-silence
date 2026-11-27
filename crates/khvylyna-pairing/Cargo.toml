@@ -10,7 +10,7 @@ default = ["std"]
 std = ["dep:rand", "dep:tokio"]
 
 [dependencies]
-aes-gcm = { version = "0.11.1", default-features = false, features = ["aes", "alloc"] }
+aes-gcm = { version = "0.11.1", default-features = false, features = ["aes", "alloc", "zeroize"] }
 hkdf = { version = "0.13", default-features = false }
 pake-cpace-embedded = "0.2.2"
 rand = { version = "0.8", default-features = false, features = ["getrandom"], optional = true }

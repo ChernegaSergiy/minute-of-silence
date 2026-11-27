@@ -221,4 +221,10 @@ mod tests {
         assert!(secret.open_data(&message).is_err());
         assert!(secret.open_data(&[0u8; NONCE_LEN]).is_err());
     }
+
+    #[test]
+    fn cipher_state_is_zeroized_on_drop() {
+        fn assert_zeroize_on_drop<T: zeroize::ZeroizeOnDrop>() {}
+        assert_zeroize_on_drop::<Aes256Gcm>();
+    }
 }
