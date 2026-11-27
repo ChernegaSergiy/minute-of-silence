@@ -3,6 +3,23 @@
 use alloc::string::String;
 use serde::{Deserialize, Serialize};
 
+/// Category of a discovered Minute of Silence device on the local network.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(export_to = "types.gen.ts"))]
+#[serde(rename_all = "snake_case")]
+pub enum DeviceKind {
+    /// Standalone ESP32 hardware device (`minute-of-silence-device`).
+    Hardware,
+    /// Desktop application (Windows, Linux, macOS).
+    Desktop,
+    /// Android mobile application.
+    Android,
+    /// Unclassified or legacy device without a `kind` TXT record.
+    #[default]
+    Unknown,
+}
+
 /// Discovered standalone Minute of Silence hardware device on the local network.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
