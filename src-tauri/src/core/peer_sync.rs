@@ -47,15 +47,20 @@ pub struct IncomingSettingsOffer {
     pub json: String,
 }
 
-/// Send a serialized `ExportBundle` JSON payload to a discovered peer via `POST /api/bundle`.
+/// Return `true` if `addr` is a local network destination (RFC 1918 private or link-local).
+fn is_allowed_peer_ip(addr: Ipv4Addr) -> bool {
+    addr.is_private() || addr.is_link_local() || (cfg!(test) && addr.is_loopback())
+}
+
+/// Send a serialized `ExportBundle` JSON payload to a discovered local peer via `POST /api/bundle`.
 pub async fn send_bundle(ip: &str, port: u16, json: &str) -> crate::Result<()> {
     let addr: Ipv4Addr = ip
         .trim()
         .parse()
         .map_err(|_| crate::AppError::Platform(format!("Invalid device IP address: {ip}")))?;
-    if addr.is_unspecified() || port == 0 {
+    if addr.is_unspecified() || port == 0 || !is_allowed_peer_ip(addr) {
         return Err(crate::AppError::Platform(format!(
-            "Invalid device endpoint: {ip}:{port}"
+            "Refused non-local or invalid device endpoint: {ip}:{port}"
         )));
     }
 
@@ -382,5 +387,18 @@ mod tests {
             .await
             .expect("send_bundle succeeds");
         server.await.expect("server task finishes cleanly");
+    }
+
+    #[tokio::test]
+    async fn send_bundle_rejects_public_and_invalid_ips() {
+        assert!(send_bundle("8.8.8.8", 80, "{}").await.is_err());
+        assert!(send_bundle("1.1.1.1", 49152, "{}").await.is_err());
+        assert!(send_bundle("0.0.0.0", 80, "{}").await.is_err());
+        assert!(send_bundle("192.168.1.10", 0, "{}").await.is_err());
+        assert!(is_allowed_peer_ip(Ipv4Addr::new(192, 168, 1, 105)));
+        assert!(is_allowed_peer_ip(Ipv4Addr::new(10, 0, 0, 5)));
+        assert!(is_allowed_peer_ip(Ipv4Addr::new(172, 16, 0, 1)));
+        assert!(is_allowed_peer_ip(Ipv4Addr::new(169, 254, 1, 2)));
+        assert!(!is_allowed_peer_ip(Ipv4Addr::new(8, 8, 8, 8)));
     }
 }
