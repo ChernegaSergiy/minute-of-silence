@@ -63,6 +63,12 @@ const useStyles = makeStyles({
     flex: "1 1 200px",
     minWidth: 0,
   },
+  pairingCodeGroup: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: "2px",
+    minWidth: 0,
+  },
   description: {
     fontSize: tokens.fontSizeBase100,
     color: tokens.colorNeutralForeground3,
@@ -421,7 +427,7 @@ export default function DeviceDiscoveryCard() {
       )}
       {receivingEnabled && !pairingLoading && (
         pairingCode ? (
-          <div className={styles.labelGroup}>
+          <div className={styles.pairingCodeGroup}>
             <Text weight="medium">{t("controls.device_discovery.pairing_code")}: {pairingCode}</Text>
             <Caption1 className={styles.statusText}>
               {t("controls.device_discovery.pairing_code_description")}
