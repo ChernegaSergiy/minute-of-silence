@@ -46,7 +46,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import {
   bringWindowToFront,
+  dismissPendingSettingsOffer,
   getInitialState,
+  getPendingSettingsOffer,
   getPlatform,
   getStatus,
   importSettings,
@@ -362,6 +364,15 @@ export default function App() {
   const initRef = useRef(false);
   const hasImportedRef = useRef(false);
   const statusRevisionRef = useRef(0);
+  const offerRevisionRef = useRef(0);
+
+  const refreshIncomingOffer = useCallback(async () => {
+    const revision = ++offerRevisionRef.current;
+    const offer = await getPendingSettingsOffer();
+    if (revision !== offerRevisionRef.current) return;
+    setIncomingOffer(offer);
+    if (offer) void bringWindowToFront().catch(() => {});
+  }, []);
 
   const applyStatusSnapshot = useCallback((nextStatus: StatusSnapshot, revision: number) => {
     if (revision !== statusRevisionRef.current) return;
@@ -511,23 +522,29 @@ export default function App() {
   useEffect(() => {
     let active = true;
     let unlisten: (() => void) | null = null;
-    void onIncomingSettingsOffer((offer) => {
+    void onIncomingSettingsOffer(() => {
       if (!active) return;
-      setOfferError(false);
-      void bringWindowToFront().catch(() => {});
-      setIncomingOffer(offer);
+      void refreshIncomingOffer().catch((error) =>
+        console.error("Failed to refresh incoming settings offers:", error),
+      );
     }).then((fn) => {
       if (active) {
         unlisten = fn;
+        void refreshIncomingOffer().catch((error) =>
+          console.error("Failed to load incoming settings offers:", error),
+        );
       } else {
         fn();
       }
+    }).catch((error) => {
+      console.error("Failed to listen for incoming settings offers:", error);
     });
     return () => {
       active = false;
+      offerRevisionRef.current++;
       unlisten?.();
     };
-  }, []);
+  }, [refreshIncomingOffer]);
 
   // Trigger the update dialog when user is idle
   useEffect(() => {
@@ -578,19 +595,32 @@ export default function App() {
       const imported = await importSettings(incomingOffer.json);
       handleSettingsImported(imported.settings);
       setPersonalDates(imported.personalDates);
+      await dismissPendingSettingsOffer(incomingOffer.id);
       setIncomingOffer(null);
+      await refreshIncomingOffer();
     } catch (error) {
       console.error("Failed to apply incoming settings offer:", error);
       setOfferError(true);
     } finally {
       setApplyingOffer(false);
     }
-  }, [incomingOffer, handleSettingsImported]);
+  }, [incomingOffer, handleSettingsImported, refreshIncomingOffer]);
 
-  const handleDeclineIncomingOffer = useCallback(() => {
-    setIncomingOffer(null);
+  const handleDeclineIncomingOffer = useCallback(async () => {
+    if (!incomingOffer) return;
+    setApplyingOffer(true);
     setOfferError(false);
-  }, []);
+    try {
+      await dismissPendingSettingsOffer(incomingOffer.id);
+      setIncomingOffer(null);
+      await refreshIncomingOffer();
+    } catch (error) {
+      console.error("Failed to dismiss incoming settings offer:", error);
+      setOfferError(true);
+    } finally {
+      setApplyingOffer(false);
+    }
+  }, [incomingOffer, refreshIncomingOffer]);
 
   const handleSyncNtp = useCallback(async () => {
     setSyncing(true);

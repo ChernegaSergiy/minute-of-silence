@@ -6,14 +6,15 @@
 //! `incoming-settings-offer` event so the user must explicitly confirm before applying.
 
 use std::{
+    collections::VecDeque,
     io::ErrorKind,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    sync::Arc,
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -41,6 +42,8 @@ const MAX_HEADER_BYTES: usize = 8 * 1024;
 /// Maximum number of concurrent incoming peer connections handled at once.
 const MAX_CONCURRENT_CONNECTIONS: usize = 8;
 
+const MAX_PENDING_OFFERS: usize = 8;
+
 /// Maximum bytes read while waiting for the HTTP response status line.
 const MAX_STATUS_LINE_BYTES: usize = 512;
 
@@ -48,12 +51,55 @@ const MAX_STATUS_LINE_BYTES: usize = 512;
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IncomingSettingsOffer {
+    /// Identifier used to acknowledge the displayed offer.
+    pub id: u64,
     /// Display name advertised by the sender (or its IP address as fallback).
     pub sender_name: String,
     /// IPv4 address of the sending peer.
     pub sender_ip: String,
     /// Validated `ExportBundle` JSON ready to pass to `import_settings`.
     pub json: String,
+}
+
+#[derive(Default)]
+struct PendingOffers {
+    next_id: u64,
+    offers: VecDeque<IncomingSettingsOffer>,
+}
+
+/// Incoming settings awaiting an explicit user decision.
+#[derive(Default)]
+pub struct IncomingOfferQueue(Mutex<PendingOffers>);
+
+impl IncomingOfferQueue {
+    fn enqueue(&self, mut offer: IncomingSettingsOffer) -> bool {
+        let mut pending = self.0.lock().unwrap_or_else(|error| error.into_inner());
+        if pending.offers.len() >= MAX_PENDING_OFFERS {
+            return false;
+        }
+        pending.next_id += 1;
+        offer.id = pending.next_id;
+        pending.offers.push_back(offer);
+        true
+    }
+
+    /// Returns the oldest offer without removing it.
+    pub fn next(&self) -> Option<IncomingSettingsOffer> {
+        self.0
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .offers
+            .front()
+            .cloned()
+    }
+
+    /// Removes the oldest offer only if it matches the supplied identifier.
+    pub fn dismiss(&self, id: u64) {
+        let mut pending = self.0.lock().unwrap_or_else(|error| error.into_inner());
+        if pending.offers.front().is_some_and(|offer| offer.id == id) {
+            pending.offers.pop_front();
+        }
+    }
 }
 
 /// Return `true` if `addr` is a local network destination (RFC 1918 private or link-local).
@@ -228,15 +274,19 @@ async fn handle_connection(mut stream: TcpStream, peer_addr: SocketAddr, app: Ap
         .unwrap_or_else(|| sender_ip.clone());
 
     let offer = IncomingSettingsOffer {
+        id: 0,
         sender_name,
         sender_ip,
         json: parsed.body,
     };
 
-    if let Err(err) = app.emit(INCOMING_SETTINGS_EVENT, offer) {
-        log::error!("Failed to emit incoming settings offer: {err}");
-        let _ = write_http_status(&mut stream, 500).await;
+    if !app.state::<IncomingOfferQueue>().enqueue(offer) {
+        let _ = write_http_status(&mut stream, 503).await;
         return;
+    }
+
+    if let Err(err) = app.emit(INCOMING_SETTINGS_EVENT, ()) {
+        log::error!("Failed to emit incoming settings offer: {err}");
     }
 
     let _ = write_http_status(&mut stream, 202).await;
@@ -389,6 +439,45 @@ pub fn parse_http_status(resp: &[u8]) -> Option<u16> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn offer(sender: &str) -> IncomingSettingsOffer {
+        IncomingSettingsOffer {
+            id: 0,
+            sender_name: sender.to_string(),
+            sender_ip: "192.168.1.10".to_string(),
+            json: "{}".to_string(),
+        }
+    }
+
+    #[test]
+    fn incoming_offers_remain_until_acknowledged_in_order() {
+        let queue = IncomingOfferQueue::default();
+        assert!(queue.enqueue(offer("first")));
+        assert!(queue.enqueue(offer("second")));
+        let first = queue.next().expect("first offer");
+        assert_eq!(first.sender_name, "first");
+        assert_eq!(queue.next().expect("offer remains pending").id, first.id);
+        queue.dismiss(first.id + 1);
+        assert_eq!(queue.next().expect("first offer remains").id, first.id);
+        queue.dismiss(first.id);
+        let second = queue.next().expect("second offer");
+        assert_eq!(second.sender_name, "second");
+        assert_ne!(first.id, second.id);
+        queue.dismiss(second.id);
+        assert!(queue.next().is_none());
+    }
+
+    #[test]
+    fn incoming_offer_queue_rejects_new_offers_when_full() {
+        let queue = IncomingOfferQueue::default();
+        for _ in 0..MAX_PENDING_OFFERS {
+            assert!(queue.enqueue(offer("sender")));
+        }
+        assert!(!queue.enqueue(offer("overflow")));
+        let first = queue.next().expect("first offer");
+        queue.dismiss(first.id);
+        assert!(queue.enqueue(offer("new sender")));
+    }
 
     #[test]
     fn build_http_post_formats_valid_request() {

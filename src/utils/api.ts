@@ -137,17 +137,24 @@ export async function sendSettingsToDevice(ip: string, port: number): Promise<vo
 export const INCOMING_SETTINGS_EVENT = "incoming-settings-offer";
 
 export type IncomingSettingsOffer = {
+  id: number;
   senderName: string;
   senderIp: string;
   json: string;
 };
 
 export function onIncomingSettingsOffer(
-  callback: (offer: IncomingSettingsOffer) => void,
+  callback: () => void,
 ): Promise<UnlistenFn> {
-  return listen(INCOMING_SETTINGS_EVENT, (e) =>
-    callback((e.payload as unknown) as IncomingSettingsOffer),
-  );
+  return listen(INCOMING_SETTINGS_EVENT, callback);
+}
+
+export async function getPendingSettingsOffer(): Promise<IncomingSettingsOffer | null> {
+  return invoke<IncomingSettingsOffer | null>("get_pending_settings_offer");
+}
+
+export async function dismissPendingSettingsOffer(id: number): Promise<void> {
+  return invoke<void>("dismiss_pending_settings_offer", { id });
 }
 
 // Event listeners

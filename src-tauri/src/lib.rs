@@ -77,6 +77,7 @@ pub fn run() {
             let settings = Settings::load_from_store(handle);
             let state = AppState::new_with_settings(handle.clone(), settings.clone());
             app.manage(state);
+            app.manage(core::peer_sync::IncomingOfferQueue::default());
             app.state::<AppState>().runtime.attach_app(handle.clone());
 
             // --- 2.0. Native schedule and autostart (Android) ---
@@ -281,6 +282,8 @@ pub fn run() {
             app::commands::save_personal_dates,
             app::commands::discover_devices,
             app::commands::send_settings_to_device,
+            app::commands::get_pending_settings_offer,
+            app::commands::dismiss_pending_settings_offer,
             app::apng::decode_apng_frames,
         ])
         .run(tauri::generate_context!())

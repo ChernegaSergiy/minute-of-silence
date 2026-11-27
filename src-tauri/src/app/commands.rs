@@ -573,6 +573,23 @@ pub async fn install_update(app: AppHandle, state: State<'_, AppState>) -> Resul
 
 // Device discovery
 
+/// Returns the oldest incoming offer without removing it.
+#[tauri::command]
+pub fn get_pending_settings_offer(
+    queue: State<'_, crate::core::peer_sync::IncomingOfferQueue>,
+) -> Option<crate::core::peer_sync::IncomingSettingsOffer> {
+    queue.next()
+}
+
+/// Removes the matching incoming offer after the user has made a decision.
+#[tauri::command]
+pub fn dismiss_pending_settings_offer(
+    queue: State<'_, crate::core::peer_sync::IncomingOfferQueue>,
+    id: u64,
+) {
+    queue.dismiss(id);
+}
+
 /// Discover Minute of Silence devices (hardware, desktop, Android) on the local network via mDNS.
 #[tauri::command]
 pub async fn discover_devices() -> Result<Vec<khvylyna_core::DiscoveredDevice>> {
