@@ -1,4 +1,4 @@
-//! Hardware device models for local network discovery.
+//! Network device models for local network discovery.
 
 use alloc::string::String;
 use serde::{Deserialize, Serialize};
