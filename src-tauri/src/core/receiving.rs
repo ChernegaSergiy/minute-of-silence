@@ -1,5 +1,11 @@
 //! Session-scoped lifecycle for receiving settings over the local network.
 
+use std::{
+    sync::{Arc, Mutex as StdMutex},
+    time::Instant,
+};
+
+use khvylyna_pairing::window::PairingWindow;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{Mutex, watch};
 use tokio::task::JoinHandle;
@@ -11,6 +17,7 @@ const RECEIVING_STOPPED_EVENT: &str = "device-receiving-stopped";
 struct Session {
     shutdown: watch::Sender<bool>,
     task: JoinHandle<()>,
+    pairing: Arc<StdMutex<PairingWindow>>,
 }
 
 /// Owns the opt-in receiving session.
@@ -27,6 +34,16 @@ impl ReceivingState {
             .is_some_and(|session| !session.task.is_finished())
     }
 
+    /// Returns the current code while the receiver can accept a pairing attempt.
+    pub async fn pairing_code(&self) -> Option<String> {
+        let current = self.0.lock().await;
+        let session = current
+            .as_ref()
+            .filter(|session| !session.task.is_finished())?;
+        let pairing = session.pairing.lock().ok()?;
+        pairing.code(Instant::now()).map(str::to_owned)
+    }
+
     /// Starts or stops receiving and returns the resulting state.
     pub async fn set_enabled(&self, app: &AppHandle, enabled: bool) -> crate::Result<bool> {
         let mut current = self.0.lock().await;
@@ -38,6 +55,15 @@ impl ReceivingState {
                 return Ok(true);
             }
             current.take();
+            let pairing = tokio::task::spawn_blocking(|| PairingWindow::new(Instant::now()))
+                .await
+                .map_err(|error| {
+                    crate::AppError::Platform(format!("Pairing setup failed: {error}"))
+                })?
+                .map_err(|error| {
+                    crate::AppError::Platform(format!("Pairing setup failed: {error}"))
+                })?;
+            let pairing = Arc::new(StdMutex::new(pairing));
             let listener = peer_sync::bind_listener().await?;
             let responder = mdns::prepare_responder()?;
             let version = app.package_info().version.to_string();
@@ -78,7 +104,11 @@ impl ReceivingState {
                     }
                 }
             });
-            *current = Some(Session { shutdown, task });
+            *current = Some(Session {
+                shutdown,
+                task,
+                pairing,
+            });
             Ok(true)
         } else {
             if let Some(session) = current.take() {
@@ -96,6 +126,8 @@ mod tests {
 
     #[tokio::test]
     async fn receiving_is_disabled_by_default() {
-        assert!(!ReceivingState::default().is_enabled().await);
+        let state = ReceivingState::default();
+        assert!(!state.is_enabled().await);
+        assert!(state.pairing_code().await.is_none());
     }
 }

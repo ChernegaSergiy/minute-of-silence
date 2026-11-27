@@ -581,6 +581,14 @@ pub async fn get_receiving_settings_enabled(
     Ok(receiving.is_enabled().await)
 }
 
+/// Returns the current receiving session's pairing code, if available.
+#[tauri::command]
+pub async fn get_receiving_pairing_code(
+    receiving: State<'_, crate::core::receiving::ReceivingState>,
+) -> Result<Option<String>> {
+    Ok(receiving.pairing_code().await)
+}
+
 /// Enables or disables the session-scoped settings receiver.
 #[tauri::command]
 pub async fn set_receiving_settings_enabled(

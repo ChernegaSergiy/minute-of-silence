@@ -47,6 +47,7 @@ png = "0.18.1"
 base64 = "0.23"
 tauri-plugin-clipboard-manager = "2.4"
 khvylyna-core = { path = "../crates/khvylyna-core" }
+khvylyna-pairing = { path = "../crates/khvylyna-pairing" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"

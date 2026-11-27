@@ -284,6 +284,7 @@ pub fn run() {
             app::commands::get_pending_settings_offer,
             app::commands::dismiss_pending_settings_offer,
             app::commands::get_receiving_settings_enabled,
+            app::commands::get_receiving_pairing_code,
             app::commands::set_receiving_settings_enabled,
             app::apng::decode_apng_frames,
         ])
