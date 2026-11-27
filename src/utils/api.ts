@@ -134,6 +134,18 @@ export async function sendSettingsToDevice(ip: string, port: number): Promise<vo
   return invoke<void>("send_settings_to_device", { ip, port });
 }
 
+export async function getReceivingSettingsEnabled(): Promise<boolean> {
+  return invoke<boolean>("get_receiving_settings_enabled");
+}
+
+export async function setReceivingSettingsEnabled(enabled: boolean): Promise<boolean> {
+  return invoke<boolean>("set_receiving_settings_enabled", { enabled });
+}
+
+export function onReceivingSettingsStopped(callback: () => void): Promise<UnlistenFn> {
+  return listen("device-receiving-stopped", callback);
+}
+
 export const INCOMING_SETTINGS_EVENT = "incoming-settings-offer";
 
 export type IncomingSettingsOffer = {
