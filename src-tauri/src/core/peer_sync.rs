@@ -278,7 +278,7 @@ async fn write_http_status(stream: &mut TcpStream, code: u16) -> std::io::Result
 
 fn sanitize_header_value(raw: &str) -> String {
     raw.chars()
-        .filter(|ch| *ch >= ' ' && *ch <= '~')
+        .filter(|ch| !ch.is_control())
         .take(64)
         .collect()
 }
