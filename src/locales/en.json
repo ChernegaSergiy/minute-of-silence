@@ -257,7 +257,7 @@
     "0.12.2": {
       "android_support": "Android support with the ceremony constructor, test ceremonies and reminders.",
       "adaptive_navigation": "Responsive navigation, vertically stacked form fields and adaptive action buttons for narrow screens.",
-      "background_ceremony_service": "Background ceremony playback with the screen off, supported by a foreground service and scheduled app wake-up before the ceremony.",
+      "background_ceremony_service": "Background ceremony playback with the screen off, supported by a foreground service and a scheduled app wake-up before the ceremony.",
       "android_schedule_restore": "Restore the Android ceremony schedule after a device restart or app update when autostart is enabled.",
       "android_audio_controls": "Android media volume and mute controls, with temporary audio focus to let compatible players pause during the ceremony.",
       "android_notification_permission": "Android notification permission request and an in-app warning with a shortcut to system settings when notifications are blocked.",

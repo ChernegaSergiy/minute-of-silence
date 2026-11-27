@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Android support with the ceremony constructor, test ceremonies and reminders.
 - Responsive navigation, vertically stacked form fields and adaptive action buttons for narrow screens.
-- Background ceremony playback with the screen off, supported by a foreground service and scheduled app wake-up before the ceremony.
+- Background ceremony playback with the screen off, supported by a foreground service and a scheduled app wake-up before the ceremony.
 - Restore the Android ceremony schedule after a device restart or app update when autostart is enabled.
 - Android media volume and mute controls, with temporary audio focus to let compatible players pause during the ceremony.
 - Android notification permission request and an in-app warning with a shortcut to system settings when notifications are blocked.
